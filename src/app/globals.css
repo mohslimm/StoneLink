@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+/* Design tokens Antigravity — déclarer ici */
+@theme {
+  --color-gold-500: #c5a059;
+  --color-gold-400: #e8c77a;
+  --color-void: #060610;
+  --color-surface: #0f0f20;
+  --font-display: var(--font-cormorant), Georgia, serif;
+  --font-body: var(--font-outfit), system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* Variables CSS runtime (non Tailwind, pour usage en JS inline styles) */
+:root {
+  --bg-void:      #060610;
+  --bg-primary:   #0a0a14;
+  --bg-surface:   #0f0f20;
+  --bg-elevated:  #14142a;
+  --gold-500:     #c5a059;
+  --gold-400:     #e8c77a;
+  --gold-glow:    rgba(197,160,89,0.12);
+  --text-primary:   #f0ede8;
+  --text-secondary: #94a3b8;
+  --text-muted:     #475569;
+  --border-default: rgba(255,255,255,0.07);
+  --border-gold:    rgba(197,160,89,0.30);
+  --border-active:  rgba(197,160,89,0.60);
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  overflow-x: hidden;
+}
+
+/* ── Hardware acceleration sur éléments fixes ── */
+.bg-blob {
+  will-change: transform;
+  transform: translateZ(0);
+  pointer-events: none;
+}
+
+/* ── Smooth scroll natif ── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ── Spinners : GPU uniquement ── */
+@keyframes spin-gpu {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.animate-spin-gpu {
+  animation: spin-gpu 1s linear infinite;
+  will-change: transform;
+}
+
+/* ── Skeleton shimmer ── */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.03) 25%,
+    rgba(255,255,255,0.07) 50%,
+    rgba(255,255,255,0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease infinite;
+}
+
+/* ── Focus ring global Antigravity ── */
+*:focus-visible {
+  outline: 2px solid var(--gold-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

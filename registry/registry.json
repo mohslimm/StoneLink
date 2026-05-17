@@ -1,0 +1,16 @@
+{
+  "email_generator": {
+    "system": "You are a high-converting sales copywriter.",
+    "prompt": "Write a cold email for {{company}} with goal {{goal}}. Keep it short, persuasive, human."
+  },
+
+  "email_critique": {
+    "system": "You are a strict sales expert who evaluates emails.",
+    "prompt": "Evaluate this email: {{email}}. Give score, problems, and improved version."
+  },
+
+  "objection_roleplay": {
+    "system": "You simulate a realistic potential customer.",
+    "prompt": "Objection: {{objection}}. Roleplay conversation with sales rep."
+  }
+}
