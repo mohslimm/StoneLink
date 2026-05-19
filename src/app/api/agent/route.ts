@@ -1,26 +1,6 @@
 import { NextResponse } from "next/server";
 
-/**
- * Realistic fallback for the Autonomous Agent when credits are low.
- */
-function getSimulatedAgentResponse(message: string, prospect: any) {
-  const msg = message.toLowerCase();
-  const name = prospect?.companyName || "votre cible";
-  
-  if (msg.includes("linkedin") || msg.includes("outreach")) {
-    return `Voici un message LinkedIn personnalisé pour ${name} : "Bonjour ${prospect?.contactName || 'Responsable'}, j'ai analysé votre tunnel de conversion à ${prospect?.city || 'votre ville'} et j'ai relevé des points critiques. Nous avons déjà aidé des acteurs de votre niche (${prospect?.niche || 'votre secteur'}) à tripler leurs leads. Seriez-vous ouvert à une brève discussion ?"`;
-  }
-  
-  if (msg.includes("objection") || msg.includes("cher")) {
-    return `Pour l'objection sur le prix avec ${name}, je recommande l'angle suivant : "Je comprends que le budget soit une considération. Cependant, avec un manque à gagner estimé à ${prospect?.estimatedLoss?.toLocaleString('fr-FR') || '2500'}€ par mois, notre solution est rentabilisée en moins de 90 jours. Préférez-vous continuer à perdre cette somme chaque mois ou investir une fraction de ce montant pour stopper l'hémorragie ?"`;
-  }
 
-  if (msg.includes("email") || msg.includes("follow-up")) {
-    return `Séquence de follow-up générée pour ${name}. Objet : "Question stratégique sur votre présence digitale". Corps : "Suite à notre analyse, nous avons identifié que votre site actuel convertit 3x moins que la moyenne de votre secteur. Voici comment nous pouvons rectifier cela..."`;
-  }
-
-  return `J'ai analysé votre demande concernant ${name}. Je recommande d'approcher le décideur avec les données de Sales Intelligence que nous avons générées. Votre angle d'attaque principal doit être le ROI immédiat sur la conversion mobile.`;
-}
 
 export async function POST(req: Request) {
   try {
@@ -89,10 +69,7 @@ ${prospectContext}`;
 
     if (!response.ok) {
       const errorData = await response.json();
-      if (errorData.error?.message?.includes("credit balance")) {
-        return NextResponse.json({ message: getSimulatedAgentResponse(message, activeProspect) });
-      }
-      return NextResponse.json({ error: errorData.error?.message || "Erreur API" }, { status: response.status });
+      return NextResponse.json({ error: errorData.error?.message || "Erreur API Anthropic" }, { status: response.status });
     }
 
     const data = await response.json();

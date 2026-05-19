@@ -8,7 +8,7 @@ export const analyticsService = {
   /**
    * Generates a weekly AI insight report
    */
-  async generateWeeklyReport(): Promise<{ insights: string[] }> {
+  async generateWeeklyReport(): Promise<{ insights: string[], metrics?: any }> {
     try {
       eventBus.dispatch('TERMINAL_LOG', 'ANALYTICS_SERVICE', { 
         message: "Neural processor engaged: Analyzing weekly performance metrics...", 
@@ -16,15 +16,19 @@ export const analyticsService = {
         module: 'analytics'
       });
 
-      // Simulation de génération de rapport
-      await new Promise(resolve => setTimeout(resolve, 2500));
+      const response = await fetch('/api/analytics');
+      if (!response.ok) {
+        throw new Error('Erreur lors de la récupération des analytics');
+      }
 
+      const data = await response.json();
       const report = {
-        insights: [
+        insights: data.insights || [
           "Immobilier premium (Conversion: +15%)",
           "Cliniques esthétiques (Cycle trop long)",
-          "Relancer les 3 leads 'hot' inactifs depuis 48h"
-        ]
+          "Relancer les leads inactifs"
+        ],
+        metrics: data.metrics
       };
 
       eventBus.dispatch('TERMINAL_LOG', 'ANALYTICS_SERVICE', { 

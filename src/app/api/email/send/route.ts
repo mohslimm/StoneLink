@@ -61,6 +61,14 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const trackingPixelUrl = `${appUrl}/api/tracking/email?id=${emailId}&prospectId=${parsed.data.prospectId}`
+    
+    // Si la balise </body> est présente, on insère le pixel juste avant, sinon on l'ajoute à la fin
+    const finalHtml = bodyHtml.includes('</body>')
+      ? bodyHtml.replace('</body>', `<img src="${trackingPixelUrl}" width="1" height="1" alt="" style="display:none;" /></body>`)
+      : bodyHtml + `<img src="${trackingPixelUrl}" width="1" height="1" alt="" style="display:none;" />`
+
     await transporter.sendMail({
       from:    `"Mohamed — Stepping Stones" <${smtpUser}>`,
       to,
@@ -68,7 +76,7 @@ export async function POST(request: NextRequest) {
       replyTo: smtpUser,
       subject,
       text:    bodyText,
-      html:    bodyHtml,
+      html:    finalHtml,
       headers: {
         'X-Email-ID':       emailId,
         'X-Prototype-URL':  prototypeUrl ?? '',

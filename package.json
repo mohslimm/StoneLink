@@ -11,6 +11,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
     "@tailwindcss/postcss": "^4.0.0",
+    "@twilio/voice-sdk": "^2.18.3",
     "chart.js": "^4.5.1",
     "clsx": "^2.1.1",
     "framer-motion": "^11.15.0",
@@ -24,6 +25,7 @@
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^2.5.5",
+    "twilio": "^6.0.2",
     "zod": "^3.24.1",
     "zustand": "^5.0.2"
   },

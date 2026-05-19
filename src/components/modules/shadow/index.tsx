@@ -2,7 +2,7 @@
 
 import React, { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, Radar, Target, TrendingUp, AlertTriangle, Twitter, Linkedin, Globe, Sparkles, Activity } from 'lucide-react';
+import { Eye, Radar, Target, TrendingUp, AlertTriangle, Twitter, Linkedin, Globe, Sparkles, Activity, Loader2 } from 'lucide-react';
 import { SHADOW_VARIANTS } from './ShadowModule.variants';
 import { useShadow } from './shadow.hooks';
 import type { ShadowSignal, FilterButtonProps, TrendItemProps } from './ShadowModule.types';
@@ -90,7 +90,7 @@ const TrendItem = memo(({ label, trend, status }: TrendItemProps) => (
 TrendItem.displayName = 'TrendItem';
 
 export const ShadowModule = memo(() => {
-  const { activeFilter, setActiveFilter, isIntercepting, handleEngage, handleIntercept } = useShadow();
+  const { activeFilter, setActiveFilter, isIntercepting, engagingId, handleEngage, handleIntercept } = useShadow();
 
   return (
     <motion.div 
@@ -152,70 +152,90 @@ export const ShadowModule = memo(() => {
             <AnimatePresence mode="popLayout">
               {SIGNALS
                 .filter(s => activeFilter === 'Tous' || s.type.toLowerCase() === activeFilter.toLowerCase())
-                .map((sig) => (
-                <motion.div 
-                  key={sig.id}
-                  layout
-                  variants={SHADOW_VARIANTS.item}
-                  initial="initial"
-                  animate="animate"
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className="p-10 rounded-[2.5rem] bg-[#0a0a14] border border-white/5 hover:border-[#c5a059]/30 transition-all duration-500 group relative overflow-hidden"
-                >
-                  <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-[#c5a059]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  
-                  <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-8">
-                      <div className="flex items-center gap-5">
-                        <div className={cn(
-                          "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110",
-                          sig.type === 'intent' ? "bg-[#c5a059]/10 text-[#c5a059]" : "bg-white/5 text-[#f0ede8]/20"
-                        )}>
-                          {sig.source === 'LinkedIn' ? <Linkedin size={20} /> : sig.source === 'Twitter' ? <Twitter size={20} /> : <Globe size={20} />}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-3 mb-1.5">
-                            <span className="text-[9px] font-bold text-[#f0ede8]/20 uppercase tracking-[0.2em]">{sig.time} via {sig.source}</span>
-                            <div className="w-1 h-1 rounded-full bg-white/10" />
-                            <div className="flex items-center gap-1.5">
-                              <Sparkles size={10} className="text-[#c5a059]/50" />
-                              <span className="text-[9px] font-mono text-[#22c55e] font-bold">Confidence {sig.confidence}%</span>
+                .map((sig) => {
+                  const isEngagingThis = engagingId === sig.id;
+                  const isAnyEngaging = engagingId !== null;
+                  return (
+                    <motion.div 
+                      key={sig.id}
+                      layout
+                      variants={SHADOW_VARIANTS.item}
+                      initial="initial"
+                      animate="animate"
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="p-10 rounded-[2.5rem] bg-[#0a0a14] border border-white/5 hover:border-[#c5a059]/30 transition-all duration-500 group relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-[#c5a059]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      
+                      <div className="relative z-10">
+                        <div className="flex justify-between items-start mb-8">
+                          <div className="flex items-center gap-5">
+                            <div className={cn(
+                              "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110",
+                              sig.type === 'intent' ? "bg-[#c5a059]/10 text-[#c5a059]" : "bg-white/5 text-[#f0ede8]/20"
+                            )}>
+                              {sig.source === 'LinkedIn' ? <Linkedin size={20} /> : sig.source === 'Twitter' ? <Twitter size={20} /> : <Globe size={20} />}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-3 mb-1.5">
+                                <span className="text-[9px] font-bold text-[#f0ede8]/20 uppercase tracking-[0.2em]">{sig.time} via {sig.source}</span>
+                                <div className="w-1 h-1 rounded-full bg-white/10" />
+                                <div className="flex items-center gap-1.5">
+                                  <Sparkles size={10} className="text-[#c5a059]/50" />
+                                  <span className="text-[9px] font-mono text-[#22c55e] font-bold">Confidence {sig.confidence}%</span>
+                                </div>
+                              </div>
+                              <h4 className="text-2xl font-['Cormorant_Garamond'] text-[#f0ede8] italic tracking-wide group-hover:text-white transition-colors">{sig.company}</h4>
                             </div>
                           </div>
-                          <h4 className="text-2xl font-['Cormorant_Garamond'] text-[#f0ede8] italic tracking-wide group-hover:text-white transition-colors">{sig.company}</h4>
+                          
+                          <div className={cn(
+                            "px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] shadow-inner",
+                            sig.type === 'intent' ? "bg-[#c5a059] text-black" : "bg-white/5 text-[#f0ede8]/40 border border-white/10"
+                          )}>
+                            {sig.type}
+                          </div>
+                        </div>
+
+                        <p className="text-[#f0ede8]/50 text-xl font-['Cormorant_Garamond'] italic leading-relaxed mb-10 group-hover:text-[#f0ede8]/80 transition-colors">
+                          "{sig.text}"
+                        </p>
+
+                        <div className="flex flex-col md:flex-row md:items-center justify-between pt-8 border-t border-white/5 gap-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                               <Target size={14} className="text-[#f0ede8]/30" />
+                            </div>
+                            <span className="text-[10px] font-bold text-[#f0ede8]/20 uppercase tracking-[0.2em] font-['Outfit']">{sig.title}</span>
+                          </div>
+                          
+                          <button 
+                            onClick={() => handleEngage(sig)}
+                            disabled={isAnyEngaging}
+                            className={cn(
+                              "px-8 py-3 font-bold text-[10px] uppercase tracking-[0.3em] rounded-xl transition-all border flex items-center justify-center gap-3 active:scale-95 group/btn cursor-pointer",
+                              isEngagingThis
+                                ? "bg-[#c5a059]/10 text-[#c5a059] border-[#c5a059]/30 cursor-wait"
+                                : isAnyEngaging
+                                  ? "bg-[#0f0f20] text-[#c5a059]/20 border-[#c5a059]/10 cursor-not-allowed opacity-40"
+                                  : "bg-[#0f0f20] hover:bg-[#c5a059] text-[#c5a059] hover:text-black border-[#c5a059]/30 hover:border-[#c5a059]"
+                            )}
+                          >
+                            {isEngagingThis ? (
+                              <>
+                                Qualification IA... <Loader2 size={14} className="animate-spin text-[#c5a059]" />
+                              </>
+                            ) : (
+                              <>
+                                Engager avec l'IA <Target size={14} className="group-hover/btn:rotate-45 transition-transform" />
+                              </>
+                            )}
+                          </button>
                         </div>
                       </div>
-                      
-                      <div className={cn(
-                        "px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] shadow-inner",
-                        sig.type === 'intent' ? "bg-[#c5a059] text-black" : "bg-white/5 text-[#f0ede8]/40 border border-white/10"
-                      )}>
-                        {sig.type}
-                      </div>
-                    </div>
-
-                    <p className="text-[#f0ede8]/50 text-xl font-['Cormorant_Garamond'] italic leading-relaxed mb-10 group-hover:text-[#f0ede8]/80 transition-colors">
-                      "{sig.text}"
-                    </p>
-
-                    <div className="flex flex-col md:flex-row md:items-center justify-between pt-8 border-t border-white/5 gap-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                           <Target size={14} className="text-[#f0ede8]/30" />
-                        </div>
-                        <span className="text-[10px] font-bold text-[#f0ede8]/20 uppercase tracking-[0.2em] font-['Outfit']">{sig.title}</span>
-                      </div>
-                      
-                      <button 
-                        onClick={() => handleEngage(sig)}
-                        className="px-8 py-3 bg-[#0f0f20] hover:bg-[#c5a059] text-[#c5a059] hover:text-black font-bold text-[10px] uppercase tracking-[0.3em] rounded-xl transition-all border border-[#c5a059]/30 hover:border-[#c5a059] flex items-center justify-center gap-3 active:scale-95 group/btn"
-                      >
-                        Engager avec l'IA <Target size={14} className="group-hover/btn:rotate-45 transition-transform" />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+                    </motion.div>
+                  );
+                })}
             </AnimatePresence>
           </div>
         </div>

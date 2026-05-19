@@ -225,8 +225,19 @@ export const useStoneStore = create<StoneStore>()(
         set({ isLoading: true });
         try {
           const res = await fetch('/api/prospects');
-          const data = await res.json();
-          if (Array.isArray(data)) set({ prospects: data });
+          const json = await res.json();
+          const rawProspects = json && Array.isArray(json.data) ? json.data : (Array.isArray(json) ? json : []);
+          
+          // Safeguard all prospects elements with default empty arrays for relations
+          const sanitizedProspects = rawProspects.map((p: any) => ({
+            ...p,
+            notes: p.notes || [],
+            emails: p.emails || [],
+            activities: p.activities || [],
+            agentHistory: p.agentHistory || []
+          }));
+
+          set({ prospects: sanitizedProspects });
         } catch (error) {
           console.error('Failed to fetch prospects:', error);
         } finally {
@@ -266,14 +277,28 @@ export const useStoneStore = create<StoneStore>()(
           body: JSON.stringify(p),
         }).then(async (res) => {
           const saved = await res.json();
+          const persistedProspect = saved && saved.data ? saved.data : saved;
+          
+          // Ensure arrays are populated to prevent downstream TypeErrors
+          const sanitizedProspect = {
+            ...persistedProspect,
+            notes: persistedProspect.notes || [],
+            emails: persistedProspect.emails || [],
+            activities: persistedProspect.activities || [],
+            agentHistory: persistedProspect.agentHistory || []
+          };
+
           set((state) => ({
-            prospects: state.prospects.map(pr => pr.id === tempId ? saved : pr)
+            prospects: state.prospects.map(pr => pr.id === tempId ? sanitizedProspect : pr)
           }));
+          
           get().addTerminalEvent({
-            message: `Prospect ${saved.companyName} persisté en base de données`,
+            message: `Prospect ${sanitizedProspect.companyName} persisté en base de données`,
             type: 'success',
             module: 'pipeline'
           });
+        }).catch(err => {
+          console.error("Failed to persist prospect:", err);
         });
 
         return newProspect;

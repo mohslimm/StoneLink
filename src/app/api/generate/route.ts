@@ -1,55 +1,6 @@
 import { NextResponse } from "next/server";
 
-/**
- * High-quality fallback for demonstration stability when credits are low.
- */
-function getSimulatedResponse(prospect: any) {
-  const isDental = prospect.niche === 'dental';
-  const name = prospect.name || "Prospect";
-  
-  return {
-    "siteAdaptation": {
-      "colorPrimary": isDental ? "#0ea5e9" : "#c5a059",
-      "colorAccent": isDental ? "#0c4a6e" : "#8e6d2f",
-      "tagline": isDental 
-        ? "L'Excellence Dentaire à la pointe de l'innovation."
-        : "L'Art de Voyager, Redéfini par Stepping Stones.",
-      "heroTitle": isDental
-        ? `Le futur de la dentisterie à ${prospect.city}.`
-        : `Explorez le Monde avec un Regard Nouveau.`,
-      "heroSubtitle": isDental
-        ? "Une expérience patient révolutionnaire alliant technologie de pointe et confort absolu."
-        : "Des itinéraires exclusifs conçus pour transformer vos rêves en souvenirs inoubliables.",
-      "ctaText": isDental ? "Réserver mon Bilan" : "Demander mon Itinéraire",
-      "sections": [
-        { "name": "Expertise Digitale", "description": "Prise de rendez-vous en ligne et suivi patient automatisé." },
-        { "name": "Confort Premium", "description": "Un environnement pensé pour votre bien-être total." }
-      ],
-      "designNotes": "Utilisation d'un espace blanc généreux pour évoquer la pureté. Typographie Serif pour l'autorité.",
-      "performanceGains": "+45% de conversion de leads grâce à l'optimisation LCP."
-    },
-    "logoConcept": {
-      "style": "Minimaliste Géométrique",
-      "symbol": "Fusion d'une forme organique et d'un éclat lumineux.",
-      "typography": "Cormorant Garamond (Light weight)",
-      "colorRationale": "Or brossé pour le prestige, bleu nuit pour la confiance.",
-      "concept": "Représenter l'équilibre parfait entre tradition et modernité."
-    },
-    "callScript": {
-      "bestTimeToCall": "Mar-Jeu 10h-12h",
-      "opener": `Bonjour, je souhaite parler au responsable de ${name} ?`,
-      "accroche": "J'ai analysé votre site actuel et j'ai relevé 3 failles critiques qui vous font perdre environ 2500€ de CA chaque mois.",
-      "pitchCore": "Nous avons développé un jumeau numérique spécifique à votre secteur qui règle ces problèmes en 48h sans aucun effort de votre part.",
-      "socialProof": "Nous avons déjà aidé des cliniques similaires à doubler leur taux de conversion en 30 jours.",
-      "transitionQuestion": "Seriez-vous ouvert à voir le prototype que j'ai déjà préparé pour vous ?",
-      "objections": [
-        { "trigger": "C'est trop cher", "response": "Je comprends, mais le coût de l'inaction est de 30 000€ par an. Notre solution s'autofinance en 3 mois." },
-        { "trigger": "J'ai déjà une agence", "response": "C'est parfait. Notre outil est complémentaire et se concentre sur la conversion pure, pas juste le visuel." }
-      ],
-      "close": "On se bloque 15 min jeudi à 14h pour que je vous montre les chiffres ?"
-    }
-  };
-}
+
 
 export async function POST(req: Request) {
   try {
@@ -134,10 +85,7 @@ JSON ATTENDU (respecter exactement cette structure) :
 
     if (!response.ok) {
       const errorData = await response.json();
-      if (errorData.error?.message?.includes("credit balance")) {
-        return NextResponse.json(getSimulatedResponse(prospect));
-      }
-      return NextResponse.json({ error: errorData.error?.message || "Erreur API" }, { status: response.status });
+      return NextResponse.json({ error: errorData.error?.message || "Erreur API Anthropic" }, { status: response.status });
     }
 
     const data = await response.json();

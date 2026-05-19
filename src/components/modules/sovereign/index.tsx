@@ -7,6 +7,7 @@ import { SOVEREIGN_VARIANTS } from './SovereignModule.variants';
 import { useSovereign } from './sovereign.hooks';
 import type { StatRowProps } from './SovereignModule.types';
 import { cn } from '@/lib/utils';
+import { Modal } from '@/components/ui/Modal';
 
 const StatRow = ({ label, value }: StatRowProps) => (
   <div className="flex justify-between items-center border-b border-white/5 pb-4 mb-4 last:mb-0 last:border-0 group/row">
@@ -15,8 +16,59 @@ const StatRow = ({ label, value }: StatRowProps) => (
   </div>
 );
 
+// Helper function to parse our beautiful mock markdown into rich React elements
+const parseSimpleMarkdown = (text?: string) => {
+  if (!text) return null;
+  return text.split('\n\n').map((block, idx) => {
+    if (block.startsWith('### ')) {
+      return (
+        <h3 key={idx} className="text-xl font-serif text-[#c5a059] italic mt-6 mb-4 font-['Cormorant_Garamond']">
+          {block.replace('### ', '')}
+        </h3>
+      );
+    }
+    if (block.startsWith('#### ')) {
+      return (
+        <h4 key={idx} className="text-sm font-bold text-white uppercase tracking-wider mt-4 mb-2 font-['Outfit']">
+          {block.replace('#### ', '')}
+        </h4>
+      );
+    }
+    if (block.startsWith('- ')) {
+      return (
+        <ul key={idx} className="list-disc pl-5 space-y-2 text-[#f0ede8]/70 my-2">
+          {block.split('\n').map((line, lIdx) => (
+            <li key={lIdx} className="font-['Outfit'] font-light">
+              {line.replace('- ', '').replace(/\*\*(.*?)\*\*/g, '$1')}
+            </li>
+          ))}
+        </ul>
+      );
+    }
+    
+    // Handle inline bold formatting (**bold**)
+    const parts = block.split(/\*\*(.*?)\*\*/g);
+    return (
+      <p key={idx} className="text-[#f0ede8]/70 font-['Outfit'] font-light leading-relaxed mb-4 text-base">
+        {parts.map((part, pIdx) => (
+          pIdx % 2 === 1 ? <strong key={pIdx} className="text-white font-medium">{part}</strong> : part
+        ))}
+      </p>
+    );
+  });
+};
+
 export const SovereignModule = memo(() => {
-  const { query, setQuery, searching, results, handleSearch } = useSovereign();
+  const { 
+    query, 
+    setQuery, 
+    searching, 
+    results, 
+    handleSearch, 
+    selectedDoc, 
+    openDocument, 
+    closeDocument 
+  } = useSovereign();
 
   return (
     <motion.div 
@@ -151,14 +203,17 @@ export const SovereignModule = memo(() => {
                       <div className="flex gap-6">
                          <div className="flex items-center gap-2">
                             <span className="text-[9px] text-[#f0ede8]/20 font-bold uppercase tracking-[0.2em]">Domain:</span>
-                            <span className="text-[9px] text-indigo-400/60 font-bold uppercase tracking-[0.2em]">Stratégie</span>
+                            <span className="text-[9px] text-indigo-400/60 font-bold uppercase tracking-[0.2em]">{res.metadata?.category || 'Stratégie'}</span>
                          </div>
                          <div className="flex items-center gap-2">
                             <span className="text-[9px] text-[#f0ede8]/20 font-bold uppercase tracking-[0.2em]">Origin:</span>
                             <span className="text-[9px] text-indigo-400/60 font-bold uppercase tracking-[0.2em]">Proprietary Dataset</span>
                          </div>
                       </div>
-                      <button className="text-[10px] font-bold text-indigo-400 uppercase tracking-[0.3em] flex items-center gap-3 group-hover:text-indigo-300 transition-all">
+                      <button 
+                        onClick={() => openDocument(res)}
+                        className="text-[10px] font-bold text-indigo-400 uppercase tracking-[0.3em] flex items-center gap-3 group-hover:text-indigo-300 transition-all cursor-pointer"
+                      >
                         Consulter le document <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
                       </button>
                     </div>
@@ -176,6 +231,56 @@ export const SovereignModule = memo(() => {
           </div>
         </div>
       </div>
+
+      {/* Premium Document Detail Viewer Modal */}
+      <Modal
+        isOpen={!!selectedDoc}
+        onClose={closeDocument}
+        title={selectedDoc?.title || ''}
+      >
+        {selectedDoc && (
+          <div className="space-y-6">
+            {/* Structured Quiet Luxury Metadata Panel */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 p-5 rounded-2xl bg-white/5 border border-white/5 mb-8">
+              <div>
+                <div className="text-[9px] text-[#f0ede8]/30 uppercase tracking-[0.2em] font-bold font-['Outfit']">Confidentialité</div>
+                <div className="text-xs font-mono text-indigo-400 mt-1.5 font-bold">{selectedDoc.metadata?.confidentiality || 'INTERNE'}</div>
+              </div>
+              <div>
+                <div className="text-[9px] text-[#f0ede8]/30 uppercase tracking-[0.2em] font-bold font-['Outfit']">Indexation</div>
+                <div className="text-xs font-mono text-indigo-400 mt-1.5 font-bold">{selectedDoc.metadata?.lastIndexed || 'Récent'}</div>
+              </div>
+              <div>
+                <div className="text-[9px] text-[#f0ede8]/30 uppercase tracking-[0.2em] font-bold font-['Outfit']">Auteur</div>
+                <div className="text-xs font-mono text-indigo-400 mt-1.5 font-bold">{selectedDoc.metadata?.author || 'Système'}</div>
+              </div>
+              <div>
+                <div className="text-[9px] text-[#f0ede8]/30 uppercase tracking-[0.2em] font-bold font-['Outfit']">Catégorie</div>
+                <div className="text-xs font-mono text-[#c5a059] mt-1.5 font-bold">{selectedDoc.metadata?.category || 'Général'}</div>
+              </div>
+              <div>
+                <div className="text-[9px] text-[#f0ede8]/30 uppercase tracking-[0.2em] font-bold font-['Outfit']">ID Vecteur</div>
+                <div className="text-xs font-mono text-[#f0ede8]/50 mt-1.5 font-bold">{selectedDoc.metadata?.vectorId || 'vec_gen_00000'}</div>
+              </div>
+            </div>
+
+            {/* Document Rich Content Body */}
+            <div className="space-y-6 text-[#f0ede8]/85 border-t border-white/5 pt-6">
+              {parseSimpleMarkdown(selectedDoc.fullContent)}
+            </div>
+
+            {/* Footer Action */}
+            <div className="flex justify-end pt-8 border-t border-white/5 mt-8">
+              <button 
+                onClick={closeDocument}
+                className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white font-['Outfit'] font-medium text-xs tracking-wider uppercase rounded-xl transition-all cursor-pointer"
+              >
+                Fermer l'Aperçu
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </motion.div>
   );
 });

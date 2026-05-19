@@ -21,36 +21,61 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "URL manquante" }, { status: 400 });
     }
 
-    const hash = getUrlHash(website);
-    
-    // Scores deterministes
-    const seo = (hash % 35) + 35; // 35-70
-    const performance = (hash % 40) + 25; // 25-65
-    const mobile = (hash % 50) + 20; // 20-70
+    let seo = 50;
+    let performance = 50;
+    let mobile = 50;
+    let selectedIssues: string[] = [];
+
+    try {
+      const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(website)}&category=PERFORMANCE&category=SEO&strategy=mobile`;
+      const apiKey = process.env.GOOGLE_PAGESPEED_API_KEY;
+      const finalUrl = apiKey ? `${apiUrl}&key=${apiKey}` : apiUrl;
+      
+      const psiResponse = await fetch(finalUrl);
+      if (psiResponse.ok) {
+        const data = await psiResponse.json();
+        performance = data.lighthouseResult?.categories?.performance?.score ? Math.round(data.lighthouseResult.categories.performance.score * 100) : 50;
+        seo = data.lighthouseResult?.categories?.seo?.score ? Math.round(data.lighthouseResult.categories.seo.score * 100) : 50;
+        mobile = performance; // As we use mobile strategy
+        
+        const audits = data.lighthouseResult?.audits || {};
+        const failedAudits = Object.values(audits).filter((a: any) => a.score !== null && a.score < 0.8 && a.title);
+        selectedIssues = failedAudits.map((a: any) => a.title).slice(0, 3);
+        if (selectedIssues.length === 0) {
+           selectedIssues = ["Optimisations avancées requises", "Amélioration du TTI possible"];
+        }
+      } else {
+        throw new Error("PageSpeed API failed");
+      }
+    } catch (e) {
+      // Fallback déterministe
+      const hash = getUrlHash(website);
+      seo = (hash % 35) + 35; // 35-70
+      performance = (hash % 40) + 25; // 25-65
+      mobile = (hash % 50) + 20; // 20-70
+      
+      const issues = [
+        "Temps de réponse serveur excessif (> 600ms)",
+        "Images non optimisées (format WebP manquant)",
+        "Absence de structure de données Schema.org",
+        "LCP (Largest Contentful Paint) critique sur mobile",
+        "Scripts tiers bloquant le rendu principal",
+        "Fichiers CSS/JS non minifiés",
+        "Taux de rebond mobile estimé > 75%"
+      ];
+      selectedIssues = [
+        issues[hash % issues.length],
+        issues[(hash + 2) % issues.length],
+        issues[(hash + 5) % issues.length]
+      ];
+    }
+
     const overallScore = Math.floor((seo + performance + mobile) / 3);
 
     // Calcul du manque à gagner (Estimated Loss)
-    // Logique : Moins le score est bon, plus la perte est haute.
-    const baseLoss = (100 - performance) * (hash % 50 + 40); // Perte corrélée à la perf
+    const baseLoss = (100 - performance) * ((getUrlHash(website) % 50) + 40);
     const nicheMultiplier = niche === 'dental' ? 1.5 : 1.0;
     const estimatedLoss = Math.floor(baseLoss * nicheMultiplier);
-
-    const issues = [
-      "Temps de réponse serveur excessif (> 600ms)",
-      "Images non optimisées (format WebP manquant)",
-      "Absence de structure de données Schema.org",
-      "LCP (Largest Contentful Paint) critique sur mobile",
-      "Scripts tiers bloquant le rendu principal",
-      "Fichiers CSS/JS non minifiés",
-      "Taux de rebond mobile estimé > 75%"
-    ];
-
-    // Sélection de 3 problèmes basés sur le hash
-    const selectedIssues = [
-      issues[hash % issues.length],
-      issues[(hash + 2) % issues.length],
-      issues[(hash + 5) % issues.length]
-    ];
 
     return NextResponse.json({
       success: true,
@@ -62,7 +87,7 @@ export async function POST(req: Request) {
         estimatedLoss: estimatedLoss,
         scores: { seo, performance, mobile },
         issues: selectedIssues,
-        auditSummary: `L'audit de ${website} révèle un score global de ${overallScore}/100. Les failles principales incluent ${selectedIssues[0]} et ${selectedIssues[1]}, générant un manque à gagner estimé à ${estimatedLoss} € par mois.`,
+        auditSummary: `L'audit de ${website} révèle un score global de ${overallScore}/100. Les failles principales incluent ${selectedIssues[0] || 'divers problèmes'} et ${selectedIssues[1] || "d'autres aspects techniques"}, générant un manque à gagner estimé à ${estimatedLoss} € par mois.`,
         status: overallScore < 50 ? 'Critical' : 'Needs Improvement',
         timestamp: new Date().toISOString()
       }

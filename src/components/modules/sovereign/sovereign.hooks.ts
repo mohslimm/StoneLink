@@ -6,6 +6,7 @@ export const useSovereign = () => {
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<SovereignResult[]>([]);
+  const [selectedDoc, setSelectedDoc] = useState<SovereignResult | null>(null);
 
   const handleSearch = useCallback(async () => {
     if (!query.trim()) return;
@@ -23,11 +24,22 @@ export const useSovereign = () => {
     }
   }, [query]);
 
+  const openDocument = useCallback((doc: SovereignResult) => {
+    setSelectedDoc(doc);
+  }, []);
+
+  const closeDocument = useCallback(() => {
+    setSelectedDoc(null);
+  }, []);
+
   return {
     query,
     setQuery,
     searching,
     results,
-    handleSearch
+    handleSearch,
+    selectedDoc,
+    openDocument,
+    closeDocument
   };
 };

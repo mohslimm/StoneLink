@@ -9,6 +9,7 @@ import {
   Phone, PhoneOff, Loader2, RefreshCw, AlertCircle,
   Mic, MicOff, PhoneCall,
 } from 'lucide-react'
+import { Device, Call as TwilioCall } from '@twilio/voice-sdk'
 import type { Prospect, CallScript, CallOutcome, DealStage } from '@/types/pipeline'
 import { useStoneStore } from '@/stores/useStoneStore'
 import { ScriptReader } from './ScriptReader'
@@ -82,6 +83,11 @@ export const CallTab = memo(({ prospect }: CallTabProps) => {
   const [callStartTime,  setCallStart]    = useState<number>(0)
   const [currentStep,    setCurrentStep]  = useState(0)
 
+  // Twilio VoIP State
+  const [device, setDevice] = useState<Device | null>(null)
+  const [activeCall, setActiveCall] = useState<TwilioCall | null>(null)
+  const [twilioError, setTwilioError] = useState<string | null>(null)
+
   const callElapsedRef = useRef(0)
 
   // Track elapsed time
@@ -137,20 +143,80 @@ export const CallTab = memo(({ prospect }: CallTabProps) => {
 
   // ── Call Controls ──────────────────────────────────────────────
 
-  const handleStartCall = useCallback(() => {
+  const handleStartCall = useCallback(async () => {
     setCallActive(true)
     setCallStart(Date.now())
+    setTwilioError(null)
+
     addActivity(prospect.id, {
       type:        'call_made',
       description: `Appel lancé vers ${prospect.contactName} (${prospect.phone})`,
     })
     moveProspectToStage(prospect.id, 'calling')
+
+    try {
+      // 1. Récupérer le token depuis le backend
+      const res = await fetch('/api/call/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identity: `agent-${prospect.id}` })
+      })
+      
+      const data = await res.json()
+      if (!res.ok || !data.token) {
+        throw new Error(data.error || 'Erreur token VoIP')
+      }
+
+      // 2. Initialiser le Device Twilio
+      const newDevice = new Device(data.token, {
+        codecPreferences: ['opus', 'pcmu'],
+        fakeLocalDTMF: true,
+        enableRingingState: true
+      })
+
+      newDevice.on('error', (twilioErr) => {
+        console.error('Twilio Error:', twilioErr)
+        setTwilioError(twilioErr.message || 'Erreur réseau Twilio')
+      })
+
+      await newDevice.register()
+      setDevice(newDevice)
+
+      // 3. Connecter l'appel
+      const call = await newDevice.connect({ params: { To: prospect.phone } })
+      
+      call.on('disconnect', () => {
+        setActiveCall(null)
+        setCallActive(false)
+        setShowEndModal(true)
+      })
+
+      call.on('error', (err) => {
+        setTwilioError(err.message)
+      })
+
+      setActiveCall(call)
+      
+    } catch (err: any) {
+      console.error('VoIP Init Failed:', err)
+      setTwilioError(err.message || "Mode simulation activé")
+    }
   }, [prospect, addActivity, moveProspectToStage])
 
   const handleEndCall = useCallback(() => {
+    if (activeCall) {
+      activeCall.disconnect()
+    }
     setCallActive(false)
     setShowEndModal(true)
-  }, [])
+  }, [activeCall])
+
+  // Cleanup Twilio device
+  useEffect(() => {
+    return () => {
+      if (device) device.destroy()
+    }
+  }, [device])
 
   const handleSaveBilan = useCallback(async (
     outcome: CallOutcome,
@@ -333,7 +399,14 @@ export const CallTab = memo(({ prospect }: CallTabProps) => {
       >
         <div className="flex items-center gap-3">
           {isCallActive ? (
-            <GlobalCallTimer isActive={isCallActive} />
+            <div className="flex items-center gap-2">
+              <GlobalCallTimer isActive={isCallActive} />
+              {twilioError && (
+                <span className="text-[10px] text-[#ef4444] bg-[rgba(239,68,68,0.1)] px-2 py-0.5 rounded-full border border-[rgba(239,68,68,0.2)]">
+                  Simulé
+                </span>
+              )}
+            </div>
           ) : (
             <span className="text-[12px] font-bold text-[#22c55e] uppercase tracking-wider">
               Script prêt
@@ -344,7 +417,14 @@ export const CallTab = memo(({ prospect }: CallTabProps) => {
         <div className="flex items-center gap-2">
           {isCallActive && (
             <button
-              onClick={() => setMuted((v) => !v)}
+              onClick={() => {
+                setMuted((v) => {
+                  if (activeCall) {
+                    activeCall.mute(!v)
+                  }
+                  return !v
+                })
+              }}
               className="w-8 h-8 flex items-center justify-center rounded-xl transition-all"
               style={{
                 background: isMuted ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.06)',

@@ -13,7 +13,9 @@ const EmailSchema = new Schema({
   body: { type: String, required: true },
   sentAt: { type: Date, default: Date.now },
   opened: { type: Boolean, default: false },
+  openedAt: { type: Date },
   clicked: { type: Boolean, default: false },
+  clickedAt: { type: Date },
 }, { _id: false });
 
 const ActivitySchema = new Schema({
