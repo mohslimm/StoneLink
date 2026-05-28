@@ -4,8 +4,9 @@
 // Fallback statique si la clé n'est pas configurée
 // ─────────────────────────────────────────────────────────────────
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
+import Anthropic from '@anthropic-ai/sdk'
 import type { CallScript, ScriptStep, ObjectionHandler, CloseScript } from '@/types/pipeline'
 
 // ─── Validation Schema ────────────────────────────────────────────
@@ -164,22 +165,33 @@ function buildFallbackScript(req: ScriptRequest): CallScript {
   }
 }
 
-// ─── Claude Script Generator ──────────────────────────────────────
+// ─── Claude SSE Generator ─────────────────────────────────────────
 
-async function generateWithClaude(req: ScriptRequest): Promise<CallScript> {
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) return buildFallbackScript(req)
+async function generateWithClaudeSSE(req: ScriptRequest) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    // Return a dummy fallback string wrapped in JSON
+    const fallback = buildFallbackScript(req);
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(`data: ${JSON.stringify(fallback)}\n\n`);
+        controller.enqueue(`data: [DONE]\n\n`);
+        controller.close();
+      }
+    });
+    return stream;
+  }
 
-  const prenom = req.contactName.trim() ? (req.contactName.trim().split(' ')[0] ?? req.contactName) : "Responsable"
-  const niche  = NICHE_LABELS[req.niche] ?? req.niche
-  const score  = req.lighthouseScore ?? 42
-  const perte  = req.estimatedLoss ? `${req.estimatedLoss.toLocaleString('fr-FR')} €/mois` : 'plusieurs milliers d\'euros/mois'
-  const locationText = req.city.trim() ? `à ${req.city.trim()}` : "dans votre région"
+  const prenom = req.contactName.trim() ? (req.contactName.trim().split(' ')[0] ?? req.contactName) : "Responsable";
+  const niche  = NICHE_LABELS[req.niche] ?? req.niche;
+  const score  = req.lighthouseScore ?? 42;
+  const perte  = req.estimatedLoss ? `${req.estimatedLoss.toLocaleString('fr-FR')} €/mois` : 'plusieurs milliers d\'euros/mois';
+  const locationText = req.city.trim() ? `à ${req.city.trim()}` : "dans votre région";
 
   const systemPrompt = `Tu es un expert en vente B2B pour une agence de création de sites web premium.
 Tu génères des scripts d'appel commercial ultra-personnalisés, percutants et naturels en français.
 Ton style : professionnel mais humain, factuel mais engageant. Pas de jargon. Pas de promesse excessive.
-Tu dois répondre UNIQUEMENT avec un JSON valide, sans markdown, sans backticks.`
+Tu dois répondre UNIQUEMENT avec un JSON valide. N'ajoute aucun préfixe, aucun suffixe, aucun bloc de code markdown (\`\`\`).`;
 
   const userPrompt = `Génère un script d'appel commercial pour ce prospect :
 - Prénom contact : ${prenom}
@@ -212,82 +224,70 @@ Génère ce JSON strict (pas de markdown) :
     { "id": 2, "type": "assumptive", "script": "..." },
     { "id": 3, "type": "urgency", "script": "..." }
   ]
-}`
+}`;
 
-  try {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 25_000)
+  const anthropic = new Anthropic({ apiKey });
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model:      'claude-3-5-haiku-20241022',
-        max_tokens: 3000,
-        system:     systemPrompt,
-        messages:   [{ role: 'user', content: userPrompt }],
-      }),
-      signal: controller.signal,
-    })
+  const stream = await anthropic.messages.create({
+    model: 'claude-3-5-haiku-20241022',
+    max_tokens: 3000,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: userPrompt }],
+    stream: true,
+  });
 
-    clearTimeout(timeout)
+  const encoder = new TextEncoder();
 
-    if (!response.ok) {
-      console.error('[call/script] Claude error:', response.status)
-      return buildFallbackScript(req)
+  const readableStream = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const chunk of stream) {
+          if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+            const data = JSON.stringify({ text: chunk.delta.text });
+            controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+          }
+        }
+        controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
+      } catch (err) {
+        console.error('[call/script] Stream error:', err);
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Stream interrupted' })}\n\n`));
+      } finally {
+        controller.close();
+      }
     }
+  });
 
-    const claude = await response.json() as {
-      content: Array<{ type: string; text: string }>
-    }
-    const text = claude.content[0]?.text ?? ''
-    const parsed = JSON.parse(text) as {
-      steps: ScriptStep[]
-      objections: ObjectionHandler[]
-      closes: CloseScript[]
-    }
-
-    return {
-      niche:           req.niche as CallScript['niche'],
-      prospectName:    prenom,
-      companyName:     req.companyName,
-      lighthouseScore: score,
-      estimatedLoss:   req.estimatedLoss ?? 0,
-      steps:           parsed.steps,
-      objections:      parsed.objections,
-      closes:          parsed.closes,
-      generatedAt:     new Date(),
-    }
-  } catch {
-    return buildFallbackScript(req)
-  }
+  return readableStream;
 }
 
 // ─── Route Handler ────────────────────────────────────────────────
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const parsed = ScriptRequestSchema.safeParse(body)
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Paramètres invalides', details: parsed.error.flatten() },
-        { status: 400 }
-      )
+      return new Response(JSON.stringify({ error: 'Paramètres invalides', details: parsed.error.flatten() }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
 
-    const script = await generateWithClaude(parsed.data)
+    const stream = await generateWithClaudeSSE(parsed.data)
 
-    return NextResponse.json({ script }, { status: 200 })
-  } catch {
-    return NextResponse.json(
-      { error: 'Erreur serveur — veuillez réessayer' },
-      { status: 500 }
-    )
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    })
+  } catch (error) {
+    console.error('API Error:', error);
+    return new Response(JSON.stringify({ error: 'Erreur serveur — veuillez réessayer' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
 }

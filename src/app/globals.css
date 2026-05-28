@@ -1,83 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600;700&display=swap');
+
 @import "tailwindcss";
 
-/* Design tokens Antigravity — déclarer ici */
-@theme {
-  --color-gold-500: #C9A84C;
-  --color-gold-400: #E8C97A;
-  --color-void: #0A0A0F;
-  --color-surface: #111118;
-  --font-display: var(--font-cormorant), Georgia, serif;
-  --font-body: var(--font-dm-sans), system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-}
+@layer base {
+  :root {
+    --bg-void: #050509;
+    --bg-base: #0a0a12;
+    --bg-surface: #11111a;
+    --bg-elevated: #181824;
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-medium: rgba(255, 255, 255, 0.10);
+    --border-gold: rgba(197, 160, 89, 0.25);
+    --text-primary: #e8e4dc;
+    --text-secondary: rgba(232, 228, 220, 0.55);
+    --text-tertiary: rgba(232, 228, 220, 0.30);
+    --gold: #c5a059;
+    --gold-bright: #d4b06a;
+    --gold-muted: rgba(197, 160, 89, 0.15);
+    --green: #4ade80;
+    --green-muted: rgba(74, 222, 128, 0.10);
+    --red: #f87171;
+    --red-muted: rgba(248, 113, 113, 0.10);
+    --blue: #60a5fa;
+    --blue-muted: rgba(96, 165, 250, 0.10);
+    --radius: 10px;
+    --background: 240 33% 3%;
+    --foreground: 40 20% 90%;
+    --card: 240 20% 6%;
+    --card-foreground: 40 20% 90%;
+    --popover: 240 20% 8%;
+    --popover-foreground: 40 20% 90%;
+    --primary: 40 50% 56%;
+    --primary-foreground: 240 33% 4%;
+    --secondary: 240 15% 12%;
+    --secondary-foreground: 40 20% 90%;
+    --muted: 240 15% 12%;
+    --muted-foreground: 40 10% 55%;
+    --accent: 240 15% 12%;
+    --accent-foreground: 40 20% 90%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 10% 15%;
+    --input: 240 10% 15%;
+    --ring: 40 50% 56%;
+  }
 
-/* Variables CSS runtime (non Tailwind, pour usage en JS inline styles) */
-:root {
-  --bg-void:      #0A0A0F;
-  --bg-primary:   #0A0A0F;
-  --bg-surface:   #111118;
-  --bg-elevated:  #1A1A24;
-  --gold-500:     #C9A84C;
-  --gold-400:     #E8C97A;
-  --gold-glow:    rgba(201,168,76,0.12);
-  --text-primary:   #F0EDE6;
-  --text-secondary: #8A8799;
-  --text-muted:     #475569;
-  --border-default: rgba(201,168,76,0.15);
-  --border-gold:    rgba(201,168,76,0.30);
-  --border-active:  rgba(201,168,76,0.60);
-  --success:        #52C98A;
-  --danger:         #E05252;
-  --warning:        #E0A952;
-}
+  html {
+    scroll-behavior: smooth;
+  }
 
-body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  overflow-x: hidden;
-}
+  body {
+    background-color: var(--bg-void);
+    color: var(--text-primary);
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
 
-/* ── Hardware acceleration sur éléments fixes ── */
-.bg-blob {
-  will-change: transform;
-  transform: translateZ(0);
-  pointer-events: none;
-}
+  * {
+    border-color: var(--border-subtle);
+  }
 
-/* ── Smooth scroll natif ── */
-html {
-  scroll-behavior: smooth;
-}
-
-/* ── Spinners : GPU uniquement ── */
-@keyframes spin-gpu {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-.animate-spin-gpu {
-  animation: spin-gpu 1s linear infinite;
-  will-change: transform;
-}
-
-/* ── Skeleton shimmer ── */
-@keyframes shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position:  200% center; }
-}
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    rgba(255,255,255,0.03) 25%,
-    rgba(255,255,255,0.07) 50%,
-    rgba(255,255,255,0.03) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s ease infinite;
-}
-
-/* ── Focus ring global Antigravity ── */
-*:focus-visible {
-  outline: 2px solid var(--gold-500);
-  outline-offset: 2px;
-  border-radius: 4px;
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--border-subtle);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-medium);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+  }
 }

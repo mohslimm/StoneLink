@@ -1,4 +1,14 @@
-import type { PrototypeCatalogItem } from '@/components/modules/pipeline/prototype/PrototypeCard';
+export interface PrototypeCatalogItem {
+  id: string;
+  niche: string;
+  name: string;
+  description: string;
+  thumbnailUrl: string;
+  recommendedFor: string[];
+  tags: string[];
+  defaultValues: Record<string, string>;
+  customizableFields: string[];
+}
 
 export const PROTOTYPE_CATALOG: PrototypeCatalogItem[] = [
   {
