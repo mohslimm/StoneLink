@@ -13,10 +13,10 @@ import type { CallScript, ScriptStep, ObjectionHandler, CloseScript } from '@/ty
 const ScriptRequestSchema = z.object({
   prospectId:      z.string().min(1),
   companyName:     z.string().min(1),
-  contactName:     z.string().min(1),
+  contactName:     z.string(),
   niche:           z.string().min(1),
-  city:            z.string().min(1),
-  country:         z.string().min(1),
+  city:            z.string(),
+  country:         z.string(),
   lighthouseScore: z.number().min(0).max(100).optional(),
   estimatedLoss:   z.number().optional(),
   website:         z.string().optional(),
@@ -43,10 +43,11 @@ const NICHE_LABELS: Record<string, string> = {
 // ─── Fallback Script Generator ────────────────────────────────────
 
 function buildFallbackScript(req: ScriptRequest): CallScript {
-  const prenom = req.contactName.split(' ')[0] ?? req.contactName
+  const prenom = req.contactName.trim() ? (req.contactName.trim().split(' ')[0] ?? req.contactName) : "Responsable"
   const niche  = NICHE_LABELS[req.niche] ?? req.niche
   const score  = req.lighthouseScore ?? 42
   const perte  = req.estimatedLoss ? `${req.estimatedLoss.toLocaleString('fr-FR')} €/mois` : 'plusieurs milliers d\'euros par mois'
+  const locationText = req.city.trim() ? `à ${req.city.trim()}` : "dans votre région"
 
   const steps: ScriptStep[] = [
     {
@@ -77,7 +78,7 @@ function buildFallbackScript(req: ScriptRequest): CallScript {
       id: 4,
       phase: 'social_proof',
       label: 'Preuve Sociale',
-      script: `On a refait le site d'un autre ${niche} à ${req.city} l'an dernier. En 3 mois, leurs demandes de contact avaient augmenté de 40%. Le propriétaire m'a dit que c'était la meilleure décision qu'il avait prise. Et ça a commencé exactement comme ça — un coup de fil.`,
+      script: `On a refait le site d'un autre ${niche} ${locationText} l'an dernier. En 3 mois, leurs demandes de contact avaient augmenté de 40%. Le propriétaire m'a dit que c'était la meilleure décision qu'il avait prise. Et ça a commencé exactement comme ça — un coup de fil.`,
       tip: 'Si le prospect est sceptique, demandez : "Vous recevez combien de demandes par semaine depuis le site ?"',
       durationTarget: 35,
     },
@@ -169,10 +170,11 @@ async function generateWithClaude(req: ScriptRequest): Promise<CallScript> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return buildFallbackScript(req)
 
-  const prenom = req.contactName.split(' ')[0] ?? req.contactName
+  const prenom = req.contactName.trim() ? (req.contactName.trim().split(' ')[0] ?? req.contactName) : "Responsable"
   const niche  = NICHE_LABELS[req.niche] ?? req.niche
   const score  = req.lighthouseScore ?? 42
   const perte  = req.estimatedLoss ? `${req.estimatedLoss.toLocaleString('fr-FR')} €/mois` : 'plusieurs milliers d\'euros/mois'
+  const locationText = req.city.trim() ? `à ${req.city.trim()}` : "dans votre région"
 
   const systemPrompt = `Tu es un expert en vente B2B pour une agence de création de sites web premium.
 Tu génères des scripts d'appel commercial ultra-personnalisés, percutants et naturels en français.
@@ -183,7 +185,7 @@ Tu dois répondre UNIQUEMENT avec un JSON valide, sans markdown, sans backticks.
 - Prénom contact : ${prenom}
 - Entreprise : ${req.companyName}
 - Secteur : ${niche} (niche: ${req.niche})
-- Ville : ${req.city} (${req.country})
+- Localisation : ${locationText} (${req.country || 'France'})
 - Score Lighthouse actuel : ${score}/100
 - Perte estimée : ${perte}
 - Site web : ${req.website ?? 'inconnu'}

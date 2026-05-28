@@ -26,7 +26,7 @@ import {
   PRIORITY_CONFIG, ACTIVITY_ICONS, formatTimeAgo, getInitials,
 } from '@/lib/pipelineConfig'
 import { PrototypeWizard } from './prototype/PrototypeWizard'
-import { CallTab } from './call/CallTab'
+import { CallHUD } from './call/CallHUD'
 
 // ─── Tab Types ────────────────────────────────────────────────────
 
@@ -591,7 +591,7 @@ export const ProspectDrawer = memo(({ isOpen, onClose }: ProspectDrawerProps) =>
                   initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.2 }}>
                   {activeDrawerTab === 'profile'   && <ProfileTab prospect={prospect} />}
-                  {activeDrawerTab === 'call'      && <CallTab prospect={prospect} />}
+                  {activeDrawerTab === 'call'      && <CallHUD prospect={prospect} onClose={() => setDrawerTab('profile')} />}
                   {activeDrawerTab === 'prototype' && <PrototypeTab prospect={prospect} />}
                   {activeDrawerTab === 'history'   && <HistoryTab prospect={prospect} />}
                   {activeDrawerTab === 'mirror'    && <MirrorTab prospect={prospect} />}

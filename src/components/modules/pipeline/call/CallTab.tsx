@@ -169,9 +169,7 @@ export const CallTab = memo(({ prospect }: CallTabProps) => {
 
       // 2. Initialiser le Device Twilio
       const newDevice = new Device(data.token, {
-        codecPreferences: ['opus', 'pcmu'],
-        fakeLocalDTMF: true,
-        enableRingingState: true
+        codecPreferences: [TwilioCall.Codec.Opus, TwilioCall.Codec.PCMU]
       })
 
       newDevice.on('error', (twilioErr) => {

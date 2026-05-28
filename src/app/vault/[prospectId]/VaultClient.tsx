@@ -7,6 +7,8 @@ import {
   Clock, Calendar, ArrowRight, Activity, PenTool 
 } from 'lucide-react';
 
+import type { Prospect } from '@/types/pipeline';
+
 const VARIANTS = {
   container: { animate: { transition: { staggerChildren: 0.1 } } },
   item: {
@@ -23,7 +25,25 @@ const TIMELINE_STEPS = [
   { id: 'live', label: 'Déploiement', status: 'upcoming' },
 ];
 
-export function VaultClient({ prospect, vault }: { prospect: any, vault: any }) {
+interface SerializedVaultFile {
+  _id?: string;
+  id: string;
+  name: string;
+  type: 'proposal' | 'contract' | 'invoice' | 'audit' | 'other';
+  url: string;
+  uploadDate: string;
+  viewed: boolean;
+  viewedAt?: string;
+}
+
+interface SerializedVault {
+  _id?: string;
+  prospectId: string;
+  files: SerializedVaultFile[];
+  passwordHash?: string;
+}
+
+export function VaultClient({ prospect, vault }: { prospect: Prospect; vault: SerializedVault }) {
 
   const [message, setMessage] = useState('');
   const [chat, setChat] = useState<{sender: 'agency' | 'client', text: string, time: string}[]>([
@@ -35,7 +55,7 @@ export function VaultClient({ prospect, vault }: { prospect: any, vault: any }) 
 
   useEffect(() => {
     // Determine if already signed via a hypothetical activity log
-    if (prospect?.activities.some(a => a.type === 'note_added' && a.description.includes('Contrat signé'))) {
+    if (prospect?.activities?.some(a => a.type === 'note_added' && a.description.includes('Contrat signé'))) {
       setSigned(true);
     }
   }, [prospect]);
@@ -177,31 +197,54 @@ export function VaultClient({ prospect, vault }: { prospect: any, vault: any }) 
             <motion.div variants={VARIANTS.item} className="bg-white/[0.02] border border-white/5 rounded-3xl p-8">
               <h2 className="text-xl font-serif mb-6">Livrables du Projet</h2>
               <div className="space-y-3">
-                {[
-                  { name: 'Architecture_Design_System.pdf', size: '2.4 MB', type: 'Design', ready: true },
-                  { name: 'Wireframes_V1.fig', size: '14 MB', type: 'Design', ready: true },
-                  { name: 'Code_Source_Frontend.zip', size: '—', type: 'Dev', ready: false },
-                  { name: 'Documentation_API.md', size: '—', type: 'Docs', ready: false }
-                ].map((file, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 bg-black/40 border border-white/5 rounded-xl hover:border-white/10 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-[#c5a059]">
-                        <FileText className="w-5 h-5" />
+                {vault?.files && vault.files.length > 0 ? (
+                  vault.files.map((file, i) => (
+                    <div key={file.id || i} className="flex items-center justify-between p-4 bg-black/40 border border-white/5 rounded-xl hover:border-white/10 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-[#c5a059]">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="text-sm text-white font-medium">{file.name}</div>
+                          <div className="text-xs text-white/40 capitalize">{file.type} • {file.uploadDate ? new Date(file.uploadDate).toLocaleDateString('fr-FR') : 'Date inconnue'}</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-sm text-white font-medium">{file.name}</div>
-                        <div className="text-xs text-white/40">{file.type} • {file.size}</div>
-                      </div>
+                      {file.url ? (
+                        <a href={file.url} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition-colors" title="Télécharger">
+                          <Download className="w-4 h-4" />
+                        </a>
+                      ) : (
+                        <span className="text-xs text-[#c5a059] bg-[#c5a059]/10 border border-[#c5a059]/20 px-3 py-1 rounded-full uppercase tracking-wider font-semibold">En cours</span>
+                      )}
                     </div>
-                    {file.ready ? (
-                      <button className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition-colors" title="Télécharger">
-                        <Download className="w-4 h-4" />
-                      </button>
-                    ) : (
-                      <span className="text-[10px] uppercase tracking-widest text-white/20 font-bold px-2">En cours</span>
-                    )}
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  [
+                    { name: 'Architecture_Design_System.pdf', size: '2.4 MB', type: 'Design', ready: true },
+                    { name: 'Wireframes_V1.fig', size: '14 MB', type: 'Design', ready: true },
+                    { name: 'Code_Source_Frontend.zip', size: '—', type: 'Dev', ready: false },
+                    { name: 'Documentation_API.md', size: '—', type: 'Docs', ready: false }
+                  ].map((file, i) => (
+                    <div key={i} className="flex items-center justify-between p-4 bg-black/40 border border-white/5 rounded-xl hover:border-white/10 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-[#c5a059]">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="text-sm text-white font-medium">{file.name}</div>
+                          <div className="text-xs text-white/40">{file.type} • {file.size}</div>
+                        </div>
+                      </div>
+                      {file.ready ? (
+                        <button className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition-colors" title="Télécharger">
+                          <Download className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <span className="text-xs text-[#c5a059] bg-[#c5a059]/10 border border-[#c5a059]/20 px-3 py-1 rounded-full uppercase tracking-wider font-semibold">En cours</span>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             </motion.div>
 
