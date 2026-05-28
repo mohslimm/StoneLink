@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutGrid, List, Search, Plus, MoreHorizontal, X, Phone, Trash2 } from 'lucide-react';
 import { GlassPanel } from '@/components/ui/custom/GlassPanel';
@@ -7,9 +7,10 @@ import { AnimatedButton } from '@/components/ui/custom/AnimatedButton';
 import { InputField } from '@/components/ui/custom/InputField';
 import { useUIStore } from '@/hooks/useUIStore';
 import { mockProspects } from '@/data/prospects';
-import { STAGE_COLORS, STAGE_LABELS } from '@/types';
+import { STAGE_COLORS, STAGE_LABELS, mapBackendProspect } from '@/types';
 import type { PipelineStage, Prospect, CallRecord } from '@/types';
 import { cn } from '@/lib/utils';
+import { Loader2 } from 'lucide-react';
 
 const stages: PipelineStage[] = ['nouveau', 'contacte', 'prototype', 'ferme', 'perdu'];
 
@@ -364,21 +365,49 @@ function PipelineStats({ prospects }: { prospects: Prospect[] }) {
 
 /* ─── CRM Page ─── */
 export default function CRM() {
-  const { crmView, setCrmView } = useUIStore();
+  const { crmView, setCrmView, addToast } = useUIStore();
   const [search, setSearch] = useState('');
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  
+  const [prospects, setProspects] = useState<Prospect[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch from MongoDB
+  const fetchProspects = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/prospects');
+      if (!res.ok) throw new Error('Erreur serveur');
+      const json = await res.json();
+      if (json.data) {
+        setProspects(json.data.map(mapBackendProspect));
+      }
+    } catch (err) {
+      console.error(err);
+      addToast({ type: 'error', message: 'Impossible de charger les prospects' });
+      setProspects(mockProspects); // fallback on mock if DB fails
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Actually, I can just use React.useEffect. Let me fix the import block.
+
+  useEffect(() => {
+    fetchProspects();
+  }, []);
 
   const filteredProspects = useMemo(() => {
-    if (!search.trim()) return mockProspects;
+    if (!search.trim()) return prospects;
     const q = search.toLowerCase();
-    return mockProspects.filter(
+    return prospects.filter(
       (p) =>
         p.name.toLowerCase().includes(q) ||
         p.company.toLowerCase().includes(q) ||
         p.sector.toLowerCase().includes(q)
     );
-  }, [search]);
+  }, [search, prospects]);
 
   return (
     <div className="min-h-[calc(100dvh-56px)] pb-8">
@@ -389,7 +418,7 @@ export default function CRM() {
             Prospects
           </h1>
           <span className="text-[11px] font-body font-medium px-2.5 py-1 rounded-full bg-[#11111a] text-[rgba(232,228,220,0.55)]">
-            {mockProspects.length}
+            {prospects.length}
           </span>
         </div>
 
@@ -460,8 +489,12 @@ export default function CRM() {
       </div>
 
       {/* Content */}
-      <div className="mt-5">
-        {crmView === 'kanban' ? (
+      <div className="mt-5 relative min-h-[400px]">
+        {loading ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Loader2 className="animate-spin text-[#c5a059]" size={32} />
+          </div>
+        ) : crmView === 'kanban' ? (
           <KanbanBoard prospects={filteredProspects} onSelect={setSelectedProspect} />
         ) : (
           <ListView prospects={filteredProspects} onSelect={setSelectedProspect} />
@@ -478,7 +511,10 @@ export default function CRM() {
       {/* Add Prospect Modal */}
       <AnimatePresence>
         {showAddModal && (
-          <AddProspectModal onClose={() => setShowAddModal(false)} />
+          <AddProspectModal onClose={() => setShowAddModal(false)} onAdded={() => {
+            setShowAddModal(false);
+            fetchProspects();
+          }} />
         )}
       </AnimatePresence>
     </div>
@@ -486,7 +522,32 @@ export default function CRM() {
 }
 
 /* ─── Add Prospect Modal ─── */
-function AddProspectModal({ onClose }: { onClose: () => void }) {
+function AddProspectModal({ onClose, onAdded }: { onClose: () => void, onAdded: () => void }) {
+  const { addToast } = useUIStore();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({ contactName: '', companyName: '', website: '', phone: '', email: '' });
+
+  const handleSubmit = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/prospects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, niche: 'Général', country: 'France', city: 'Paris' }), // Default required fields
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Erreur lors de la création');
+      }
+      addToast({ type: 'success', message: 'Prospect créé avec succès' });
+      onAdded();
+    } catch (err: any) {
+      addToast({ type: 'error', message: err.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
@@ -504,17 +565,18 @@ function AddProspectModal({ onClose }: { onClose: () => void }) {
       >
         <h2 className="font-display text-[32px] font-normal text-[#e8e4dc]">Nouveau prospect</h2>
         <div className="space-y-4 mt-6">
-          <InputField placeholder="Nom du contact" />
-          <InputField placeholder="Entreprise" />
-          <InputField placeholder="https://..." />
-          <InputField placeholder="+33..." />
+          <input className="w-full h-11 px-4 rounded-[8px] bg-[#11111a] border border-[rgba(255,255,255,0.06)] text-[13px] font-body text-[#e8e4dc] focus:outline-none focus:border-[rgba(197,160,89,0.25)]" placeholder="Nom du contact" value={formData.contactName} onChange={(e) => setFormData({...formData, contactName: e.target.value})} />
+          <input className="w-full h-11 px-4 rounded-[8px] bg-[#11111a] border border-[rgba(255,255,255,0.06)] text-[13px] font-body text-[#e8e4dc] focus:outline-none focus:border-[rgba(197,160,89,0.25)]" placeholder="Entreprise" value={formData.companyName} onChange={(e) => setFormData({...formData, companyName: e.target.value})} />
+          <input className="w-full h-11 px-4 rounded-[8px] bg-[#11111a] border border-[rgba(255,255,255,0.06)] text-[13px] font-body text-[#e8e4dc] focus:outline-none focus:border-[rgba(197,160,89,0.25)]" placeholder="Email" type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+          <input className="w-full h-11 px-4 rounded-[8px] bg-[#11111a] border border-[rgba(255,255,255,0.06)] text-[13px] font-body text-[#e8e4dc] focus:outline-none focus:border-[rgba(197,160,89,0.25)]" placeholder="https://..." value={formData.website} onChange={(e) => setFormData({...formData, website: e.target.value})} />
+          <input className="w-full h-11 px-4 rounded-[8px] bg-[#11111a] border border-[rgba(255,255,255,0.06)] text-[13px] font-body text-[#e8e4dc] focus:outline-none focus:border-[rgba(197,160,89,0.25)]" placeholder="+33..." value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
         </div>
         <div className="flex gap-3 mt-6">
-          <AnimatedButton variant="secondary" className="flex-1" onClick={onClose}>
+          <AnimatedButton variant="secondary" className="flex-1" onClick={onClose} disabled={loading}>
             Annuler
           </AnimatedButton>
-          <AnimatedButton variant="primary" className="flex-1">
-            Ajouter
+          <AnimatedButton variant="primary" className="flex-1" onClick={handleSubmit} disabled={loading}>
+            {loading ? <Loader2 size={16} className="animate-spin" /> : 'Ajouter'}
           </AnimatedButton>
         </div>
       </motion.div>

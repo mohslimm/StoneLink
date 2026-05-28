@@ -10,6 +10,9 @@ interface CallState {
   isMuted: boolean;
   isHeld: boolean;
   callOutcome: CallOutcome | null;
+  rawScript: string;
+  script: any | null;
+  scriptLoading: boolean;
 
   startCall: (prospect: Prospect) => void;
   endCall: () => void;
@@ -20,6 +23,9 @@ interface CallState {
   toggleHold: () => void;
   setOutcome: (outcome: CallOutcome) => void;
   resetCall: () => void;
+  appendRawScript: (text: string) => void;
+  setScript: (script: any) => void;
+  setScriptLoading: (loading: boolean) => void;
 }
 
 export const useCallStore = create<CallState>((set, get) => ({
@@ -31,9 +37,12 @@ export const useCallStore = create<CallState>((set, get) => ({
   isMuted: false,
   isHeld: false,
   callOutcome: null,
+  rawScript: '',
+  script: null,
+  scriptLoading: false,
 
   startCall: (prospect) =>
-    set({ isActive: true, prospect, elapsedSeconds: 0, currentPhase: 0, completedPhases: [], callOutcome: null }),
+    set({ isActive: true, prospect, elapsedSeconds: 0, currentPhase: 0, completedPhases: [], callOutcome: null, rawScript: '', script: null, scriptLoading: true }),
 
   endCall: () => set({ isActive: false, isMuted: false, isHeld: false }),
 
@@ -61,6 +70,10 @@ export const useCallStore = create<CallState>((set, get) => ({
 
   setOutcome: (outcome) => set({ callOutcome: outcome }),
 
+  appendRawScript: (text) => set((s) => ({ rawScript: s.rawScript + text })),
+  setScript: (script) => set({ script, scriptLoading: false }),
+  setScriptLoading: (loading) => set({ scriptLoading: loading }),
+
   resetCall: () =>
     set({
       isActive: false,
@@ -71,5 +84,8 @@ export const useCallStore = create<CallState>((set, get) => ({
       isMuted: false,
       isHeld: false,
       callOutcome: null,
+      rawScript: '',
+      script: null,
+      scriptLoading: false,
     }),
 }));

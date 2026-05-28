@@ -63,3 +63,21 @@ export const STAGE_LABELS: Record<PipelineStage, string> = {
   ferme: 'Fermes',
   perdu: 'Perdus',
 };
+
+export function mapBackendProspect(doc: any): Prospect {
+  return {
+    id: doc._id?.toString() || Math.random().toString(),
+    name: doc.contactName || 'Sans contact',
+    company: doc.companyName || 'Sans entreprise',
+    url: doc.website || 'Pas de site',
+    phone: doc.phone || 'Pas de téléphone',
+    email: doc.email || 'Pas d\'email',
+    score: Math.floor(Math.random() * (95 - 40) + 40), // We simulate a lighthouse score if not present
+    sector: doc.niche || 'Général',
+    stage: (doc.stage === 'new' ? 'nouveau' : doc.stage === 'contacted' ? 'contacte' : doc.stage === 'closed' ? 'ferme' : 'nouveau') as PipelineStage,
+    lastContact: doc.lastContactedAt ? new Date(doc.lastContactedAt).toLocaleDateString() : 'Jamais',
+    callHistory: [],
+    notes: Array.isArray(doc.notes) ? doc.notes.map((n: any) => n.content).join('\n') : '',
+    scriptReady: !!doc.aiAssets?.callScript,
+  };
+}

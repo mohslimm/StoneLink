@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import {
-  Phone, Mic, MicOff, Pause, PhoneOff, ChevronRight, CheckCircle,
+import { Loader2, Sparkles, Phone, Mic, MicOff, Pause, PhoneOff, ChevronRight, CheckCircle,
   X, Calendar, Send, Clock, Search,
 } from 'lucide-react';
 import { GlassPanel } from '@/components/ui/custom/GlassPanel';
@@ -12,7 +11,7 @@ import { CallTimer } from '@/components/ui/custom/CallTimer';
 import { AnimatedButton } from '@/components/ui/custom/AnimatedButton';
 import { useCallStore } from '@/hooks/useCallStore';
 import { useUIStore } from '@/hooks/useUIStore';
-import { mockProspects, mockScriptPhases, mockObjections } from '@/data/prospects';
+import { mockProspects, mockObjections } from '@/data/prospects';
 
 /* ─── Pre-Call State ─── */
 function PreCallState({ onStartCall }: { onStartCall: (p: typeof mockProspects[0]) => void }) {
@@ -176,90 +175,103 @@ function CallStatusBar() {
   );
 }
 
-/* ─── Script Reader Panel ─── */
+/* ─── ScriptReaderPanel ─── */
 function ScriptReaderPanel() {
-  const { currentPhase, completedPhases, advancePhase, jumpToPhase } = useCallStore();
-  const phase = mockScriptPhases[currentPhase];
+  const { currentPhase, completedPhases, advancePhase, jumpToPhase, scriptLoading, script, rawScript } = useCallStore();
+
+  const phases = script?.steps || [];
+  const phase = phases[currentPhase] || null;
 
   return (
     <GlassPanel variant="gold-accent" className="p-6 flex flex-col h-full min-h-[400px]">
       {/* Header */}
       <div className="flex items-center justify-between pb-4 mb-4 border-b border-[rgba(255,255,255,0.06)]">
         <div>
-          <p className="text-[18px] font-body font-semibold text-[#e8e4dc]">Script de vente</p>
+          <div className="flex items-center gap-2">
+            <p className="text-[18px] font-body font-semibold text-[#e8e4dc]">Script de vente</p>
+            {scriptLoading && <Loader2 size={14} className="animate-spin text-[#c5a059]" />}
+          </div>
           <p className="text-[11px] font-body font-medium uppercase tracking-[0.06em] text-[rgba(232,228,220,0.30)] mt-0.5">
             Genere par Claude 3.5
           </p>
         </div>
         <span className="text-[11px] font-body font-medium uppercase tracking-[0.06em] text-[#c5a059]">
-          Phase {currentPhase + 1}/6
+          Phase {currentPhase + 1}/{phases.length || 6}
         </span>
       </div>
 
       {/* Phase content */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentPhase}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          >
-            {/* Completed phases summary */}
-            {completedPhases.map((cp) => (
-              <div
-                key={cp}
-                className="flex items-center gap-3 py-2 cursor-pointer opacity-50 hover:opacity-75 transition-opacity"
-                onClick={() => jumpToPhase(cp)}
-              >
-                <span className="w-6 h-6 rounded-full bg-[#11111a] text-[11px] font-body font-medium flex items-center justify-center text-[rgba(232,228,220,0.55)]">
-                  {cp + 1}
-                </span>
-                <span className="text-[13px] font-body text-[rgba(232,228,220,0.55)]">
-                  {mockScriptPhases[cp].title}
-                </span>
-              </div>
-            ))}
+        {!script && scriptLoading ? (
+          <div className="py-4">
+            <p className="text-[13px] font-body font-medium uppercase tracking-[0.1em] text-[#c5a059] mb-4 flex items-center gap-2">
+              <Sparkles size={14} /> Generation en cours...
+            </p>
+            <p className="text-[14px] font-body text-[rgba(232,228,220,0.55)] leading-relaxed whitespace-pre-wrap font-mono">
+              {rawScript}
+            </p>
+          </div>
+        ) : phase ? (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentPhase}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {completedPhases.map((cp) => (
+                <div
+                  key={cp}
+                  className="flex items-center gap-3 py-2 cursor-pointer opacity-50 hover:opacity-75 transition-opacity"
+                  onClick={() => jumpToPhase(cp)}
+                >
+                  <span className="w-6 h-6 rounded-full bg-[#11111a] text-[11px] font-body font-medium flex items-center justify-center text-[rgba(232,228,220,0.55)]">
+                    {cp + 1}
+                  </span>
+                  <span className="text-[13px] font-body text-[rgba(232,228,220,0.55)]">
+                    {phases[cp]?.label || 'Phase termin\u00e9e'}
+                  </span>
+                </div>
+              ))}
 
-            {/* Active phase */}
-            <div className="py-4" style={{ boxShadow: 'inset 2px 0 0 #c5a059, 0 0 20px rgba(197, 160, 89, 0.05)' }}>
-              <div className="flex items-center gap-3 mb-3">
-                <span className="w-6 h-6 rounded-full bg-[#c5a059] text-[11px] font-body font-semibold flex items-center justify-center text-[#0a0a12]">
-                  {phase.number}
-                </span>
-                <h3 className="text-[18px] font-body font-semibold text-[#e8e4dc]">
-                  {phase.title}
-                </h3>
-              </div>
-              <p className="text-[15px] font-body text-[#e8e4dc] leading-[1.7] whitespace-pre-line">
-                {phase.content}
-              </p>
-              <p className="text-[11px] font-body font-medium uppercase tracking-[0.06em] text-[rgba(232,228,220,0.30)] mt-3">
-                {phase.speaker}
-              </p>
-
-              {/* Key talking points */}
-              <div className="mt-4 space-y-2">
-                {phase.keyPoints.map((kp, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <CheckCircle size={12} className="text-[#4ade80] flex-shrink-0" />
-                    <span className="text-[13px] font-body text-[rgba(232,228,220,0.55)]">{kp}</span>
+              <div className="py-4" style={{ boxShadow: 'inset 2px 0 0 #c5a059, 0 0 20px rgba(197, 160, 89, 0.05)' }}>
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="w-6 h-6 rounded-full bg-[#c5a059] text-[11px] font-body font-semibold flex items-center justify-center text-[#0a0a12]">
+                    {phase.id}
+                  </span>
+                  <h3 className="text-[18px] font-body font-semibold text-[#e8e4dc]">
+                    {phase.label}
+                  </h3>
+                </div>
+                <p className="text-[15px] font-body text-[#e8e4dc] leading-[1.7] whitespace-pre-line">
+                  {phase.script}
+                </p>
+                
+                {phase.tip && (
+                  <div className="mt-4 p-3 rounded-[8px] bg-[rgba(197,160,89,0.05)] border border-[rgba(197,160,89,0.15)] flex items-start gap-2">
+                    <CheckCircle size={14} className="text-[#c5a059] mt-0.5 flex-shrink-0" />
+                    <span className="text-[13px] font-body text-[rgba(232,228,220,0.7)]">{phase.tip}</span>
                   </div>
-                ))}
+                )}
               </div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
+            </motion.div>
+          </AnimatePresence>
+        ) : (
+          <div className="py-4 text-center">
+            <p className="text-[14px] font-body text-[rgba(232,228,220,0.55)]">Erreur de chargement du script</p>
+          </div>
+        )}
       </div>
 
       {/* Phase dots + advance */}
       <div className="pt-4 mt-4 border-t border-[rgba(255,255,255,0.06)]">
         <div className="flex items-center justify-center gap-2 mb-4">
-          {mockScriptPhases.map((_, i) => (
+          {(phases.length > 0 ? phases : Array(6).fill(null)).map((_: any, i: number) => (
             <button
               key={i}
               onClick={() => completedPhases.includes(i) && jumpToPhase(i)}
+              disabled={!script}
               className={`w-2 h-2 rounded-full transition-colors cursor-pointer ${
                 i === currentPhase
                   ? 'bg-[#c5a059]'
@@ -271,22 +283,27 @@ function ScriptReaderPanel() {
           ))}
         </div>
         <AnimatedButton
-          variant={currentPhase === 5 ? 'primary' : 'secondary'}
+          variant={currentPhase >= phases.length - 1 ? 'primary' : 'secondary'}
           onClick={advancePhase}
-          icon={currentPhase === 5 ? <CheckCircle size={16} /> : <ChevronRight size={16} />}
+          icon={currentPhase >= phases.length - 1 ? <CheckCircle size={16} /> : <ChevronRight size={16} />}
           fullWidth
+          disabled={!script}
         >
-          {currentPhase === 5 ? 'Terminer l\'appel' : 'Phase suivante'}
+          {currentPhase >= phases.length - 1 ? 'Terminer l\'appel' : 'Phase suivante'}
         </AnimatedButton>
       </div>
     </GlassPanel>
   );
 }
 
+// Objections panel is not modified for size limits
+
 /* ─── Objection Panel ─── */
 function ObjectionPanel() {
+  const { script } = useCallStore();
   const [activeObjection, setActiveObjection] = useState<string | null>(null);
-  const activeObj = mockObjections.find((o) => o.id === activeObjection);
+  const objections = script?.objections || mockObjections;
+  const activeObj = objections.find((o: any) => o.trigger === activeObjection || o.id === activeObjection);
 
   return (
     <GlassPanel className="p-5 flex flex-col h-full min-h-[400px] relative overflow-hidden">
@@ -299,15 +316,15 @@ function ObjectionPanel() {
 
       {/* Objection grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 overflow-y-auto flex-1">
-        {mockObjections.map((obj, i) => (
+        {objections.map((obj: any, i: number) => (
           <motion.div
-            key={obj.id}
+            key={obj.trigger || obj.id}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
           >
             <motion.button
-              onClick={() => setActiveObjection(obj.id)}
+              onClick={() => setActiveObjection(obj.trigger || obj.id)}
               className="w-full text-left p-3.5 rounded-[10px] bg-[rgba(17,17,26,0.7)] border border-[rgba(255,255,255,0.06)] hover:border-[rgba(197,160,89,0.25)] hover:shadow-glass transition-all cursor-pointer"
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.98 }}
@@ -484,6 +501,88 @@ export default function Call() {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch script via SSE
+  const { prospect, script, scriptLoading } = useCallStore();
+  useEffect(() => {
+    let active = true;
+    if (prospect && !script && scriptLoading) {
+      const fetchScript = async () => {
+        try {
+          const res = await fetch('/api/call/script', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prospectId: prospect.id,
+              companyName: prospect.company,
+              contactName: prospect.name,
+              niche: prospect.sector,
+              city: 'Paris',
+              country: 'France',
+              lighthouseScore: prospect.score,
+              website: prospect.url,
+              phone: prospect.phone,
+            })
+          });
+          
+          if (!res.body) throw new Error('No body');
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          
+          let done = false;
+          let accumulatedRaw = '';
+          
+          while (!done && active) {
+            const { value, done: doneReading } = await reader.read();
+            done = doneReading;
+            if (value) {
+              const chunk = decoder.decode(value, { stream: true });
+              const lines = chunk.split('\n');
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  const dataStr = line.slice(6);
+                  if (dataStr === '[DONE]') {
+                    done = true;
+                    break;
+                  }
+                  try {
+                    const parsed = JSON.parse(dataStr);
+                    if (parsed.text) {
+                      accumulatedRaw += parsed.text;
+                      useCallStore.getState().appendRawScript(parsed.text);
+                    } else if (parsed.steps) {
+                      // Fallback JSON object
+                      useCallStore.getState().setScript(parsed);
+                      return;
+                    }
+                  } catch(e) {}
+                }
+              }
+            }
+          }
+          
+          if (active) {
+            try {
+              const cleanedRaw = accumulatedRaw.trim();
+              const startIdx = cleanedRaw.indexOf('{');
+              const endIdx = cleanedRaw.lastIndexOf('}');
+              if (startIdx !== -1 && endIdx !== -1) {
+                  const json = JSON.parse(cleanedRaw.substring(startIdx, endIdx + 1));
+                  useCallStore.getState().setScript(json);
+              }
+            } catch(e) {
+               console.error("Failed to parse streamed JSON", e);
+            }
+            useCallStore.getState().setScriptLoading(false);
+          }
+        } catch (err) {
+          if (active) useCallStore.getState().setScriptLoading(false);
+        }
+      };
+      fetchScript();
+    }
+    return () => { active = false; };
+  }, [prospect, script, scriptLoading]);
 
   const handleStartCall = (p: typeof mockProspects[0]) => {
     startCall(p);
