@@ -1,0 +1,38 @@
+{
+  "blackMarketRates": {
+    "USD": 250,
+    "EUR": 270,
+    "GBP": 310,
+    "lastUpdated": ""
+  },
+  "marketZones": [
+    { "zone": "DZ Local", "countries": ["Algeria"], "currency": "DA", "multiplier": 1 },
+    { "zone": "MENA", "countries": ["Saudi Arabia", "UAE", "Qatar", "Jordan", "Morocco", "Tunisia"], "currency": "USD", "multiplier": 4 },
+    { "zone": "Southern EU", "countries": ["Greece", "Portugal", "Spain", "Italy", "Malta", "Cyprus"], "currency": "EUR", "multiplier": 8 },
+    { "zone": "Western EU", "countries": ["France", "Germany", "UK", "Netherlands", "Belgium", "Switzerland"], "currency": "EUR", "multiplier": 15 },
+    { "zone": "North America", "countries": ["USA", "Canada"], "currency": "USD", "multiplier": 18 },
+    { "zone": "Australia", "countries": ["Australia", "New Zealand"], "currency": "USD", "multiplier": 25 },
+    { "zone": "Latin America", "countries": ["Brazil", "Mexico", "Colombia", "Argentina"], "currency": "USD", "multiplier": 5 }
+  ],
+  "baseProjects": [
+    { "id": "vitrine", "label": "Site Vitrine (3-5 pages)", "baseDA": 50000 },
+    { "id": "vitrine_seo", "label": "Site Vitrine + SEO", "baseDA": 80000 },
+    { "id": "ecommerce", "label": "E-Commerce Basic", "baseDA": 150000 },
+    { "id": "custom_admin", "label": "Custom + Admin Panel", "baseDA": 200000 },
+    { "id": "full_platform", "label": "Full Platform", "baseDA": 300000 },
+    { "id": "mobile_app", "label": "Mobile App", "baseDA": 350000 },
+    { "id": "saas", "label": "SaaS Platform", "baseDA": 500000 }
+  ],
+  "modules": [
+    { "id": "blog", "label": "Blog / CMS", "baseDA": 20000 },
+    { "id": "booking", "label": "Booking System", "baseDA": 30000 },
+    { "id": "payment", "label": "Payment Integration", "baseDA": 35000 },
+    { "id": "multilang", "label": "Multi-Language", "baseDA": 25000 },
+    { "id": "customer_dashboard", "label": "Customer Dashboard", "baseDA": 40000 },
+    { "id": "loyalty", "label": "Loyalty Program", "baseDA": 30000 },
+    { "id": "marketplace", "label": "C2C Marketplace", "baseDA": 60000 },
+    { "id": "analytics", "label": "Analytics Dashboard", "baseDA": 25000 },
+    { "id": "api", "label": "API Integrations", "baseDA": 30000 },
+    { "id": "deployment", "label": "Deployment + Hosting Setup", "baseDA": 20000 }
+  ]
+}

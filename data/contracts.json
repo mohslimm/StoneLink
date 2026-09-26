@@ -1,0 +1,41 @@
+[
+  {
+    "id": "1783670251995",
+    "ref": "HA-2026-952",
+    "date": "10/07/2026",
+    "client": {
+      "name": "test",
+      "company": "test",
+      "phone": "0555555555",
+      "country": "algeria",
+      "address": "",
+      "activity": ""
+    },
+    "project": {
+      "title": "Site Vitrine (3-5 pages)",
+      "description": "test the contract"
+    },
+    "pricing": {
+      "totalDA": 50000,
+      "totalForeign": 0,
+      "currency": "DA",
+      "zone": "DZ Local",
+      "breakdown": [
+        {
+          "id": "vitrine",
+          "label": "Site Vitrine (3-5 pages)",
+          "priceDA": 50000
+        }
+      ],
+      "tranchesSplit": 2
+    },
+    "languages": [
+      "EN",
+      "FR",
+      "AR"
+    ],
+    "timeline": "2 semaines",
+    "hourlyRate": 3000,
+    "warrantyDays": 30
+  }
+]

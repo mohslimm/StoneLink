@@ -1,0 +1,6 @@
+{
+  "defaultQuery": "dental clinic, beauty clinic, private medical center",
+  "defaultAreas": ["Riyadh", "Jeddah", "Dammam"],
+  "resultCount": 3,
+  "pitchTemplates": {}
+}

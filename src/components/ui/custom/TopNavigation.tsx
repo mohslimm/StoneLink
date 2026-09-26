@@ -8,10 +8,13 @@ import { useUIStore } from '@/hooks/useUIStore';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { label: 'Dashboard', path: '/' },
-  { label: 'Appels', path: '/call' },
+  { label: 'Cockpit', path: '/' },
   { label: 'CRM', path: '/crm' },
-  { label: 'Parametres', path: '/settings' },
+  { label: 'Appels', path: '/call' },
+  { label: 'Campagnes', path: '/campaigns' },
+  { label: 'Contrats', path: '/contracts' },
+  { label: 'Analytics', path: '/analytics' },
+  { label: 'Paramètres', path: '/settings' },
 ];
 
 export function TopNavigation() {
@@ -68,7 +71,7 @@ export function TopNavigation() {
             </span>
           </div>
           <div className="w-8 h-8 rounded-full border border-[rgba(255,255,255,0.10)] bg-[#11111a] flex items-center justify-center">
-            <span className="text-[11px] font-body font-medium text-[#c5a059]">JD</span>
+            <span className="text-[11px] font-body font-medium text-[#c5a059]">SS</span>
           </div>
           {/* Mobile hamburger */}
           <button
