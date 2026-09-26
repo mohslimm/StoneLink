@@ -65,19 +65,36 @@ export const STAGE_LABELS: Record<PipelineStage, string> = {
 };
 
 export function mapBackendProspect(doc: any): Prospect {
+  const rawStage = doc.stage || 'nouveau';
+  let stage: PipelineStage = 'nouveau';
+
+  if (['nouveau', 'new'].includes(rawStage)) {
+    stage = 'nouveau';
+  } else if (['contacte', 'contacted', 'to_call', 'calling', 'called'].includes(rawStage)) {
+    stage = 'contacte';
+  } else if (['prototype', 'prototype_sent', 'interested'].includes(rawStage)) {
+    stage = 'prototype';
+  } else if (['ferme', 'closed', 'closed_won', 'meeting', 'proposal', 'negotiation'].includes(rawStage)) {
+    stage = 'ferme';
+  } else if (['perdu', 'lost', 'closed_lost'].includes(rawStage)) {
+    stage = 'perdu';
+  }
+
   return {
-    id: doc._id?.toString() || Math.random().toString(),
-    name: doc.contactName || 'Sans contact',
-    company: doc.companyName || 'Sans entreprise',
-    url: doc.website || 'Pas de site',
+    id: doc._id?.toString() || doc.id || String(Math.random()),
+    name: doc.contactName || doc.name || 'Sans contact',
+    company: doc.companyName || doc.company || 'Sans entreprise',
+    url: doc.website || doc.url || 'Pas de site',
     phone: doc.phone || 'Pas de téléphone',
     email: doc.email || 'Pas d\'email',
-    score: Math.floor(Math.random() * (95 - 40) + 40), // We simulate a lighthouse score if not present
-    sector: doc.niche || 'Général',
-    stage: (doc.stage === 'new' ? 'nouveau' : doc.stage === 'contacted' ? 'contacte' : doc.stage === 'closed' ? 'ferme' : 'nouveau') as PipelineStage,
-    lastContact: doc.lastContactedAt ? new Date(doc.lastContactedAt).toLocaleDateString() : 'Jamais',
-    callHistory: [],
-    notes: Array.isArray(doc.notes) ? doc.notes.map((n: any) => n.content).join('\n') : '',
-    scriptReady: !!doc.aiAssets?.callScript,
+    score: typeof doc.score === 'number' ? doc.score : (doc.lighthouseScore || 52),
+    sector: doc.niche || doc.sector || 'Général',
+    stage,
+    lastContact: doc.lastContactedAt ? new Date(doc.lastContactedAt).toLocaleDateString('fr-FR') : (doc.lastContact || 'Jamais'),
+    callHistory: Array.isArray(doc.callHistory) ? doc.callHistory : [],
+    notes: Array.isArray(doc.notes)
+      ? doc.notes.map((n: any) => typeof n === 'string' ? n : n.content).join('\n')
+      : (typeof doc.notes === 'string' ? doc.notes : ''),
+    scriptReady: !!doc.aiAssets?.callScript || !!doc.scriptReady,
   };
 }

@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import ProspectModel from '@/models/Prospect';
 import TerminalEventModel from '@/models/TerminalEvent';
 
+export const dynamic = 'force-dynamic';
+
 // 1x1 transparent GIF base64
 const PIXEL_B64 = "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 const pixelBuffer = Buffer.from(PIXEL_B64, 'base64');

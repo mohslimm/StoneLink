@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import ProspectModel from '@/models/Prospect';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     if (mongoose.connection.readyState !== 1) {

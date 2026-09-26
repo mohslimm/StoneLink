@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import SequenceModel from '@/models/Sequence';
 import ProspectModel from '@/models/Prospect';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
   try {
     if (mongoose.connection.readyState !== 1) {

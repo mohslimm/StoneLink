@@ -32,7 +32,7 @@ export function StatCard({ label, value, sparklineData, index = 0, hasIndicator 
         </p>
         {sparklineData && (
           <div className="w-full h-8 mt-2">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height={32} minWidth={40} minHeight={32}>
               <AreaChart data={data}>
                 <defs>
                   <linearGradient id={`spark-${index}`} x1="0" y1="0" x2="0" y2="1">

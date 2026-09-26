@@ -4,6 +4,8 @@ import VaultModel from '@/models/Vault';
 import ProspectModel from '@/models/Prospect';
 import TerminalEventModel from '@/models/TerminalEvent';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
