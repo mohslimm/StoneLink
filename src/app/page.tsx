@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { Phone, Sparkles, Loader2, ArrowRight, PhoneOff } from 'lucide-react';
@@ -321,7 +321,7 @@ function LeadPipelineSection() {
 
 /* ─── Quick Launch Section ─── */
 function QuickLaunchSection() {
-  const readyProspects = mockProspects.filter((p) => p.scriptReady);
+  const readyProspects = useMemo(() => mockProspects.filter((p) => p.scriptReady).slice(0, 5), []);
 
   return (
     <section className="bg-[#0a0a12] py-16 md:py-24 px-6">

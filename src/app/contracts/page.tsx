@@ -409,7 +409,7 @@ export default function ContractsPage() {
                     <FileCheck size={15} /> Clauses Incluses par Stepping Stones Agency :
                   </div>
                   <div>• Transfert complet de propriété du code source après solde.</div>
-                  <div>• Optimisation Lighthouse $\ge 90$ garantie sur Mobile & Desktop.</div>
+                  <div>• Optimisation Lighthouse ≥ 90 garantie sur Mobile & Desktop.</div>
                   <div>• Hébergement et nom de domaine configurés clé en main.</div>
                 </div>
 
@@ -460,7 +460,7 @@ export default function ContractsPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-[rgba(232,228,220,0.55)]">Taux Horaire USD :</span>
-                      <span className="text-[#4ade80] font-semibold">${profitability.hourlyRateUSD}/h</span>
+                      <span className="text-[#4ade80] font-semibold">{profitability.hourlyRateUSD} USD/h</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-[rgba(232,228,220,0.55)]">Verdict Rentabilité :</span>

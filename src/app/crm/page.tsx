@@ -245,10 +245,8 @@ function PipelineCard({
   onUpdateStage: (id: string, stage: PipelineStage) => void;
 }) {
   return (
-    <motion.div
-      layout
-      whileHover={{ y: -2 }}
-      className="p-4 rounded-[10px] bg-[rgba(17,17,26,0.85)] border border-[rgba(255,255,220,0.06)] shadow-glass cursor-pointer hover:border-[rgba(197,160,89,0.3)] transition-all group"
+    <div
+      className="p-4 rounded-[10px] bg-[rgba(17,17,26,0.85)] border border-[rgba(255,255,220,0.06)] shadow-glass cursor-pointer hover:border-[rgba(197,160,89,0.3)] hover:-translate-y-0.5 transition-all group"
       onClick={onClick}
     >
       <div className="flex items-start justify-between gap-2">
@@ -297,7 +295,78 @@ function PipelineCard({
           ))}
         </div>
       </div>
-    </motion.div>
+    </div>
+  );
+}
+
+/* ─── Kanban Column ─── */
+function KanbanColumn({
+  stage,
+  prospects,
+  onSelect,
+  onUpdateStage,
+  onAddClick,
+}: {
+  stage: PipelineStage;
+  prospects: Prospect[];
+  onSelect: (p: Prospect) => void;
+  onUpdateStage: (id: string, stage: PipelineStage) => void;
+  onAddClick: () => void;
+}) {
+  const [limit, setLimit] = useState(25);
+  const stageProspects = useMemo(() => prospects.filter((p) => p.stage === stage), [prospects, stage]);
+  const visible = stageProspects.slice(0, limit);
+  const hasMore = stageProspects.length > limit;
+
+  return (
+    <div className="flex-shrink-0 w-[290px] flex flex-col">
+      {/* Column header */}
+      <div
+        className="flex items-center justify-between pb-3 mb-3"
+        style={{ borderBottom: `2px solid ${STAGE_COLORS[stage]}` }}
+      >
+        <div className="flex items-center gap-2">
+          <h3 className="text-[16px] font-body font-semibold text-[#e8e4dc]">{STAGE_LABELS[stage]}</h3>
+          <span className="text-[11px] font-body font-medium px-2 py-0.5 rounded-full bg-[#11111a] text-[rgba(232,228,220,0.55)]">
+            {stageProspects.length}
+          </span>
+        </div>
+        <button
+          onClick={onAddClick}
+          title="Ajouter un prospect"
+          className="w-6 h-6 rounded-full bg-[rgba(255,255,255,0.05)] flex items-center justify-center text-[rgba(232,228,220,0.55)] hover:text-[#e8e4dc] hover:bg-[rgba(255,255,255,0.1)] transition-colors cursor-pointer"
+        >
+          <Plus size={14} />
+        </button>
+      </div>
+
+      {/* Cards */}
+      <div className="flex-1 flex flex-col gap-2.5 min-h-[220px]">
+        {visible.map((prospect) => (
+          <PipelineCard
+            key={prospect.id}
+            prospect={prospect}
+            onClick={() => onSelect(prospect)}
+            onUpdateStage={onUpdateStage}
+          />
+        ))}
+
+        {hasMore && (
+          <button
+            onClick={() => setLimit((prev) => prev + 25)}
+            className="w-full py-2 text-center text-[12px] font-body text-[#c5a059] bg-[#11111a] hover:bg-[#181826] rounded-[8px] border border-[rgba(197,160,89,0.2)] transition-colors cursor-pointer"
+          >
+            Afficher +25 (sur {stageProspects.length - limit} restants)
+          </button>
+        )}
+
+        {stageProspects.length === 0 && (
+          <div className="text-center py-10 rounded-[10px] border border-dashed border-[rgba(255,255,255,0.06)]">
+            <p className="text-[12px] font-body text-[rgba(232,228,220,0.30)]">Aucun prospect</p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -315,65 +384,16 @@ function KanbanBoard({
 }) {
   return (
     <div className="flex gap-4 overflow-x-auto pb-6 px-6">
-      {stages.map((stage, colIdx) => {
-        const stageProspects = prospects.filter((p) => p.stage === stage);
-        return (
-          <motion.div
-            key={stage}
-            className="flex-shrink-0 w-[290px] flex flex-col"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: colIdx * 0.06, duration: 0.4 }}
-          >
-            {/* Column header */}
-            <div
-              className="flex items-center justify-between pb-3 mb-3"
-              style={{ borderBottom: `2px solid ${STAGE_COLORS[stage]}` }}
-            >
-              <div className="flex items-center gap-2">
-                <h3 className="text-[16px] font-body font-semibold text-[#e8e4dc]">{STAGE_LABELS[stage]}</h3>
-                <span className="text-[11px] font-body font-medium px-2 py-0.5 rounded-full bg-[#11111a] text-[rgba(232,228,220,0.55)]">
-                  {stageProspects.length}
-                </span>
-              </div>
-              <button
-                onClick={onAddClick}
-                title="Ajouter un prospect"
-                className="w-6 h-6 rounded-full bg-[rgba(255,255,255,0.05)] flex items-center justify-center text-[rgba(232,228,220,0.55)] hover:text-[#e8e4dc] hover:bg-[rgba(255,255,255,0.1)] transition-colors cursor-pointer"
-              >
-                <Plus size={14} />
-              </button>
-            </div>
-
-            {/* Cards */}
-            <div className="flex-1 flex flex-col gap-2.5 min-h-[220px]">
-              <AnimatePresence>
-                {stageProspects.map((prospect) => (
-                  <motion.div
-                    key={prospect.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.96 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.96 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <PipelineCard
-                      prospect={prospect}
-                      onClick={() => onSelect(prospect)}
-                      onUpdateStage={onUpdateStage}
-                    />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-              {stageProspects.length === 0 && (
-                <div className="text-center py-10 rounded-[10px] border border-dashed border-[rgba(255,255,255,0.06)]">
-                  <p className="text-[12px] font-body text-[rgba(232,228,220,0.30)]">Aucun prospect</p>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        );
-      })}
+      {stages.map((stage) => (
+        <KanbanColumn
+          key={stage}
+          stage={stage}
+          prospects={prospects}
+          onSelect={onSelect}
+          onUpdateStage={onUpdateStage}
+          onAddClick={onAddClick}
+        />
+      ))}
     </div>
   );
 }
