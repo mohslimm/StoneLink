@@ -14,12 +14,6 @@ tsconfig.tsbuildinfo
 
 # Environment variables & secrets (CRITICAL)
 
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-*.env
-
 # Debug & Logs
 npm-debug.log*
 yarn-debug.log*
