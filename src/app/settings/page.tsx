@@ -6,7 +6,7 @@ import {
   Users, Sparkles, Phone, Bell, DollarSign, Check, X,
   CheckCircle, AlertCircle, RefreshCw, Send, ShieldCheck,
   ExternalLink, MessageSquare, Laptop, Smartphone, Globe,
-  Copy, ArrowRight, Zap, Info, Sliders, Play
+  Copy, ArrowRight, Zap, Info, Sliders, Play, ChevronRight, ArrowLeftRight
 } from 'lucide-react';
 import { GlassPanel } from '@/components/ui/custom/GlassPanel';
 import { AnimatedButton } from '@/components/ui/custom/AnimatedButton';
@@ -749,6 +749,7 @@ function NotificationsPanel() {
 /* ─── Main Settings Master Page ─── */
 export default function Settings() {
   const { settingsTab, setSettingsTab } = useUIStore();
+  const { activeFounder, setActiveFounder, geminiModel } = useSettingsStore();
 
   const panelComponents: Record<string, React.ComponentType> = {
     fondateurs: FoundersPanel,
@@ -768,7 +769,7 @@ export default function Settings() {
   return (
     <div className="min-h-[calc(100dvh-56px)] max-w-[1580px] mx-auto pb-16">
       {/* Mobile navigation */}
-      <div className="lg:hidden flex overflow-x-auto gap-1.5 px-4 pt-4 pb-2 border-b border-[rgba(255,255,255,0.06)]">
+      <div className="lg:hidden flex overflow-x-auto gap-1.5 px-4 pt-4 pb-2 border-b border-[rgba(255,255,255,0.06)] bg-[rgba(10,10,18,0.6)] backdrop-blur">
         {settingsNav.map((item) => {
           const Icon = item.icon;
           const isActive = activeKey === item.id;
@@ -779,7 +780,7 @@ export default function Settings() {
               className={cn(
                 'flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[12.5px] font-body font-medium whitespace-nowrap cursor-pointer transition-colors',
                 isActive
-                  ? 'bg-[rgba(197,160,89,0.18)] text-[#c5a059] border border-[rgba(197,160,89,0.3)]'
+                  ? 'bg-[rgba(197,160,89,0.18)] text-[#c5a059] border border-[rgba(197,160,89,0.3)] shadow-[0_0_15px_rgba(197,160,89,0.15)]'
                   : 'text-[rgba(232,228,220,0.55)] hover:text-[#e8e4dc]'
               )}
             >
@@ -790,42 +791,117 @@ export default function Settings() {
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] min-h-[calc(100dvh-56px)]">
-        {/* Desktop Sidebar */}
-        <div className="hidden lg:block border-r border-[rgba(255,255,255,0.06)] py-8 pr-4">
-          <div className="px-6 mb-6">
-            <span className="text-[10.5px] font-body font-semibold uppercase tracking-[0.14em] text-[#c5a059]">
-              CENTRE DE CONTRÔLE
-            </span>
-            <h2 className="font-display font-medium text-[22px] text-[#e8e4dc] mt-1">
-              Paramètres
-            </h2>
+      <div className="grid grid-cols-1 lg:grid-cols-[290px_1fr] min-h-[calc(100dvh-56px)]">
+        {/* Desktop Luxury Sidebar */}
+        <aside className="hidden lg:flex flex-col justify-between border-r border-[rgba(197,160,89,0.15)] bg-[rgba(10,10,18,0.85)] backdrop-blur-[24px] py-7 px-4 min-h-[calc(100dvh-56px)] sticky top-[56px] shadow-[4px_0_30px_rgba(0,0,0,0.4)]">
+          <div>
+            {/* Header Badge & Title */}
+            <div className="px-3 mb-6">
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-[rgba(197,160,89,0.1)] border border-[rgba(197,160,89,0.25)] text-[#c5a059] text-[10.5px] font-body font-semibold uppercase tracking-[0.12em] mb-2">
+                <Sparkles size={11} />
+                <span>Centre de Contrôle</span>
+              </div>
+              <h2 className="font-display font-medium text-[22px] text-[#e8e4dc]">
+                Paramètres
+              </h2>
+              <p className="text-[12px] font-body text-[rgba(232,228,220,0.45)] mt-0.5">
+                Configurations opérationnelles & IA
+              </p>
+            </div>
+
+            {/* Navigation Menu */}
+            <nav className="space-y-1.5" aria-label="Paramètres">
+              {settingsNav.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeKey === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setSettingsTab(item.id)}
+                    className={cn(
+                      'w-full flex items-center justify-between px-3.5 py-3 rounded-[12px] text-left cursor-pointer transition-all duration-200 group relative',
+                      isActive
+                        ? 'bg-[linear-gradient(90deg,rgba(197,160,89,0.18),rgba(197,160,89,0.04))] border border-[rgba(197,160,89,0.38)] shadow-[0_4px_24px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)] text-[#e8e4dc]'
+                        : 'border border-transparent text-[rgba(232,228,220,0.55)] hover:text-[#e8e4dc] hover:bg-[rgba(255,255,255,0.04)] hover:border-[rgba(255,255,255,0.06)]'
+                    )}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={cn(
+                        'w-8 h-8 rounded-[8px] flex items-center justify-center transition-colors flex-shrink-0',
+                        isActive
+                          ? 'bg-[rgba(197,160,89,0.22)] text-[#c5a059] shadow-[0_0_12px_rgba(197,160,89,0.2)]'
+                          : 'bg-[rgba(255,255,255,0.03)] text-[rgba(232,228,220,0.4)] group-hover:text-[#e8e4dc]'
+                      )}>
+                        <Icon size={16} />
+                      </div>
+                      <span className={cn('text-[13.5px] font-body truncate', isActive ? 'font-medium text-[#e8e4dc]' : '')}>
+                        {item.label}
+                      </span>
+                    </div>
+
+                    {isActive && (
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#c5a059] shadow-[0_0_8px_#c5a059]" />
+                        <ChevronRight size={14} className="text-[#c5a059]" />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
           </div>
 
-          <div className="space-y-1">
-            {settingsNav.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeKey === item.id;
-              return (
+          {/* Bottom Executive HUD (Founders & System State) */}
+          <div className="space-y-3 pt-6 border-t border-[rgba(255,255,255,0.06)] px-1">
+            {/* Active Founder Capsule */}
+            <div className="p-3 rounded-[12px] bg-[#0c0c16] border border-[rgba(197,160,89,0.2)]">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] font-body uppercase tracking-[0.1em] text-[rgba(232,228,220,0.45)]">
+                  Opérateur Actif
+                </span>
                 <button
-                  key={item.id}
-                  onClick={() => setSettingsTab(item.id)}
-                  className={cn(
-                    'w-full flex items-center gap-3.5 px-6 py-3 text-left cursor-pointer transition-all duration-200 rounded-r-[12px]',
-                    isActive
-                      ? 'border-l-2 border-l-[#c5a059] bg-[rgba(197,160,89,0.12)] text-[#e8e4dc] shadow-[inset_10px_0_20px_rgba(197,160,89,0.05)]'
-                      : 'border-l-2 border-l-transparent text-[rgba(232,228,220,0.55)] hover:bg-[#0c0c16] hover:text-[#e8e4dc]'
-                  )}
+                  type="button"
+                  onClick={() => setActiveFounder(activeFounder === 'abdelhadi' ? 'mohamed' : 'abdelhadi')}
+                  title="Basculer l'opérateur de closing"
+                  className="inline-flex items-center gap-1 text-[10.5px] font-medium text-[#c5a059] hover:underline cursor-pointer transition-colors"
                 >
-                  <Icon size={16} className={isActive ? 'text-[#c5a059]' : 'text-[rgba(232,228,220,0.4)]'} />
-                  <span className={cn('text-[14px] font-body', isActive && 'font-medium text-[#e8e4dc]')}>
-                    {item.label}
-                  </span>
+                  <ArrowLeftRight size={10} />
+                  <span>Basculer</span>
                 </button>
-              );
-            })}
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-[rgba(197,160,89,0.15)] border border-[rgba(197,160,89,0.3)] flex items-center justify-center text-[#c5a059] text-[11px] font-semibold font-display flex-shrink-0 shadow-[0_0_10px_rgba(197,160,89,0.15)]">
+                  {activeFounder === 'abdelhadi' ? 'AH' : 'MS'}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[12.5px] font-body font-medium text-[#e8e4dc] truncate">
+                    {activeFounder === 'abdelhadi' ? 'Abdelhadi Hammaz' : 'Mohamed Slimani'}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[10px] text-[#4ade80]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#4ade80] animate-pulse" />
+                    <span>Founder • Session Active</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* AI Engine Status Pill */}
+            <div className="px-3 py-2 rounded-[10px] bg-[#090912] border border-[rgba(255,255,255,0.05)] flex items-center justify-between text-[11px] font-mono">
+              <span className="text-[rgba(232,228,220,0.5)] truncate max-w-[160px]">
+                {geminiModel || 'gemini-3.8-flash'}
+              </span>
+              <span className="text-[#4ade80] text-[10px] flex items-center gap-1">
+                <span>Protégé</span>
+              </span>
+            </div>
+
+            {/* Agency Footer */}
+            <div className="text-center text-[10.5px] font-body text-[rgba(232,228,220,0.3)] pt-1">
+              Stepping Stones Agency &bull; StoneLink
+            </div>
           </div>
-        </div>
+        </aside>
 
         {/* Panel Content */}
         <div className="p-6 lg:p-10">
