@@ -206,11 +206,22 @@ function LeadPipelineSection() {
     }, 2500);
   }, [url, addToast]);
 
+  const [showScriptModal, setShowScriptModal] = useState(false);
+  const [copiedPitch, setCopiedPitch] = useState(false);
+
+  const fullPitch = `Bonjour, c'est Jean de Stepping Stones. J'ai analysé votre site ce matin (${url || 'votre site'}) — votre score technique Google est de ${score}/100. Pour une entreprise avec votre réputation, cela représente un manque à gagner significatif : vos concurrents optimisés captent les prospects qui recherchent vos services. Je peux vous envoyer gratuitement aujourd'hui une maquette fonctionnelle et modernisée de votre site pour que vous constatiez la différence par vous-même. Vous avez 2 minutes pour qu'on en discute ?`;
+
+  const copyPitch = () => {
+    navigator.clipboard.writeText(fullPitch);
+    setCopiedPitch(true);
+    setTimeout(() => setCopiedPitch(false), 2000);
+  };
+
   const isSuccess = score >= 70;
   const scoreColor = score >= 70 ? '#4ade80' : score >= 40 ? '#60a5fa' : '#f87171';
 
   return (
-    <section className="bg-[#050509] py-16 md:py-24 px-6">
+    <section className="bg-[#050509] py-16 md:py-24 px-6 relative">
       <div className="max-w-[720px] mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -300,7 +311,12 @@ function LeadPipelineSection() {
 
                 <p className="text-[13px] font-body text-[rgba(232,228,220,0.55)] mt-4 italic leading-relaxed">
                   &ldquo;Bonjour, c&apos;est Jean de Stepping Stones. J&apos;ai analyse votre site ce matin — votre score Lighthouse est de {score}, ce qui represente un manque a gagner significatif...&rdquo;
-                  <span className="text-[#c5a059] not-italic ml-1 cursor-pointer hover:underline">Voir le script</span>
+                  <button
+                    onClick={() => setShowScriptModal(true)}
+                    className="text-[#c5a059] not-italic ml-1.5 font-medium hover:underline cursor-pointer inline-flex items-center"
+                  >
+                    Voir le script complet
+                  </button>
                 </p>
 
                 <div className="mt-4">
@@ -311,6 +327,64 @@ function LeadPipelineSection() {
                   </Link>
                 </div>
               </GlassPanel>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Script Viewer Modal */}
+        <AnimatePresence>
+          {showScriptModal && (
+            <motion.div
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <div
+                className="absolute inset-0 bg-[rgba(5,5,9,0.75)] backdrop-blur-[6px]"
+                onClick={() => setShowScriptModal(false)}
+              />
+              <motion.div
+                className="relative w-full max-w-[600px] p-6 rounded-[16px] bg-[rgba(17,17,26,0.98)] border border-[rgba(197,160,89,0.3)] shadow-[0_10px_40px_rgba(0,0,0,0.6)] backdrop-blur-[20px]"
+                initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              >
+                <div className="flex items-center justify-between pb-3 mb-4 border-b border-[rgba(255,255,255,0.08)]">
+                  <div>
+                    <span className="text-[10px] font-body uppercase tracking-[0.1em] text-[#c5a059] font-semibold">
+                      Script de Vente IA
+                    </span>
+                    <h3 className="text-[18px] font-display text-[#e8e4dc]">
+                      Accroche & Proposition Personnalisée
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setShowScriptModal(false)}
+                    className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.06)] flex items-center justify-center text-[rgba(232,228,220,0.6)] hover:text-[#e8e4dc] cursor-pointer"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="p-4 rounded-[10px] bg-[rgba(10,10,18,0.7)] border border-[rgba(255,255,255,0.06)] text-[14px] font-body text-[#e8e4dc] leading-[1.8] whitespace-pre-line">
+                  {fullPitch}
+                </div>
+
+                <div className="flex items-center justify-between mt-5 gap-3">
+                  <button
+                    onClick={copyPitch}
+                    className="h-10 px-4 rounded-full border border-[rgba(255,255,255,0.12)] text-[13px] font-body text-[#e8e4dc] hover:border-[rgba(197,160,89,0.4)] transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    {copiedPitch ? '✓ Copié !' : 'Copier le script'}
+                  </button>
+                  <Link href="/call">
+                    <AnimatedButton icon={<Phone size={15} />}>
+                      Lancer l&apos;appel dans le Studio
+                    </AnimatedButton>
+                  </Link>
+                </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>

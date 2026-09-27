@@ -342,6 +342,16 @@ export const generateContractHTML = (contractData, config) => {
     </div>
   </div>
 
+  ${contractData.aiData?.executiveSummary ? `
+  <div class="executive-summary" style="background: #fdfbf7; border: 1px solid #e2d9c8; border-radius: 8px; padding: 22px 26px; margin-bottom: 30px;">
+    <div style="font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #b89047; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+      <span>★</span> Note Stratégique & Cadrage Exécutif
+    </div>
+    <div style="font-size: 13.5px; line-height: 1.8; color: #333;">
+      ${contractData.aiData.executiveSummary}
+    </div>
+  </div>` : ''}
+
   <div class="article">
     ${renderArticleHeader('01', L.art1Title)}
     <div class="article-body">
@@ -364,6 +374,20 @@ export const generateContractHTML = (contractData, config) => {
         </tbody>
       </table>
       <div class="module-total">Total Global : ${getPriceDisplay(totalDA)}</div>
+      ${contractData.aiData?.tailoredScope?.length ? `
+      <div style="margin-top: 24px;">
+        <div class="scope-category" style="margin-top: 15px;">Spécifications Techniques Approfondies (Ingénierie IA)</div>
+        <div style="padding: 14px 6px;">
+          ${contractData.aiData.tailoredScope.map(cat => `
+            <div style="margin-bottom: 16px;">
+              <div style="font-weight: 700; font-size: 13px; color: var(--accent); margin-bottom: 5px;">▸ ${cat.category} &bull; ${cat.label}</div>
+              <ul style="padding-left: 20px; font-size: 12.5px; color: #444; line-height: 1.8;">
+                ${(cat.deliverables || []).map(d => `<li>${d}</li>`).join('')}
+              </ul>
+            </div>
+          `).join('')}
+        </div>
+      </div>` : ''}
     </div>
   </div>
 
@@ -478,6 +502,25 @@ export const generateContractHTML = (contractData, config) => {
       )}
     </div>
   </div>
+
+  ${contractData.aiData?.specialClauses?.length ? `
+  <div class="article">
+    ${renderArticleHeader('10', {
+      fr: 'Clauses Particulières & Engagements Spécifiques',
+      en: 'Special Clauses & Bespoke Commitments',
+      ar: 'الشروط والالتزامات الخاصة'
+    })}
+    <div class="article-body">
+      ${contractData.aiData.specialClauses.map((sc, i) => `
+        <div style="margin-bottom: 18px; padding-bottom: 14px; ${i < contractData.aiData.specialClauses.length - 1 ? 'border-bottom: 1px dashed var(--border);' : ''}">
+          <div style="font-weight: 700; font-size: 13px; color: var(--accent); margin-bottom: 6px;">
+            10.${i+1} ${sc.title}
+          </div>
+          ${renderTriBlock(sc.textFr, sc.textEn || sc.textFr, sc.textAr || '', '')}
+        </div>
+      `).join('')}
+    </div>
+  </div>` : ''}
 
   <div class="signatures">
     <div class="sig-block">

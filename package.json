@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
+    "@google/generative-ai": "^0.24.1",
     "@tailwindcss/postcss": "^4.0.0",
     "@tauri-apps/api": "^2.11.0",
     "@twilio/voice-sdk": "^2.18.3",

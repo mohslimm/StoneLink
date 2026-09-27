@@ -1,13 +1,13 @@
 // ─────────────────────────────────────────────────────────────────
 // STONELINK — POST /api/call/script
-// Génère un script d'appel commercial personnalisé via Claude AI
-// Fallback statique si la clé n'est pas configurée
+// Génère un script d'appel commercial personnalisé via Google Gemini Flash
+// Gestion intelligente : "Avec Site Web" vs "Sans Site Web (Google Maps)"
 // ─────────────────────────────────────────────────────────────────
 
-import { NextRequest } from 'next/server'
-import { z } from 'zod'
-import Anthropic from '@anthropic-ai/sdk'
-import type { CallScript, ScriptStep, ObjectionHandler, CloseScript } from '@/types/pipeline'
+import { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import type { CallScript, ScriptStep, ObjectionHandler, CloseScript } from '@/types/pipeline';
 
 // ─── Validation Schema ────────────────────────────────────────────
 
@@ -22,272 +22,309 @@ const ScriptRequestSchema = z.object({
   estimatedLoss:   z.number().optional(),
   website:         z.string().optional(),
   phone:           z.string().optional(),
-})
+});
 
-type ScriptRequest = z.infer<typeof ScriptRequestSchema>
+type ScriptRequest = z.infer<typeof ScriptRequestSchema>;
 
-// ─── Niche Labels ─────────────────────────────────────────────────
+// ─── Fallback Script Generator (Infaillible) ──────────────────────
 
-const NICHE_LABELS: Record<string, string> = {
-  dental:     'cabinet dentaire',
-  restaurant: 'restaurant',
-  travel:     'agence de voyage',
-  realestate: 'agence immobilière',
-  law:        'cabinet d\'avocat',
-  clinic:     'clinique',
-  salon:      'salon de beauté',
-  logistics:  'entreprise logistique',
-  saas:       'éditeur SaaS',
-  ecommerce:  'boutique e-commerce',
-}
+function buildDeterministicFallback(req: ScriptRequest): CallScript {
+  const prenom = req.contactName.trim() ? (req.contactName.trim().split(' ')[0] ?? req.contactName) : "Responsable";
+  const hasWebsite = !!req.website && !req.website.toLowerCase().includes('pas de site') && req.website.trim().length > 3;
+  const score = req.lighthouseScore ?? 42;
+  const locationText = req.city.trim() ? `à ${req.city.trim()}` : "dans votre région";
 
-// ─── Fallback Script Generator ────────────────────────────────────
+  if (!hasWebsite) {
+    // ─── SCENARIO SANS SITE WEB (Reputation Maps & Visibilité) ────
+    return {
+      niche: req.niche as CallScript['niche'],
+      prospectName: prenom,
+      companyName: req.companyName,
+      lighthouseScore: 0,
+      estimatedLoss: 0,
+      steps: [
+        {
+          id: 1,
+          phase: 'opener',
+          label: 'Ouverture Google Maps',
+          script: `Bonjour ${prenom}, je suis Abdelhadi de Stepping Stones Agency. J'ai vu votre excellente réputation et vos avis élogieux sur Google Maps pour ${req.companyName}. Cependant, en cherchant votre site internet officiel pour consulter vos offres, impossible de le trouver. Vous avez 2 minutes ?`,
+          tip: 'Ton chaleureux et élogieux. Pause après la question.',
+          durationTarget: 20,
+        },
+        {
+          id: 2,
+          phase: 'audit_reveal',
+          label: 'Constat d\'Invisibilité',
+          script: `Aujourd'hui, quand des clients à fort pouvoir d'achat recherchent vos prestations ${locationText} et ne trouvent pas de site officiel, ils pensent souvent que l'établissement est fermé ou peu moderne, et ils cliquent directement sur un concurrent qui a une vitrine en ligne. Vous perdez des clients prêts à payer chaque semaine.`,
+          tip: 'Mettre le doigt sur le manque à gagner sans accuser le prospect.',
+          durationTarget: 40,
+        },
+        {
+          id: 3,
+          phase: 'pitch',
+          label: 'Vitrine Clé en Main',
+          script: `La bonne nouvelle, c'est que nous avons déjà modélisé une vitrine digitale moderne spécialement conçue pour ${req.companyName}, pensée pour capturer les appels immédiatement et asseoir votre autorité n°1 dans votre ville. Je peux vous l'envoyer gratuitement par email aujourd'hui pour que vous la voyiez.`,
+          tip: 'Insister sur "gratuit", "déjà modélisé" et "sans engagement".',
+          durationTarget: 45,
+        },
+        {
+          id: 4,
+          phase: 'social_proof',
+          label: 'Preuve Sociale',
+          script: `Nous avons récemment digitalisé un professionnel de votre secteur qui n'avait qu'une page sur les réseaux. Dès le premier mois de mise en ligne, ses demandes de rendez-vous qualifiés ont doublé.`,
+          tip: 'Démontrer que le site attire des clients plus rentables que les réseaux.',
+          durationTarget: 35,
+        },
+        {
+          id: 5,
+          phase: 'transition',
+          label: 'Transmission Maquette',
+          script: `Pour vous faire parvenir l'accès à votre maquette aujourd'hui, sur quelle adresse email professionnelle puis-je vous l'adresser ?`,
+          tip: 'Accord implicite : demander directement l\'adresse email.',
+          durationTarget: 25,
+        },
+        {
+          id: 6,
+          phase: 'close',
+          label: 'Clôture & RDV',
+          script: `C'est noté ${prenom}. Je vous transmets le lien dans les 15 minutes. Je vous propose un point rapide de 5 minutes demain après-midi pour avoir votre ressenti. 14h vous convient ?`,
+          tip: 'Technique de l\'agenda : verrouiller le créneau.',
+          durationTarget: 30,
+        },
+      ],
+      objections: [
+        {
+          trigger: 'facebook',
+          label: 'Une page Facebook / Instagram me suffit',
+          response: `Je comprends tout à fait, les réseaux sont utiles pour poster des photos. Mais quand un client a un besoin urgent et solvable, il ne va pas chercher sur Instagram, il tape sur Google. S'il n'y a pas de site officiel avec vos coordonnées nettes, il va chez le concurrent immédiat.`,
+          pivot: 'Voulez-vous qu\'on regarde comment capter ces recherches Google avec la maquette ?',
+        },
+        {
+          trigger: 'bouche_a_oreille',
+          label: 'Le bouche-à-oreille me suffit',
+          response: `C'est une grande force, et c'est la preuve de votre savoir-faire. Mais aujourd'hui, même quand un ami vous recommande, la première chose que fait le client est de taper votre nom sur son smartphone pour voir où vous êtes et ce que vous faites. S'il ne trouve rien, il hésite.`,
+          pivot: 'La maquette renforce précisément ce bouche-à-oreille. Je vous l\'envoie pour voir ?',
+        },
+        {
+          trigger: 'pas_temps',
+          label: 'Pas le temps de gérer un site web',
+          response: `C'est exactement pour ça qu'on a créé notre formule : vous n'avez absolument rien à gérer. Le site est 100% autonome, hébergé, sécurisé et optimisé pour que votre téléphone sonne sans que vous n'ayez à toucher à une seule ligne de code.`,
+          pivot: 'Cela ne vous demandera que 5 minutes pour valider la maquette qu\'on a préparée.',
+        },
+        {
+          trigger: 'prix',
+          label: 'Trop cher / Pas de budget',
+          response: `Avant même de parler de tarifs, regardez la maquette gratuitement. Si un seul client supplémentaire par mois rentabilise l'intégralité du site pour les 3 prochaines années, c'est un investissement qui vous rapporte de l'argent.`,
+          pivot: 'Jetons un coup d\'œil à la maquette gratuite d\'abord ?',
+        },
+        {
+          trigger: 'rappeler',
+          label: 'Rappelez-moi plus tard',
+          response: `Avec plaisir. Je vous transmets la maquette maintenant pour que vous puissiez l'ouvrir tranquillement à votre rythme ce soir.`,
+          pivot: 'Je vous rappelle jeudi matin à 10h pour un échange rapide ?',
+        },
+      ],
+      closes: [
+        { id: 1, type: 'soft', script: `Je vous envoie le lien par mail, vous jetez un œil quand vous avez 2 minutes.` },
+        { id: 2, type: 'assumptive', script: `Je vous bloque un créneau demain à 14h pour faire le point sur la maquette.` },
+      ],
+      generatedAt: new Date(),
+    };
+  }
 
-function buildFallbackScript(req: ScriptRequest): CallScript {
-  const prenom = req.contactName.trim() ? (req.contactName.trim().split(' ')[0] ?? req.contactName) : "Responsable"
-  const niche  = NICHE_LABELS[req.niche] ?? req.niche
-  const score  = req.lighthouseScore ?? 42
-  const perte  = req.estimatedLoss ? `${req.estimatedLoss.toLocaleString('fr-FR')} €/mois` : 'plusieurs milliers d\'euros par mois'
-  const locationText = req.city.trim() ? `à ${req.city.trim()}` : "dans votre région"
-
-  const steps: ScriptStep[] = [
-    {
-      id: 1,
-      phase: 'opener',
-      label: 'Ouverture',
-      script: `Bonjour ${prenom}, je suis [Votre Prénom] de Stepping Stones Agency. Je vous contacte car j'ai analysé le site de ${req.companyName} et j'ai identifié quelques points critiques qui méritent votre attention. Vous avez 2 minutes ?`,
-      tip: 'Ton décontracté, sourire dans la voix. Pause après la question.',
-      durationTarget: 20,
-    },
-    {
-      id: 2,
-      phase: 'audit_reveal',
-      label: 'Révélation Audit',
-      script: `J'ai passé votre site dans notre outil d'analyse — le score obtenu est de ${score}/100. Pour vous donner une idée, la moyenne des ${niche}s qui convertissent bien tourne autour de 85. Ce qui veut dire que des visiteurs quittent votre site sans vous contacter alors qu'ils cherchent exactement vos services.`,
-      tip: `Score < 50 = ton urgent mais factuel. Laisser un silence après l'annonce du score.`,
-      durationTarget: 40,
-    },
-    {
-      id: 3,
-      phase: 'pitch',
-      label: 'La Solution',
-      script: `On a développé un modèle de site spécialement conçu pour les ${niche}s — pré-optimisé, mobile-first, avec les éléments qui convainquent vos clients. Ce qu'on peut faire c'est vous montrer à quoi ressemblerait votre nouveau site avec votre logo, vos couleurs. Vous le recevez gratuitement dans votre boite mail aujourd'hui.`,
-      tip: 'Insister sur "gratuit" et "aujourd\'hui". C\'est la proposition à faible friction.',
-      durationTarget: 45,
-    },
-    {
-      id: 4,
-      phase: 'social_proof',
-      label: 'Preuve Sociale',
-      script: `On a refait le site d'un autre ${niche} ${locationText} l'an dernier. En 3 mois, leurs demandes de contact avaient augmenté de 40%. Le propriétaire m'a dit que c'était la meilleure décision qu'il avait prise. Et ça a commencé exactement comme ça — un coup de fil.`,
-      tip: 'Si le prospect est sceptique, demandez : "Vous recevez combien de demandes par semaine depuis le site ?"',
-      durationTarget: 35,
-    },
-    {
-      id: 5,
-      phase: 'transition',
-      label: 'Transition',
-      script: `Pour vous envoyer le prototype personnalisé, j'aurais juste besoin de votre adresse email. Je l'envoie dans les minutes qui suivent notre appel. Vous me confirmez que c'est bien ${req.companyName.toLowerCase()}@gmail.com ou vous avez une autre adresse ?`,
-      tip: 'Supposez qu\'ils vont dire oui. Reformuler l\'email qu\'on a déjà si possible.',
-      durationTarget: 25,
-    },
-    {
-      id: 6,
-      phase: 'close',
-      label: 'Clôture',
-      script: `Parfait ${prenom}. Je vous envoie ça maintenant. Vous allez recevoir un email de ma part avec le lien du prototype — consultez-le tranquillement. Je vous rappelle dans 48h pour avoir votre retour. On est libres mercredi matin pour en discuter ?`,
-      tip: 'Ne pas attendre une confirmation enthousiaste. Proposer un créneau directement = technique de l\'agenda.',
-      durationTarget: 30,
-    },
-  ]
-
-  const objections: ObjectionHandler[] = [
-    {
-      trigger: 'prix',
-      label: 'Trop cher',
-      response: `Je comprends, le budget c'est une vraie question. Mais avant de parler chiffres, regardez le prototype — vous jugez sur ce que vous voyez. Et si on estime que votre site actuel vous coûte ${perte} en leads perdus, l'investissement se rembourse en quelques semaines.`,
-      pivot: 'Alors, je vous envoie le prototype maintenant pour que vous puissiez juger par vous-même ?',
-    },
-    {
-      trigger: 'prestataire',
-      label: 'J\'ai déjà quelqu\'un',
-      response: `C'est super d'avoir déjà quelqu'un. Notre approche est différente — on ne remplace pas votre prestataire, on vous donne une base déjà optimisée qu'ils peuvent utiliser. Et de toute façon, regarder le prototype ne coûte rien. Vous décidez après.`,
-      pivot: 'Je vous envoie quand même pour que vous ayez une référence de ce qui se fait de mieux dans votre secteur ?',
-    },
-    {
-      trigger: 'pas_maintenant',
-      label: 'Pas le bon moment',
-      response: `Je comprends tout à fait. Justement, le prototype je vous l'envoie maintenant — vous le regardez quand vous avez 5 minutes, même dans 3 semaines. L'idée c'est que vous l'ayez sous la main quand le moment est venu.`,
-      pivot: `C'est quoi votre email pour que je vous l'envoie ?`,
-    },
-    {
-      trigger: 'pas_interesse',
-      label: 'Pas intéressé',
-      response: `Je respecte votre décision. Juste une dernière chose — votre score de ${score}/100 sur Google va continuer à affecter votre visibilité. Si ça change et que vous voulez qu'on en discute, gardez mes coordonnées. Bonne journée ${prenom}.`,
-      pivot: 'Dans ce cas je note un rappel dans 3 mois. On ne sait jamais.',
-    },
-    {
-      trigger: 'rappeler',
-      label: 'Rappelez-moi',
-      response: `Bien sûr. Vous êtes disponible plutôt en matinée ou en après-midi en général ? Je bloque un créneau dès maintenant dans mon agenda pour ne pas vous oublier.`,
-      pivot: 'Parfait, je vous envoie quand même le prototype entre-temps pour vous faire une idée.',
-    },
-  ]
-
-  const closes: CloseScript[] = [
-    {
-      id: 1,
-      type: 'soft',
-      script: `Est-ce que vous voulez qu'on en discute rapidement cette semaine, le temps que le prototype soit encore frais dans votre esprit ?`,
-    },
-    {
-      id: 2,
-      type: 'assumptive',
-      script: `Je vous bloque mercredi à 10h — si ça vous convient on fait un point de 15 minutes sur le prototype. C'est bon pour vous ?`,
-    },
-    {
-      id: 3,
-      type: 'urgency',
-      script: `On a actuellement 2 slots disponibles pour lancer un projet ce mois-ci. Si vous voulez qu'on en soit, c'est le bon moment pour se positionner.`,
-    },
-  ]
-
+  // ─── SCENARIO AVEC SITE WEB (Audit Lighthouse & Refonte) ──────────
   return {
     niche: req.niche as CallScript['niche'],
     prospectName: prenom,
-    companyName:  req.companyName,
+    companyName: req.companyName,
     lighthouseScore: score,
-    estimatedLoss:   req.estimatedLoss ?? 0,
-    steps,
-    objections,
-    closes,
+    estimatedLoss: req.estimatedLoss ?? 0,
+    steps: [
+      {
+        id: 1,
+        phase: 'opener',
+        label: 'Ouverture',
+        script: `Bonjour ${prenom}, je suis Abdelhadi de Stepping Stones Agency. Je vous contacte car j'ai analysé le site de ${req.companyName} ce matin et j'ai relevé des points techniques critiques qui affectent directement vos conversions. Vous avez 2 minutes ?`,
+        tip: 'Ton professionnel, direct et factuel. Laisser un blanc après la question.',
+        durationTarget: 20,
+      },
+      {
+        id: 2,
+        phase: 'audit_reveal',
+        label: 'Révélation Audit',
+        script: `J'ai passé votre site dans nos audits de performance Google : votre score n'est que de ${score}/100. Cela signifie qu'une part importante de vos visiteurs sur mobile quitte la page par lenteur ou manque de clarté avant même de vous appeler.`,
+        tip: 'Laisser un silence après l\'annonce du score.',
+        durationTarget: 40,
+      },
+      {
+        id: 3,
+        phase: 'pitch',
+        label: 'La Solution',
+        script: `Nous avons conçu un modèle modernisé, ultra-rapide et taillé pour convertir vos visiteurs en clients payants. On peut vous montrer gratuitement à quoi ressemblerait votre nouveau site avec votre identité visuelle.`,
+        tip: 'Mettre l\'accent sur le gain de clients concrets.',
+        durationTarget: 45,
+      },
+      {
+        id: 4,
+        phase: 'social_proof',
+        label: 'Preuve Sociale',
+        script: `Sur une refonte similaire effectuée pour un confrère ${locationText}, le volume d'appels entrants a grimpé de 45% en moins de 6 semaines grâce à l'optimisation mobile.`,
+        tip: 'Chiffre concret et crédible.',
+        durationTarget: 35,
+      },
+      {
+        id: 5,
+        phase: 'transition',
+        label: 'Transition',
+        script: `Pour vous faire parvenir le prototype personnalisé dans l'heure, confirmez-moi simplement votre adresse email professionnelle ?`,
+        tip: 'Passer à l\'action naturellement.',
+        durationTarget: 25,
+      },
+      {
+        id: 6,
+        phase: 'close',
+        label: 'Clôture & RDV',
+        script: `Parfait ${prenom}. Je vous envoie l'accès dès maintenant. On se cale un bref appel de 5 minutes demain à 14h pour avoir votre avis ?`,
+        tip: 'Proposer un horaire ferme.',
+        durationTarget: 30,
+      },
+    ],
+    objections: [
+      {
+        trigger: 'prix',
+        label: 'Trop cher',
+        response: `Le coût d'un site se mesure à ce qu'il rapporte. Si votre site actuel vous coûte des clients perdus chaque semaine, un site optimisé s'autofinance dès les premiers mois. Regardez d'abord la maquette gratuite pour juger.`,
+        pivot: 'Puis-je vous envoyer le lien pour vous rendre compte de la différence ?',
+      },
+      {
+        trigger: 'prestataire',
+        label: 'J\'ai déjà un prestataire',
+        response: `C'est une bonne chose d'avoir un partenaire technique. Cependant, votre score de ${score}/100 montre des fuites évidentes. Notre prototype gratuit vous donne une base d'évaluation sans aucun engagement.`,
+        pivot: 'Je vous le partage simplement comme point de comparaison ?',
+      },
+      {
+        trigger: 'satisfait',
+        label: 'Mon site me convient actuellement',
+        response: `Être satisfait de l'esthétique est une chose, mais la performance technique en est une autre. Si 40% des visiteurs sur mobile quittent le site avant le chargement complet, c'est du chiffre d'affaires laissé à la concurrence.`,
+        pivot: 'Prenez 2 minutes pour voir la fluidité de la maquette optimisée.',
+      },
+    ],
+    closes: [
+      { id: 1, type: 'soft', script: `Je vous envoie le prototype pour que vous puissiez comparer.` },
+      { id: 2, type: 'assumptive', script: `Je bloque mercredi à 10h pour en reparler 5 minutes.` },
+    ],
     generatedAt: new Date(),
-  }
+  };
 }
 
-// ─── Claude SSE Generator ─────────────────────────────────────────
+// ─── Gemini 3.8 Flash Generation ──────────────────────────────────
 
-async function generateWithClaudeSSE(req: ScriptRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+async function generateWithGemini(req: ScriptRequest) {
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    // Return a dummy fallback string wrapped in JSON
-    const fallback = buildFallbackScript(req);
-    const stream = new ReadableStream({
-      start(controller) {
-        controller.enqueue(`data: ${JSON.stringify(fallback)}\n\n`);
-        controller.enqueue(`data: [DONE]\n\n`);
-        controller.close();
-      }
-    });
-    return stream;
+    throw new Error('GEMINI_API_KEY missing');
   }
 
   const prenom = req.contactName.trim() ? (req.contactName.trim().split(' ')[0] ?? req.contactName) : "Responsable";
-  const niche  = NICHE_LABELS[req.niche] ?? req.niche;
-  const score  = req.lighthouseScore ?? 42;
-  const perte  = req.estimatedLoss ? `${req.estimatedLoss.toLocaleString('fr-FR')} €/mois` : 'plusieurs milliers d\'euros/mois';
+  const hasWebsite = !!req.website && !req.website.toLowerCase().includes('pas de site') && req.website.trim().length > 3;
+  const score = req.lighthouseScore ?? 42;
   const locationText = req.city.trim() ? `à ${req.city.trim()}` : "dans votre région";
 
-  const systemPrompt = `Tu es un expert en vente B2B pour une agence de création de sites web premium.
-Tu génères des scripts d'appel commercial ultra-personnalisés, percutants et naturels en français.
-Ton style : professionnel mais humain, factuel mais engageant. Pas de jargon. Pas de promesse excessive.
-Tu dois répondre UNIQUEMENT avec un JSON valide. N'ajoute aucun préfixe, aucun suffixe, aucun bloc de code markdown (\`\`\`).`;
-
-  const userPrompt = `Génère un script d'appel commercial pour ce prospect :
-- Prénom contact : ${prenom}
-- Entreprise : ${req.companyName}
-- Secteur : ${niche} (niche: ${req.niche})
-- Localisation : ${locationText} (${req.country || 'France'})
-- Score Lighthouse actuel : ${score}/100
-- Perte estimée : ${perte}
-- Site web : ${req.website ?? 'inconnu'}
-
-Génère ce JSON strict (pas de markdown) :
-{
-  "steps": [
-    { "id": 1, "phase": "opener", "label": "Ouverture", "script": "...", "tip": "...", "durationTarget": 20 },
-    { "id": 2, "phase": "audit_reveal", "label": "Révélation Audit", "script": "...", "tip": "...", "durationTarget": 40 },
-    { "id": 3, "phase": "pitch", "label": "La Solution", "script": "...", "tip": "...", "durationTarget": 45 },
-    { "id": 4, "phase": "social_proof", "label": "Preuve Sociale", "script": "...", "tip": "...", "durationTarget": 35 },
-    { "id": 5, "phase": "transition", "label": "Transition", "script": "...", "tip": "...", "durationTarget": 25 },
-    { "id": 6, "phase": "close", "label": "Clôture", "script": "...", "tip": "...", "durationTarget": 30 }
-  ],
-  "objections": [
-    { "trigger": "prix", "label": "Trop cher", "response": "...", "pivot": "..." },
-    { "trigger": "prestataire", "label": "J'ai déjà quelqu'un", "response": "...", "pivot": "..." },
-    { "trigger": "pas_maintenant", "label": "Pas le bon moment", "response": "...", "pivot": "..." },
-    { "trigger": "pas_interesse", "label": "Pas intéressé", "response": "...", "pivot": "..." },
-    { "trigger": "rappeler", "label": "Rappelez-moi", "response": "...", "pivot": "..." }
-  ],
-  "closes": [
-    { "id": 1, "type": "soft", "script": "..." },
-    { "id": 2, "type": "assumptive", "script": "..." },
-    { "id": 3, "type": "urgency", "script": "..." }
-  ]
-}`;
-
-  const anthropic = new Anthropic({ apiKey });
-
-  const stream = await anthropic.messages.create({
-    model: 'claude-3-5-haiku-20241022',
-    max_tokens: 3000,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: userPrompt }],
-    stream: true,
-  });
-
-  const encoder = new TextEncoder();
-
-  const readableStream = new ReadableStream({
-    async start(controller) {
-      try {
-        for await (const chunk of stream) {
-          if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-            const data = JSON.stringify({ text: chunk.delta.text });
-            controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-          }
-        }
-        controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
-      } catch (err) {
-        console.error('[call/script] Stream error:', err);
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Stream interrupted' })}\n\n`));
-      } finally {
-        controller.close();
-      }
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-3.8-flash',
+    generationConfig: {
+      responseMimeType: 'application/json',
+      temperature: 0.4,
     }
   });
 
-  return readableStream;
+  const prompt = `Tu es un directeur commercial d'élite pour une agence de développement web et systèmes digitaux de prestige (Stepping Stones Agency).
+Génère un script d'appel téléphonique B2B percutant, ultra-personnalisé et naturel en français, avec adaptation stricte au statut web du prospect :
+
+DONNÉES DU PROSPECT :
+- Entreprise : ${req.companyName}
+- Interlocuteur : ${prenom}
+- Secteur d'activité : ${req.niche}
+- Localisation : ${locationText} (${req.country || 'Algérie'})
+- Présence web : ${hasWebsite ? `Site web existant : ${req.website} (Score technique Google : ${score}/100)` : 'AUCUN SITE WEB (Présent uniquement sur Google Maps avec des avis clients)'}
+
+CONSIGNES STRICTES :
+${hasWebsite
+  ? `Angle : Audit technique, lenteur mobile, score Lighthouse ${score}/100, perte de prospects vers les concurrents optimisés, proposition d'une maquette refondue gratuite livrable aujourd'hui.`
+  : `Angle : Félicitations pour la réputation et les avis Google Maps, alerte sur l'invisibilité digitale (les clients qui cherchent sur Google ne trouvent aucun site officiel et vont chez les concurrents), proposition d'une vitrine moderne clé en main livrée aujourd'hui.`
+}
+
+Retourne UNIQUEMENT un objet JSON valide avec cette structure exacte :
+{
+  "steps": [
+    { "id": 1, "phase": "opener", "label": "${hasWebsite ? 'Ouverture Audit' : 'Ouverture Google Maps'}", "script": "...", "tip": "...", "durationTarget": 20 },
+    { "id": 2, "phase": "audit_reveal", "label": "${hasWebsite ? 'Révélation Audit' : 'Constat d\'Invisibilité'}", "script": "...", "tip": "...", "durationTarget": 40 },
+    { "id": 3, "phase": "pitch", "label": "${hasWebsite ? 'La Solution Refonte' : 'Vitrine Clé en Main'}", "script": "...", "tip": "...", "durationTarget": 45 },
+    { "id": 4, "phase": "social_proof", "label": "Preuve Sociale", "script": "...", "tip": "...", "durationTarget": 35 },
+    { "id": 5, "phase": "transition", "label": "Transmission Maquette", "script": "...", "tip": "...", "durationTarget": 25 },
+    { "id": 6, "phase": "close", "label": "Clôture & RDV", "script": "...", "tip": "...", "durationTarget": 30 }
+  ],
+  "objections": [
+    { "trigger": "${hasWebsite ? 'prix' : 'facebook'}", "label": "${hasWebsite ? 'Trop cher' : 'Une page Facebook me suffit'}", "response": "...", "pivot": "..." },
+    { "trigger": "${hasWebsite ? 'prestataire' : 'bouche_a_oreille'}", "label": "${hasWebsite ? 'J\'ai déjà quelqu\'un' : 'Le bouche-à-oreille me suffit'}", "response": "...", "pivot": "..." },
+    { "trigger": "${hasWebsite ? 'satisfait' : 'pas_temps'}", "label": "${hasWebsite ? 'Mon site actuel me suffit' : 'Pas le temps de gérer un site'}", "response": "...", "pivot": "..." },
+    { "trigger": "prix", "label": "Tarifs & Budget", "response": "...", "pivot": "..." },
+    { "trigger": "rappeler", "label": "Rappelez-moi plus tard", "response": "...", "pivot": "..." }
+  ]
+}`;
+
+  const result = await model.generateContent(prompt);
+  const responseText = result.response.text();
+  const parsed = JSON.parse(responseText);
+
+  return parsed;
 }
 
 // ─── Route Handler ────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const parsed = ScriptRequestSchema.safeParse(body)
+    const body = await request.json();
+    const parsed = ScriptRequestSchema.safeParse(body);
 
     if (!parsed.success) {
       return new Response(JSON.stringify({ error: 'Paramètres invalides', details: parsed.error.flatten() }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
-      })
+      });
     }
 
-    const stream = await generateWithClaudeSSE(parsed.data)
+    let scriptData: any = null;
 
-    return new Response(stream, {
+    try {
+      scriptData = await generateWithGemini(parsed.data);
+    } catch (geminiError: any) {
+      console.warn('[Gemini 3.8 Flash] Fallback to deterministic script engine:', geminiError.message);
+      scriptData = buildDeterministicFallback(parsed.data);
+    }
+
+    const encoder = new TextEncoder();
+    const readableStream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(scriptData)}\n\n`));
+        controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
+        controller.close();
+      }
+    });
+
+    return new Response(readableStream, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
       },
-    })
-  } catch (error) {
+    });
+  } catch (error: any) {
     console.error('API Error:', error);
-    return new Response(JSON.stringify({ error: 'Erreur serveur — veuillez réessayer' }), {
+    return new Response(JSON.stringify({ error: 'Erreur serveur' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
-    })
+    });
   }
 }
