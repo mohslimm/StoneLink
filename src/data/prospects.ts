@@ -7,7 +7,7 @@ export const mockProspects: Prospect[] = [
     "name": "Mohamed Slimani",
     "company": "Slimani Voyages & Omra",
     "url": "",
-    "phone": "+213777105611",
+    "phone": "0669014890",
     "email": "contact@slimanivoyages.dz",
     "score": 0,
     "sector": "Agence de Voyage",
@@ -10747,7 +10747,7 @@ export const mockScriptPhases = [
 ];
 
 export const mockObjections: import('@/types').ObjectionItem[] = [
-  { id: 'o1', category: 'BUDGET', label: 'Trop cher', response: "Je comprends tout a fait. Laissez-moi vous poser une question : votre site actuel vous rapporte combien de nouveaux clients par mois ?\n\n[Laisser repondre]\n\nMaintenant, imaginez qu'un site optimise vous en apporte le double. A votre tarif moyen, combien cela represente ? Le cout du site se rentabilise en quelques semaines.", pivot: 'Question ouverte sur le ROI' },
+  { id: 'o1', category: 'BUDGET', label: 'Combien ça coûte ? / Trop cher', response: "Nous préparons une proposition chiffrée détaillée sur-mesure que je vous envoie directement en PDF sur WhatsApp juste après notre échange. Comme ça vous avez le détail exact des prestations sans mauvaise surprise.\n\nL'important aujourd'hui est d'évaluer le gain de clients concrets avec notre maquette gratuite sans aucun engagement.", pivot: 'Sur quel numéro WhatsApp puis-je vous envoyer ce devis PDF chiffré ?' },
   { id: 'o2', category: 'CONCURRENCE', label: "J'ai deja un prestataire", response: "C'est excellent que vous ayez deja quelqu'un. Combien de nouveaux clients vous apporte-t-il par mois via votre site ?\n\n[Laisser repondre]\n\nSi ce n'est pas suffisant, ce n'est peut-etre pas un probleme de prestataire, mais d'approche. Notre prototype gratuit vous permet de comparer sans risque.", pivot: 'Mettre en concurrence les resultats' },
   { id: 'o3', category: 'TEMPS', label: "Pas le temps en ce moment", response: "Je comprends, vous etes tres occupe. C'est justement pourquoi je vous propose le prototype gratuit : cela prend 5 minutes a approuver, et nous gerons tout ensuite.\n\nVous n'avez rien a faire de votre cote. On vous envoie le resultat, vous dites oui ou non. Simple.", pivot: 'Eliminer la friction' },
   { id: 'o4', category: 'SATISFACTION', label: 'Je suis satisfait de mon site actuel', response: 'C\'est rassurant d\'etre satisfait. Mais "satisfait" et "optimal" sont deux choses differentes. Votre site actuel capte combien de leads par semaine ?\n\n[Laisser repondre]\n\nAvec un score Lighthouse faible, il y a probablement 30-40% de visiteurs qui repartent sans vous contacter. C\'est de l\'argent sur la table.', pivot: 'Distinguer satisfait/optimal' },

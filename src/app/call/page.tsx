@@ -1074,16 +1074,25 @@ function ScriptReaderPanel({
   const rawPhases = script?.steps && script.steps.length > 0 ? script.steps : fallbackSteps;
   const currentStep = rawPhases[currentPhase] || rawPhases[0];
 
-  // Pick text according to language tab
+  // Pick text according to language tab & active phase
   const displayText = useMemo(() => {
-    if (languageMode === 'ar' && localizedPitches?.pitches?.ar) {
-      return localizedPitches.pitches.ar;
-    }
-    if (languageMode === 'en' && localizedPitches?.pitches?.en) {
-      return localizedPitches.pitches.en;
+    if (currentPhase === 0) {
+      if (languageMode === 'ar' && localizedPitches?.pitches?.ar) {
+        return localizedPitches.pitches.ar;
+      }
+      if (languageMode === 'en' && localizedPitches?.pitches?.en) {
+        return localizedPitches.pitches.en;
+      }
+    } else {
+      if (languageMode === 'ar') {
+        return `${currentStep?.script || ''}\n\n💡 En Darija : ركز على تقديم الماكيت المجانية واقتراح إرسال تفاصيل العرض في ملف PDF عبر واتساب مباشرة بعد المكالمة.`;
+      }
+      if (languageMode === 'en') {
+        return `${currentStep?.script || ''}\n\n💡 In English: Keep the conversation focused on sending the custom free interactive mock-up and delivering the formal PDF proposal via WhatsApp.`;
+      }
     }
     return currentStep?.script || '';
-  }, [languageMode, localizedPitches, currentStep]);
+  }, [languageMode, localizedPitches, currentStep, currentPhase]);
 
   const copySpeech = () => {
     navigator.clipboard.writeText(displayText);
@@ -1293,9 +1302,9 @@ function ObjectionPanel() {
         {
           id: 'o_prix',
           category: 'BUDGET',
-          label: 'Trop cher / Pas de budget',
-          response: `Avant même de parler de tarifs, regardez la maquette gratuitement. Si un seul client supplémentaire par mois rentabilise l'intégralité du site pour les 3 prochaines années, c'est un investissement qui vous rapporte de l'argent.`,
-          pivot: 'Jetons un coup d\'œil à la maquette gratuite d\'abord ?',
+          label: 'Combien ça coûte ? / Trop cher',
+          response: `Nous préparons une proposition chiffrée détaillée sur-mesure que je vous envoie directement en PDF sur WhatsApp juste après notre échange. Comme ça vous avez le détail exact des prestations sans mauvaise surprise. L'important aujourd'hui est d'évaluer le gain de clients concrets avec notre maquette gratuite.`,
+          pivot: 'Sur quel numéro WhatsApp puis-je vous transmettre ce devis PDF chiffré ?',
         },
         {
           id: 'o_rappel',

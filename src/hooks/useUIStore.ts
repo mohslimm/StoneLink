@@ -24,10 +24,26 @@ export const useUIStore = create<UIState>((set) => ({
 
   addToast: (toast) => {
     const id = `toast-${++toastIdCounter}`;
-    set((state) => ({ toasts: [...state.toasts, { ...toast, id }] }));
+    set((state) => {
+      // Prevent exact duplicate toast messages
+      if (state.toasts.some((t) => t.message === toast.message)) {
+        return state;
+      }
+
+      // If this is a Copilot suggestion toast, replace any existing Copilot suggestion
+      let filtered = state.toasts;
+      if (toast.message.startsWith('Suggestion Copilote')) {
+        filtered = filtered.filter((t) => !t.message.startsWith('Suggestion Copilote'));
+      }
+
+      // Keep maximum 3 toasts visible at a time
+      const updated = [...filtered, { ...toast, id }].slice(-3);
+      return { toasts: updated };
+    });
+
     setTimeout(() => {
       set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
-    }, 4000);
+    }, 4500);
   },
 
   removeToast: (id) =>
