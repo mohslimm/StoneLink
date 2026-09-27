@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { callGeminiResilient } from '@/lib/gemini';
 
 export const runtime = 'nodejs';
 
@@ -101,10 +102,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(buildFallbackResponse());
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3.8-flash" });
-
-    const systemPrompt = `Tu es un Ingénieur d'Affaires et Architecte Logiciel Senior chez "Stepping Stones Agency" (fondée par Hammaz Abdelhadi).
+    const systemPrompt = `Tu es un Ingénieur d'Affaires et Architecte Logiciel Senior chez "Stepping Stones Agency" (fondée par Mohamed Slimani & Abdelhadi Hammaz).
 Ta mission est de rédiger les éléments juridiques et techniques sur-mesure pour un contrat de prestation de développement web et logiciel B2B.
 
 Profil du Client :
@@ -156,8 +154,11 @@ Réponds STRICTEMENT avec un objet JSON valide (aucun bloc markdown, aucun texte
   "closingPitch": "string (Message d'accompagnement direct et percutant de 2-3 phrases prêt à envoyer sur WhatsApp ou par email au client avec le contrat)"
 }`;
 
-    const result = await model.generateContent(systemPrompt);
-    const rawText = result.response.text().trim();
+    const geminiRes = await callGeminiResilient({
+      prompt: systemPrompt,
+      preferredModel: 'gemini-3.8-flash',
+    });
+    const rawText = geminiRes.text.trim();
 
     // Clean JSON response (handling potential markdown code fence)
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
@@ -169,7 +170,8 @@ Réponds STRICTEMENT avec un objet JSON valide (aucun bloc markdown, aucun texte
     const parsedData = JSON.parse(jsonMatch[0]);
     return NextResponse.json({
       success: true,
-      source: 'gemini-3.8-flash',
+      source: geminiRes.modelUsed,
+      fallbackUsed: geminiRes.fallbackUsed,
       ...parsedData
     });
 

@@ -14,6 +14,7 @@ import { ToggleSwitch } from '@/components/ui/custom/ToggleSwitch';
 import { useUIStore } from '@/hooks/useUIStore';
 import { useSettingsStore } from '@/hooks/useSettingsStore';
 import { cn } from '@/lib/utils';
+import { SUPPORTED_GEMINI_MODELS } from '@/lib/gemini';
 
 const settingsNav = [
   { id: 'fondateurs', label: 'Fondateurs', icon: Users },
@@ -334,24 +335,35 @@ function CallsPanel() {
   );
 }
 
-/* ─── 3. AI Engine Panel (Gemini 3.8 Flash) ─── */
+/* ─── 3. AI Engine Panel (Gemini Resilient Multi-Tier) ─── */
 function AIEnginePanel() {
   const { addToast } = useUIStore();
   const { geminiModel, setGeminiModel, customSalesPrompt, setCustomSalesPrompt } = useSettingsStore();
   const [testingAi, setTestingAi] = useState(false);
   const [testResult, setTestResult] = useState<any>(null);
 
-  const handleTestGemini = async () => {
+  const selectedModelInfo = SUPPORTED_GEMINI_MODELS.find(m => m.id === geminiModel) || SUPPORTED_GEMINI_MODELS[0];
+
+  const handleTestGemini = async (modelToTest?: string) => {
+    const target = modelToTest || geminiModel || 'gemini-3.8-flash';
     setTestingAi(true);
     setTestResult(null);
     try {
-      const res = await fetch('/api/settings/gemini-test');
+      const res = await fetch(`/api/settings/gemini-test?model=${target}`);
       const data = await res.json();
       setTestResult(data);
       if (data.success) {
-        addToast({ type: 'success', message: `Gemini opérationnel (Latence : ${data.latencyMs}ms)` });
+        if (data.fallbackUsed) {
+          addToast({ type: 'info', message: `Pic 503 absorbé : repli automatique vers ${data.model} (${data.latencyMs}ms)` });
+        } else {
+          addToast({ type: 'success', message: `${data.model} opérationnel (${data.latencyMs}ms)` });
+        }
       } else {
-        addToast({ type: 'error', message: data.error || 'Erreur lors du test Gemini' });
+        if (data.isDemandSpike) {
+          addToast({ type: 'info', message: "Serveurs Google en pic d'affluence (503). Repli prêt." });
+        } else {
+          addToast({ type: 'error', message: data.error || 'Erreur lors du test Gemini' });
+        }
       }
     } catch {
       addToast({ type: 'error', message: 'Impossible de contacter l\'API Gemini' });
@@ -368,20 +380,23 @@ function AIEnginePanel() {
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2 h-2 rounded-full bg-[#4ade80] animate-pulse" />
             <span className="text-[11px] font-body font-semibold uppercase tracking-[0.1em] text-[#4ade80]">
-              Moteur Actif & Connecté
+              Moteur Actif & Protégé
+            </span>
+            <span className="text-[10px] font-body px-2 py-0.5 rounded-full bg-[rgba(197,160,89,0.15)] border border-[rgba(197,160,89,0.3)] text-[#c5a059]">
+              {selectedModelInfo.badge}
             </span>
           </div>
           <h3 className="font-display font-medium text-[20px] text-[#e8e4dc]">
-            Google Gemini 3.8 Flash
+            {selectedModelInfo.name}
           </h3>
           <p className="text-[12.5px] font-body text-[rgba(232,228,220,0.55)] mt-0.5">
-            Alimente le studio d&apos;appel (/call) et le générateur de contrats (/contracts) via Google AI Studio.
+            {selectedModelInfo.description}
           </p>
         </div>
 
         <button
           type="button"
-          onClick={handleTestGemini}
+          onClick={() => handleTestGemini()}
           disabled={testingAi}
           className="h-10 px-4 rounded-[10px] bg-[rgba(197,160,89,0.15)] hover:bg-[rgba(197,160,89,0.25)] border border-[rgba(197,160,89,0.35)] text-[#c5a059] text-[12.5px] font-body font-medium flex items-center gap-2 transition-colors cursor-pointer flex-shrink-0 disabled:opacity-50"
         >
@@ -390,18 +405,142 @@ function AIEnginePanel() {
         </button>
       </div>
 
+      {/* Live Test Diagnostic Feedback */}
       {testResult && (
-        <div className={`p-4 rounded-[12px] border text-[12.5px] font-body flex items-center justify-between ${
-          testResult.success 
-            ? 'bg-[rgba(74,222,128,0.08)] border-[rgba(74,222,128,0.25)] text-[#4ade80]'
-            : 'bg-[rgba(239,68,68,0.08)] border-[rgba(239,68,68,0.25)] text-[#f87171]'
-        }`}>
-          <div>
-            <strong>{testResult.success ? '⚡ Connexion Réussie' : '⚠️ Erreur'} :</strong> {testResult.response || testResult.error}
-          </div>
-          <span className="font-mono text-[11px]">{testResult.latencyMs} ms</span>
+        <div>
+          {testResult.success ? (
+            <div className={`p-4 rounded-[12px] border text-[12.5px] font-body flex items-center justify-between gap-3 ${
+              testResult.fallbackUsed
+                ? 'bg-[rgba(245,158,11,0.08)] border-[rgba(245,158,11,0.3)] text-[#fbbf24]'
+                : 'bg-[rgba(74,222,128,0.08)] border-[rgba(74,222,128,0.25)] text-[#4ade80]'
+            }`}>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2 font-medium">
+                  {testResult.fallbackUsed ? <ShieldCheck size={15} /> : <CheckCircle size={15} />}
+                  <span>
+                    {testResult.fallbackUsed
+                      ? `⚡ Repli Automatique Activé (${testResult.model}) : ${testResult.response}`
+                      : `⚡ Connexion Directe Réussie (${testResult.model}) : ${testResult.response}`}
+                  </span>
+                </div>
+                {testResult.note && (
+                  <p className="text-[11.5px] opacity-80 pl-6">
+                    {testResult.note}
+                  </p>
+                )}
+              </div>
+              <span className="font-mono text-[11px] whitespace-nowrap px-2 py-0.5 rounded bg-[rgba(255,255,255,0.05)]">
+                {testResult.latencyMs} ms
+              </span>
+            </div>
+          ) : (
+            <div className={`p-4 rounded-[12px] border text-[12.5px] font-body ${
+              testResult.isDemandSpike
+                ? 'bg-[rgba(245,158,11,0.1)] border-[rgba(245,158,11,0.3)] text-[#fbbf24]'
+                : 'bg-[rgba(239,68,68,0.08)] border-[rgba(239,68,68,0.25)] text-[#f87171]'
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 font-medium">
+                    <AlertCircle size={15} className="flex-shrink-0" />
+                    <span>
+                      {testResult.isDemandSpike
+                        ? "Serveurs Google en pic d'affluence temporaire (503 Service Unavailable)"
+                        : "Erreur de connexion API"}
+                    </span>
+                  </div>
+                  <p className="text-[11.5px] opacity-85 leading-relaxed">
+                    {testResult.error}
+                  </p>
+                  {testResult.isDemandSpike && (
+                    <p className="text-[11px] text-[rgba(232,228,220,0.6)] pt-1">
+                      💡 <strong>Note pour les fondateurs :</strong> Les nouveaux modèles d&apos;IA Google subissent de courts pics de trafic mondiaux de quelques secondes. StoneLink intègre une cascade de repli automatique vers <strong>Gemini 3.7 Flash</strong> pour garantir 0 interruption dans vos appels et contrats.
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleTestGemini()}
+                  className="px-3 py-1.5 rounded-[8px] bg-[rgba(245,158,11,0.2)] hover:bg-[rgba(245,158,11,0.3)] text-[#fbbf24] text-[11px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer flex-shrink-0"
+                >
+                  <RefreshCw size={11} />
+                  <span>Réessayer</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
+
+      {/* Model Selection Selector */}
+      <div className="space-y-3">
+        <label className="text-[11.5px] font-body uppercase tracking-[0.08em] text-[rgba(232,228,220,0.65)] block">
+          Sélection du Modèle Principal Google Gemini
+        </label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {SUPPORTED_GEMINI_MODELS.map((model) => {
+            const isCur = (geminiModel || 'gemini-3.8-flash') === model.id;
+            return (
+              <button
+                key={model.id}
+                type="button"
+                onClick={() => {
+                  setGeminiModel(model.id);
+                  addToast({ type: 'success', message: `Modèle principal basculé sur ${model.name}` });
+                }}
+                className={`p-3.5 rounded-[12px] text-left transition-all cursor-pointer border ${
+                  isCur
+                    ? 'bg-[rgba(197,160,89,0.12)] border-[#c5a059] shadow-[0_0_20px_rgba(197,160,89,0.15)]'
+                    : 'bg-[#0a0a14] border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.15)]'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[13px] font-body font-semibold text-[#e8e4dc]">
+                    {model.name}
+                  </span>
+                  <span className={`text-[10px] font-body px-2 py-0.5 rounded-full ${
+                    isCur
+                      ? 'bg-[#c5a059] text-[#0a0a12] font-semibold'
+                      : 'bg-[rgba(255,255,255,0.06)] text-[rgba(232,228,220,0.6)]'
+                  }`}>
+                    {model.badge}
+                  </span>
+                </div>
+                <p className="text-[11.5px] font-body text-[rgba(232,228,220,0.5)] line-clamp-2">
+                  {model.description}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Resilience & Auto-Fallback Architecture Card */}
+      <div className="p-4 rounded-[12px] bg-[#0c0c18] border border-[rgba(255,255,255,0.06)] space-y-2.5">
+        <div className="font-medium text-[#c5a059] text-[13px] flex items-center gap-1.5">
+          <ShieldCheck size={15} /> Cascade de Résilience & Haute Disponibilité (Redondance Zéro Coupure)
+        </div>
+        <p className="text-[12px] font-body text-[rgba(232,228,220,0.6)] leading-relaxed">
+          Si Google subit un pic temporaire de charge (503 Service Unavailable) ou un dépassement de quota sur le modèle principal, vos requêtes ne tombent jamais en panne :
+        </p>
+        <div className="flex items-center gap-2 text-[11px] font-mono flex-wrap pt-1">
+          <span className="px-2.5 py-1 rounded-[6px] bg-[rgba(197,160,89,0.15)] text-[#c5a059] border border-[rgba(197,160,89,0.3)]">
+            1. {geminiModel || 'Gemini 3.8 Flash'}
+          </span>
+          <ArrowRight size={12} className="text-[rgba(232,228,220,0.4)]" />
+          <span className="px-2.5 py-1 rounded-[6px] bg-[rgba(96,165,250,0.12)] text-[#60a5fa] border border-[rgba(96,165,250,0.25)]">
+            2. Gemini 3.7 Flash (Repli)
+          </span>
+          <ArrowRight size={12} className="text-[rgba(232,228,220,0.4)]" />
+          <span className="px-2.5 py-1 rounded-[6px] bg-[rgba(168,85,247,0.12)] text-[#c084fc] border border-[rgba(168,85,247,0.25)]">
+            3. Gemini 3.6 Flash
+          </span>
+          <ArrowRight size={12} className="text-[rgba(232,228,220,0.4)]" />
+          <span className="px-2.5 py-1 rounded-[6px] bg-[rgba(255,255,255,0.06)] text-[rgba(232,228,220,0.7)] border border-[rgba(255,255,255,0.1)]">
+            4. Moteur Déterministe
+          </span>
+        </div>
+      </div>
 
       {/* Dual-Track Engine Reminder */}
       <div className="p-4 rounded-[12px] bg-[#0a0a14] border border-[rgba(255,255,255,0.06)] space-y-2">

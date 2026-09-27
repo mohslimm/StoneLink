@@ -7,6 +7,7 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { callGeminiResilient } from '@/lib/gemini';
 import type { CallScript, ScriptStep, ObjectionHandler, CloseScript } from '@/types/pipeline';
 
 // ─── Validation Schema ────────────────────────────────────────────
@@ -230,16 +231,7 @@ async function generateWithGemini(req: ScriptRequest) {
   const score = req.lighthouseScore ?? 42;
   const locationText = req.city.trim() ? `à ${req.city.trim()}` : "dans votre région";
 
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-3.8-flash',
-    generationConfig: {
-      responseMimeType: 'application/json',
-      temperature: 0.4,
-    }
-  });
-
-  const prompt = `Tu es un directeur commercial d'élite pour une agence de développement web et systèmes digitaux de prestige (Stepping Stones Agency).
+  const prompt = `Tu es un directeur commercial d'élite pour une agence de développement web et systèmes digitaux de prestige (Stepping Stones Agency, co-fondée par Mohamed Slimani & Abdelhadi Hammaz).
 Génère un script d'appel téléphonique B2B percutant, ultra-personnalisé et naturel en français, avec adaptation stricte au statut web du prospect :
 
 DONNÉES DU PROSPECT :
@@ -274,10 +266,16 @@ Retourne UNIQUEMENT un objet JSON valide avec cette structure exacte :
   ]
 }`;
 
-  const result = await model.generateContent(prompt);
-  const responseText = result.response.text();
-  const parsed = JSON.parse(responseText);
+  const geminiRes = await callGeminiResilient({
+    prompt,
+    preferredModel: 'gemini-3.8-flash',
+    generationConfig: {
+      responseMimeType: 'application/json',
+      temperature: 0.4,
+    }
+  });
 
+  const parsed = JSON.parse(geminiRes.text);
   return parsed;
 }
 
