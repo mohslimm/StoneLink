@@ -13,6 +13,7 @@ import { CallTimer } from '@/components/ui/custom/CallTimer';
 import { AnimatedButton } from '@/components/ui/custom/AnimatedButton';
 import { useCallStore } from '@/hooks/useCallStore';
 import { useUIStore } from '@/hooks/useUIStore';
+import { useSettingsStore } from '@/hooks/useSettingsStore';
 import { mockProspects, mockObjections } from '@/data/prospects';
 import { generatePitches } from '@/services/pitch/PitchGenerator';
 
@@ -283,7 +284,10 @@ function PreCallState({ onStartCall }: { onStartCall: (p: typeof mockProspects[0
     }
   }, []);
 
-  const handleDial = () => {
+  const { callingMethod, formatPhoneNumber } = useSettingsStore();
+  const phoneFormatted = formatPhoneNumber(selectedProspect.phone);
+
+  const handleDial = (mode?: 'phonelink' | 'whatsapp') => {
     for (let i = 0; i < 3; i++) {
       setTimeout(() => {
         setRipples((prev) => [...prev, { id: ++rippleId.current }]);
@@ -292,6 +296,18 @@ function PreCallState({ onStartCall }: { onStartCall: (p: typeof mockProspects[0
         }, 800);
       }, i * 150);
     }
+
+    if (mode === 'whatsapp') {
+      if (phoneFormatted.waUrl) {
+        window.open(phoneFormatted.waUrl, '_blank');
+      }
+    } else {
+      // Default: trigger native tel: protocol to launch Windows Phone Link (SIM)
+      if (phoneFormatted.telUrl) {
+        window.location.href = phoneFormatted.telUrl;
+      }
+    }
+
     setTimeout(() => onStartCall(selectedProspect), 600);
   };
 
@@ -481,29 +497,61 @@ function PreCallState({ onStartCall }: { onStartCall: (p: typeof mockProspects[0
           </GlassPanel>
         </motion.div>
 
-        {/* Dial Button */}
-        <div className="flex flex-col items-center mt-8">
-          <div className="relative">
-            {ripples.map((r) => (
-              <motion.div
-                key={r.id}
-                className="absolute inset-0 rounded-full border border-[#4ade80]"
-                initial={{ scale: 0.8, opacity: 0.7 }}
-                animate={{ scale: 2.2, opacity: 0 }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
-              />
-            ))}
-            <motion.button
-              onClick={handleDial}
-              className="relative w-[76px] h-[76px] rounded-full bg-gradient-to-tr from-[#22c55e] to-[#4ade80] flex items-center justify-center cursor-pointer shadow-[0_0_25px_rgba(74,222,128,0.35)]"
-              whileHover={{ scale: 1.06 }}
-              whileTap={{ scale: 0.94 }}
-            >
-              <Phone size={30} className="text-[#060610]" />
-            </motion.button>
+        {/* Dual Direct Action Triggers (Phone Link PC & WhatsApp Direct) */}
+        <div className="flex flex-col items-center mt-7 space-y-4">
+          <div className="flex items-center gap-6">
+            {/* Phone Link PC Call Button */}
+            {(callingMethod === 'hybrid' || callingMethod === 'phonelink') && (
+              <div className="flex flex-col items-center">
+                <div className="relative">
+                  {ripples.map((r) => (
+                    <motion.div
+                      key={r.id}
+                      className="absolute inset-0 rounded-full border border-[#4ade80]"
+                      initial={{ scale: 0.8, opacity: 0.7 }}
+                      animate={{ scale: 2.2, opacity: 0 }}
+                      transition={{ duration: 0.8, ease: 'easeOut' }}
+                    />
+                  ))}
+                  <motion.button
+                    type="button"
+                    onClick={() => handleDial('phonelink')}
+                    className="relative w-[72px] h-[72px] rounded-full bg-gradient-to-tr from-[#22c55e] to-[#4ade80] flex items-center justify-center cursor-pointer shadow-[0_0_30px_rgba(74,222,128,0.35)]"
+                    whileHover={{ scale: 1.06 }}
+                    whileTap={{ scale: 0.94 }}
+                    title="Lancer l'appel PC via Phone Link (SIM)"
+                  >
+                    <Phone size={28} className="text-[#060610]" />
+                  </motion.button>
+                </div>
+                <span className="text-[11px] font-body font-semibold uppercase tracking-[0.1em] text-[#4ade80] mt-2.5">
+                  Appeler PC (Phone Link)
+                </span>
+              </div>
+            )}
+
+            {/* WhatsApp Direct Button */}
+            {(callingMethod === 'hybrid' || callingMethod === 'whatsapp') && (
+              <div className="flex flex-col items-center">
+                <motion.button
+                  type="button"
+                  onClick={() => handleDial('whatsapp')}
+                  className="w-[72px] h-[72px] rounded-full bg-gradient-to-tr from-[#2563eb] to-[#60a5fa] flex items-center justify-center cursor-pointer shadow-[0_0_30px_rgba(96,165,250,0.3)]"
+                  whileHover={{ scale: 1.06 }}
+                  whileTap={{ scale: 0.94 }}
+                  title="Ouvrir WhatsApp Web / Desktop"
+                >
+                  <MessageSquare size={28} className="text-[#060610]" />
+                </motion.button>
+                <span className="text-[11px] font-body font-semibold uppercase tracking-[0.1em] text-[#60a5fa] mt-2.5">
+                  WhatsApp Direct
+                </span>
+              </div>
+            )}
           </div>
-          <p className="text-[12px] font-body font-semibold uppercase tracking-[0.12em] text-[#e8e4dc] mt-4">
-            Démarrer la session d&apos;appel
+
+          <p className="text-[12px] font-body text-[rgba(232,228,220,0.5)] text-center font-mono">
+            {phoneFormatted.telUrl ? `Cible : ${phoneFormatted.displayPhone}` : 'Numéro non renseigné'}
           </p>
         </div>
       </motion.div>
@@ -514,13 +562,15 @@ function PreCallState({ onStartCall }: { onStartCall: (p: typeof mockProspects[0
 /* ─── Executive Unified Call Header ─── */
 function UnifiedCallHeader({ onEndCall }: { onEndCall: () => void }) {
   const { prospect, elapsedSeconds, isMuted, toggleMute, isHeld, toggleHold } = useCallStore();
+  const { formatPhoneNumber } = useSettingsStore();
   const [copiedPhone, setCopiedPhone] = useState(false);
 
   const hasSite = hasValidWebsite(prospect?.url);
+  const phoneFormatted = prospect?.phone ? formatPhoneNumber(prospect.phone) : null;
 
   const copyPhoneNumber = () => {
     if (prospect?.phone && prospect.phone !== 'Non renseigné') {
-      navigator.clipboard.writeText(prospect.phone);
+      navigator.clipboard.writeText(phoneFormatted?.displayPhone || prospect.phone);
       setCopiedPhone(true);
       setTimeout(() => setCopiedPhone(false), 2000);
     }
@@ -547,17 +597,44 @@ function UnifiedCallHeader({ onEndCall }: { onEndCall: () => void }) {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-3 text-[12px] font-body text-[rgba(232,228,220,0.5)] mt-0.5">
+          <div className="flex items-center gap-3 text-[12px] font-body text-[rgba(232,228,220,0.5)] mt-0.5 flex-wrap">
             {prospect?.phone && (
-              <button
-                onClick={copyPhoneNumber}
-                className="inline-flex items-center gap-1 text-[#c5a059] hover:underline cursor-pointer"
-                title="Copier le numéro"
-              >
-                <Phone size={11} />
-                <span>{prospect.phone}</span>
-                {copiedPhone ? <Check size={11} className="text-[#4ade80]" /> : <Copy size={11} />}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={copyPhoneNumber}
+                  className="inline-flex items-center gap-1 text-[#c5a059] hover:underline cursor-pointer"
+                  title="Copier le numéro"
+                >
+                  <Phone size={11} />
+                  <span>{phoneFormatted?.displayPhone || prospect.phone}</span>
+                  {copiedPhone ? <Check size={11} className="text-[#4ade80]" /> : <Copy size={11} />}
+                </button>
+
+                {phoneFormatted && phoneFormatted.telUrl && (
+                  <div className="flex items-center gap-1.5 ml-1">
+                    <a
+                      href={phoneFormatted.telUrl}
+                      className="px-2 py-0.5 rounded-[6px] bg-[rgba(197,160,89,0.12)] border border-[rgba(197,160,89,0.3)] text-[11px] font-medium text-[#c5a059] hover:bg-[rgba(197,160,89,0.22)] transition-all flex items-center gap-1"
+                      title="Composer via Windows Phone Link (SIM mobile)"
+                    >
+                      <Phone size={10} />
+                      <span className="hidden lg:inline">Phone Link</span>
+                    </a>
+                    {phoneFormatted.waUrl && (
+                      <a
+                        href={phoneFormatted.waUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-2 py-0.5 rounded-[6px] bg-[rgba(37,211,102,0.12)] border border-[rgba(37,211,102,0.3)] text-[11px] font-medium text-[#25d366] hover:bg-[rgba(37,211,102,0.22)] transition-all flex items-center gap-1"
+                        title="Ouvrir WhatsApp Direct"
+                      >
+                        <MessageSquare size={10} />
+                        <span className="hidden lg:inline">WhatsApp</span>
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
             {hasSite && (
               <a
