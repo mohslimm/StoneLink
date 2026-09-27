@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Radio, Eye, Layers } from 'lucide-react';
 import { useUIStore } from '@/hooks/useUIStore';
+import { useCrawlerStore } from '@/hooks/useCrawlerStore';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -20,6 +21,7 @@ const navItems = [
 export function TopNavigation() {
   const pathname = usePathname();
   const { isMobileNavOpen, setMobileNavOpen } = useUIStore();
+  const { isRunning, currentCount, targetCount, latestResults, setIsMonitorOpen } = useCrawlerStore();
 
   return (
     <>
@@ -61,6 +63,34 @@ export function TopNavigation() {
 
         {/* Right cluster */}
         <div className="flex items-center gap-3">
+          {isRunning ? (
+            <button
+              onClick={() => setIsMonitorOpen(true)}
+              className="flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(197,160,89,0.15)] border border-[rgba(197,160,89,0.4)] hover:bg-[rgba(197,160,89,0.25)] text-[#e8e4dc] transition-all cursor-pointer shadow-[0_0_15px_rgba(197,160,89,0.2)] animate-pulse"
+              title="Suivre et contrôler le bot en direct"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4ade80] opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#4ade80]" />
+              </span>
+              <span className="text-[11px] font-body font-medium">
+                Bot : <strong className="text-[#c5a059]">{currentCount}{targetCount > 0 ? `/${targetCount}` : ''}</strong>
+              </span>
+              <span className="hidden sm:inline-block text-[9.5px] uppercase font-mono px-1.5 py-0.5 rounded bg-[rgba(197,160,89,0.2)] text-[#c5a059]">
+                Suivre &bull; Stop
+              </span>
+            </button>
+          ) : latestResults && latestResults.leads && latestResults.leads.length > 0 ? (
+            <button
+              onClick={() => setIsMonitorOpen(true)}
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.08)] text-[rgba(232,228,220,0.7)] hover:text-[#e8e4dc] transition-all cursor-pointer text-[11px] font-body"
+              title="Voir le résultat du dernier scan"
+            >
+              <Layers size={12} className="text-[#c5a059]" />
+              <span>Dernier Scan ({latestResults.leads.length})</span>
+            </button>
+          ) : null}
+
           <div className="hidden sm:flex items-center gap-2">
             <span className="relative flex h-2 w-2">
               <span className="animate-pulse-glow absolute inline-flex h-full w-full rounded-full bg-[#4ade80] opacity-75" />

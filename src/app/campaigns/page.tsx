@@ -9,13 +9,16 @@ import {
   Trash2, Play, Search, ShieldCheck, ChevronRight, BarChart2,
   Users, AlertCircle, CheckCircle2, Clock, Globe, Phone, 
   Copy, Check, ExternalLink, ArrowUpDown, X, Layers, Filter,
-  Star, RefreshCw, ChevronDown
+  Star, RefreshCw, ChevronDown, Eye, EyeOff, FlaskConical, Globe2, Plus
 } from 'lucide-react';
 import { GlassPanel } from '@/components/ui/custom/GlassPanel';
 import { AnimatedButton } from '@/components/ui/custom/AnimatedButton';
 import { StatCard } from '@/components/ui/custom/StatCard';
+import { ToggleSwitch } from '@/components/ui/custom/ToggleSwitch';
 import { useUIStore } from '@/hooks/useUIStore';
+import { useCrawlerStore } from '@/hooks/useCrawlerStore';
 import { mockProspects } from '@/data/prospects';
+import { cn } from '@/lib/utils';
 
 interface CampaignSummary {
   id: string;
@@ -53,6 +56,14 @@ function extractArea(p: any): string {
 export default function CampaignsPage() {
   const router = useRouter();
   const { addToast } = useUIStore();
+  const {
+    isRunning,
+    currentCount,
+    targetCount,
+    latestResults,
+    setIsMonitorOpen,
+    startCrawler,
+  } = useCrawlerStore();
   const [prospects, setProspects] = useState<any[]>(mockProspects);
   const [search, setSearch] = useState('');
   const [nicheFilter, setNicheFilter] = useState('all');
@@ -63,12 +74,53 @@ export default function CampaignsPage() {
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignSummary | null>(null);
   const [isBotModalOpen, setIsBotModalOpen] = useState(false);
 
-  // Scraper Modal State
-  const [botQuery, setBotQuery] = useState('Dentiste');
-  const [botArea, setBotArea] = useState('Alger');
-  const [botCount, setBotCount] = useState(20);
-  const [isScraping, setIsScraping] = useState(false);
-  const [scrapeLog, setScrapeLog] = useState<string[]>([]);
+  // Scraper Modal State (Bot-Se Sovereign Multi-Search Engine)
+  const [botQueries, setBotQueries] = useState<string[]>(['Dentiste']);
+  const [botQueryInput, setBotQueryInput] = useState('');
+  const [botAreas, setBotAreas] = useState<string[]>(['Alger']);
+  const [botAreaInput, setBotAreaInput] = useState('');
+  const [botCount, setBotCount] = useState(25);
+  const [botOnlyNoWebsite, setBotOnlyNoWebsite] = useState(true);
+  const [botTestMode, setBotTestMode] = useState(false);
+  const [botOpenBrowser, setBotOpenBrowser] = useState(false);
+
+  const handleAddQueryTag = (q: string) => {
+    const clean = q.trim();
+    if (!clean) return;
+    if (!botQueries.some(x => x.toLowerCase() === clean.toLowerCase())) {
+      setBotQueries(prev => [...prev, clean]);
+    }
+    setBotQueryInput('');
+  };
+
+  const handleToggleQueryTag = (q: string) => {
+    if (botQueries.some(x => x.toLowerCase() === q.toLowerCase())) {
+      if (botQueries.length > 1) {
+        setBotQueries(prev => prev.filter(x => x.toLowerCase() !== q.toLowerCase()));
+      }
+    } else {
+      setBotQueries(prev => [...prev, q]);
+    }
+  };
+
+  const handleAddAreaTag = (a: string) => {
+    const clean = a.trim();
+    if (!clean) return;
+    if (!botAreas.some(x => x.toLowerCase() === clean.toLowerCase())) {
+      setBotAreas(prev => [...prev, clean]);
+    }
+    setBotAreaInput('');
+  };
+
+  const handleToggleAreaTag = (a: string) => {
+    if (botAreas.some(x => x.toLowerCase() === a.toLowerCase())) {
+      if (botAreas.length > 1) {
+        setBotAreas(prev => prev.filter(x => x.toLowerCase() !== a.toLowerCase()));
+      }
+    } else {
+      setBotAreas(prev => [...prev, a]);
+    }
+  };
 
   // Modal Campaign Detail Search & Filter
   const [modalSearch, setModalSearch] = useState('');
@@ -248,41 +300,35 @@ export default function CampaignsPage() {
   };
 
   const handleStartScrape = async () => {
-    setIsScraping(true);
-    setScrapeLog(['[Initialisation] Lancement du moteur Playwright Stealth...', `[Cible] ${botQuery} à ${botArea} (${botCount} prospects attendus)`]);
+    if (botQueries.length === 0) {
+      addToast({ type: 'info', message: 'Veuillez sélectionner au moins une niche.' });
+      return;
+    }
+    if (botAreas.length === 0) {
+      addToast({ type: 'info', message: 'Veuillez sélectionner au moins une wilaya/ville.' });
+      return;
+    }
 
-    try {
-      const res = await fetch('/api/crawler/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: botQuery, area: botArea, count: botCount })
-      });
+    const queryStr = botQueries.join(', ');
+    const areaStr = botAreas.join(', ');
+    const countPerZone = botTestMode ? 3 : botCount;
+    const totalCombos = botQueries.length * botAreas.length;
 
-      if (res.ok) {
-        setScrapeLog(prev => [...prev, '⚡ Scan en cours d\'exécution en arrière-plan.', '✅ Les leads seront injectés automatiquement en base.']);
-        addToast({ type: 'success', message: 'Scan lancé avec succès en tâche de fond.' });
-      } else {
-        setTimeout(() => {
-          setScrapeLog(prev => [
-            ...prev,
-            '🔍 Navigation furtive Google Maps...',
-            '🌐 Détection des faiblesses techniques (SSL, Vitesse, Balises)...',
-            '⚡ 20 nouveaux prospects enrichis et synchronisés dans le CRM !'
-          ]);
-          setIsScraping(false);
-          addToast({ type: 'success', message: 'Simulation de scan terminée avec succès.' });
-        }, 3000);
-      }
-    } catch {
-      setTimeout(() => {
-        setScrapeLog(prev => [
-          ...prev,
-          '🔍 Navigation furtive Google Maps...',
-          '🌐 Détection des faiblesses techniques (SSL, Vitesse, Balises)...',
-          '⚡ Nouveaux prospects enrichis et synchronisés dans le CRM !'
-        ]);
-        setIsScraping(false);
-      }, 2500);
+    setIsBotModalOpen(false); // Close setup modal, monitor modal opens automatically!
+
+    const res = await startCrawler({
+      query: queryStr,
+      area: areaStr,
+      count: countPerZone,
+      onlyNoWebsite: botOnlyNoWebsite,
+      testMode: botTestMode,
+      openBrowser: botOpenBrowser,
+    });
+
+    if (res.success) {
+      addToast({ type: 'success', message: `Scan Bot-Se démarré pour ${totalCombos} combinaisons !` });
+    } else {
+      addToast({ type: 'error', message: res.error || 'Erreur lors du lancement' });
     }
   };
 
@@ -307,7 +353,35 @@ export default function CampaignsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {isRunning ? (
+            <button
+              onClick={() => setIsMonitorOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[rgba(197,160,89,0.15)] border border-[rgba(197,160,89,0.4)] hover:bg-[rgba(197,160,89,0.25)] text-[#e8e4dc] transition-all cursor-pointer shadow-[0_0_15px_rgba(197,160,89,0.2)] animate-pulse"
+              title="Suivre et contrôler le bot en direct"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4ade80] opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#4ade80]" />
+              </span>
+              <span className="text-[12px] font-body font-medium">
+                Bot en Cours : <strong className="text-[#c5a059]">{currentCount}{targetCount > 0 ? `/${targetCount}` : ''}</strong>
+              </span>
+              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-[rgba(197,160,89,0.2)] text-[#c5a059]">
+                Suivre &bull; Stop
+              </span>
+            </button>
+          ) : latestResults && latestResults.leads && latestResults.leads.length > 0 ? (
+            <button
+              onClick={() => setIsMonitorOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#10101c] border border-[rgba(255,255,255,0.08)] hover:border-[rgba(197,160,89,0.3)] text-[rgba(232,228,220,0.8)] hover:text-[#e8e4dc] transition-all cursor-pointer text-[12px] font-body"
+              title="Voir le résultat du dernier scan"
+            >
+              <Layers size={14} className="text-[#c5a059]" />
+              <span>Dernier Scan ({latestResults.leads.length})</span>
+            </button>
+          ) : null}
+
           <AnimatedButton icon={<Play size={15} />} onClick={() => setIsBotModalOpen(true)}>
             Nouveau Scan Bot
           </AnimatedButton>
@@ -807,7 +881,7 @@ export default function CampaignsPage() {
         )}
       </AnimatePresence>
 
-      {/* Modal: New Bot Scrape Run */}
+      {/* Modal: New Bot Scrape Run (Bot-Se Sovereign Engine) */}
       <AnimatePresence>
         {isBotModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -815,109 +889,388 @@ export default function CampaignsPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-[rgba(5,5,9,0.8)] backdrop-blur-[8px]"
-              onClick={() => !isScraping && setIsBotModalOpen(false)}
+              className="absolute inset-0 bg-[rgba(5,5,10,0.85)] backdrop-blur-[12px]"
+              onClick={() => !isRunning && setIsBotModalOpen(false)}
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative w-full max-w-[540px] bg-[#0c0c16] border border-[rgba(197,160,89,0.25)] rounded-[16px] p-6 shadow-2xl z-10"
+              exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              className="relative w-full max-w-[620px] max-h-[90vh] overflow-y-auto bg-[rgba(12,12,22,0.98)] border border-[rgba(197,160,89,0.3)] rounded-[20px] p-6 sm:p-7 shadow-[0_24px_80px_rgba(0,0,0,0.9)] z-10 custom-scrollbar"
             >
-              <div className="flex items-center justify-between mb-4 border-b border-[rgba(255,255,255,0.06)] pb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-[rgba(197,160,89,0.15)] flex items-center justify-center text-[#c5a059]">
-                    <Sparkles size={16} />
+              {/* Header */}
+              <div className="flex items-start justify-between mb-5 border-b border-[rgba(255,255,255,0.06)] pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-[12px] bg-[rgba(197,160,89,0.15)] border border-[rgba(197,160,89,0.3)] flex items-center justify-center text-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.15)]">
+                    <Sparkles size={18} />
                   </div>
                   <div>
-                    <h3 className="font-display font-medium text-[20px] text-[#e8e4dc]">
-                      Lancer un Scan Furtif
-                    </h3>
-                    <p className="text-[12px] font-body text-[rgba(232,228,220,0.5)]">
-                      Moteur Playwright + Contournement Anti-Bot
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-display font-medium text-[20px] text-[#e8e4dc]">
+                        Lancer un Scan Furtif
+                      </h3>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[rgba(197,160,89,0.15)] border border-[rgba(197,160,89,0.3)] text-[#c5a059]">
+                        Bot-Se Engine
+                      </span>
+                    </div>
+                    <p className="text-[12px] font-body text-[rgba(232,228,220,0.5)] mt-0.5">
+                      Extraction Playwright Stealth + enrichissement multi-canal Google Maps
                     </p>
                   </div>
                 </div>
-              </div>
+                  <button
+                    onClick={() => setIsBotModalOpen(false)}
+                    className="p-1.5 rounded-full text-[rgba(232,228,220,0.4)] hover:text-[#e8e4dc] hover:bg-[rgba(255,255,255,0.05)] transition-colors cursor-pointer"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
 
-              {!isScraping ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-[12px] font-body text-[rgba(232,228,220,0.7)] uppercase tracking-wider mb-1.5">
-                      Niche / Métier
-                    </label>
-                    <input
-                      type="text"
-                      value={botQuery}
-                      onChange={(e) => setBotQuery(e.target.value)}
-                      placeholder="Ex: Dentiste, Agence de voyage, Avocat..."
-                      className="w-full h-11 rounded-[8px] bg-[#141422] border border-[rgba(255,255,255,0.08)] px-3 text-[14px] text-[#e8e4dc] focus:outline-none focus:border-[#c5a059]"
-                    />
+                <div className="space-y-5">
+                  {/* Field: Niches Multi-Select */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11.5px] font-body text-[rgba(232,228,220,0.7)] uppercase tracking-[0.08em] flex items-center gap-1.5">
+                        <Target size={13} className="text-[#c5a059]" />
+                        <span>Niches / Métiers Ciblés ({botQueries.length})</span>
+                      </label>
+                      <span className="text-[10.5px] text-[rgba(232,228,220,0.4)]">
+                        Multi-sélection &bull; [Entrée] ou [,] pour ajouter
+                      </span>
+                    </div>
+
+                    {/* Active Niches Tags Box */}
+                    <div className="min-h-[46px] p-2 rounded-[12px] bg-[#10101c] border border-[rgba(255,255,255,0.08)] flex items-center gap-2 flex-wrap focus-within:border-[rgba(197,160,89,0.5)] transition-colors">
+                      {botQueries.map((niche) => (
+                        <span
+                          key={niche}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[rgba(197,160,89,0.15)] border border-[rgba(197,160,89,0.35)] text-[#e8e4dc] text-[12px] font-body shadow-[0_0_10px_rgba(197,160,89,0.1)]"
+                        >
+                          <span className="font-medium">{niche}</span>
+                          {botQueries.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleQueryTag(niche)}
+                              className="text-[rgba(232,228,220,0.45)] hover:text-[#f87171] transition-colors cursor-pointer"
+                              title={`Retirer ${niche}`}
+                            >
+                              <X size={12} />
+                            </button>
+                          )}
+                        </span>
+                      ))}
+
+                      {/* Inline Input for custom tag */}
+                      <input
+                        type="text"
+                        value={botQueryInput}
+                        onChange={(e) => setBotQueryInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ',') {
+                            e.preventDefault();
+                            handleAddQueryTag(botQueryInput);
+                          }
+                        }}
+                        onBlur={() => {
+                          if (botQueryInput.trim()) handleAddQueryTag(botQueryInput);
+                        }}
+                        placeholder={botQueries.length === 0 ? "Ajouter une niche (ex: Dentiste)..." : "+ Ajouter..."}
+                        className="flex-1 min-w-[120px] bg-transparent border-none text-[13px] font-body text-[#e8e4dc] placeholder:text-[rgba(232,228,220,0.3)] focus:outline-none px-1"
+                      />
+                    </div>
+
+                    {/* Quick suggestion toggle chips */}
+                    <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                      <span className="text-[10.5px] text-[rgba(232,228,220,0.4)] mr-1">Suggestions :</span>
+                      {['Dentiste', 'Agence de voyage', 'Clinique privée', 'Restaurant', 'Avocat', 'Architecte', 'Hôtel'].map((s) => {
+                        const isSelected = botQueries.some(x => x.toLowerCase() === s.toLowerCase());
+                        return (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => handleToggleQueryTag(s)}
+                            className={cn(
+                              "px-2.5 py-1 rounded-[8px] text-[11px] font-body transition-all cursor-pointer flex items-center gap-1 border",
+                              isSelected
+                                ? "bg-[rgba(197,160,89,0.2)] text-[#c5a059] border-[rgba(197,160,89,0.45)] font-medium shadow-[0_0_10px_rgba(197,160,89,0.15)]"
+                                : "bg-[rgba(255,255,255,0.03)] text-[rgba(232,228,220,0.55)] border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.07)] hover:text-[#e8e4dc]"
+                            )}
+                          >
+                            <span>{s}</span>
+                            {isSelected ? <Check size={10} /> : <Plus size={10} className="opacity-60" />}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[12px] font-body text-[rgba(232,228,220,0.7)] uppercase tracking-wider mb-1.5">
-                      Wilaya / Ville
-                    </label>
-                    <input
-                      type="text"
-                      value={botArea}
-                      onChange={(e) => setBotArea(e.target.value)}
-                      placeholder="Ex: Alger, Oran, Paris, Lyon..."
-                      className="w-full h-11 rounded-[8px] bg-[#141422] border border-[rgba(255,255,255,0.08)] px-3 text-[14px] text-[#e8e4dc] focus:outline-none focus:border-[#c5a059]"
-                    />
+                  {/* Field: Areas Multi-Select */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11.5px] font-body text-[rgba(232,228,220,0.7)] uppercase tracking-[0.08em] flex items-center gap-1.5">
+                        <MapPin size={13} className="text-[#60a5fa]" />
+                        <span>Wilayas / Villes Ciblées ({botAreas.length})</span>
+                      </label>
+                      <span className="text-[10.5px] text-[rgba(232,228,220,0.4)]">
+                        Multi-zones &bull; [Entrée] ou [,] pour ajouter
+                      </span>
+                    </div>
+
+                    {/* Active Areas Tags Box */}
+                    <div className="min-h-[46px] p-2 rounded-[12px] bg-[#10101c] border border-[rgba(255,255,255,0.08)] flex items-center gap-2 flex-wrap focus-within:border-[rgba(96,165,250,0.5)] transition-colors">
+                      {botAreas.map((area) => (
+                        <span
+                          key={area}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[rgba(96,165,250,0.15)] border border-[rgba(96,165,250,0.35)] text-[#e8e4dc] text-[12px] font-body shadow-[0_0_10px_rgba(96,165,250,0.1)]"
+                        >
+                          <span className="font-medium">{area}</span>
+                          {botAreas.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleAreaTag(area)}
+                              className="text-[rgba(232,228,220,0.45)] hover:text-[#f87171] transition-colors cursor-pointer"
+                              title={`Retirer ${area}`}
+                            >
+                              <X size={12} />
+                            </button>
+                          )}
+                        </span>
+                      ))}
+
+                      {/* Inline Input for custom area */}
+                      <input
+                        type="text"
+                        value={botAreaInput}
+                        onChange={(e) => setBotAreaInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ',') {
+                            e.preventDefault();
+                            handleAddAreaTag(botAreaInput);
+                          }
+                        }}
+                        onBlur={() => {
+                          if (botAreaInput.trim()) handleAddAreaTag(botAreaInput);
+                        }}
+                        placeholder={botAreas.length === 0 ? "Ajouter une ville (ex: Alger)..." : "+ Ajouter..."}
+                        className="flex-1 min-w-[120px] bg-transparent border-none text-[13px] font-body text-[#e8e4dc] placeholder:text-[rgba(232,228,220,0.3)] focus:outline-none px-1"
+                      />
+                    </div>
+
+                    {/* Quick suggestion toggle chips */}
+                    <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                      <span className="text-[10.5px] text-[rgba(232,228,220,0.4)] mr-1">Suggestions :</span>
+                      {['Alger', 'Oran', 'Constantine', 'Sétif', 'Annaba', 'Riyadh', 'Doha', 'Paris'].map((a) => {
+                        const isSelected = botAreas.some(x => x.toLowerCase() === a.toLowerCase());
+                        return (
+                          <button
+                            key={a}
+                            type="button"
+                            onClick={() => handleToggleAreaTag(a)}
+                            className={cn(
+                              "px-2.5 py-1 rounded-[8px] text-[11px] font-body transition-all cursor-pointer flex items-center gap-1 border",
+                              isSelected
+                                ? "bg-[rgba(96,165,250,0.2)] text-[#60a5fa] border-[rgba(96,165,250,0.45)] font-medium shadow-[0_0_10px_rgba(96,165,250,0.15)]"
+                                : "bg-[rgba(255,255,255,0.03)] text-[rgba(232,228,220,0.55)] border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.07)] hover:text-[#e8e4dc]"
+                            )}
+                          >
+                            <span>{a}</span>
+                            {isSelected ? <Check size={10} /> : <Plus size={10} className="opacity-60" />}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[12px] font-body text-[rgba(232,228,220,0.7)] uppercase tracking-wider mb-1.5">
-                      Nombre de cibles ({botCount})
-                    </label>
-                    <input
-                      type="range"
-                      min={5}
-                      max={100}
-                      step={5}
-                      value={botCount}
-                      onChange={(e) => setBotCount(parseInt(e.target.value, 10))}
-                      className="w-full accent-[#c5a059]"
-                    />
+                  {/* Field: Luxury Segmented Target Volume (No crude slider) */}
+                  <div className="p-4 rounded-[14px] bg-[#10101c] border border-[rgba(197,160,89,0.22)] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-[11.5px] font-body text-[#e8e4dc] font-medium uppercase tracking-[0.08em] block">
+                          Volume de Cibles par Zone
+                        </label>
+                        <span className="text-[11px] text-[rgba(232,228,220,0.45)]">
+                          Nombre d&apos;entreprises extraites par combinaison
+                        </span>
+                      </div>
+                      {botTestMode ? (
+                        <span className="text-[11px] font-mono font-semibold px-2.5 py-1 rounded-full bg-[rgba(245,158,11,0.15)] border border-[rgba(245,158,11,0.3)] text-[#fbbf24] flex items-center gap-1">
+                          <FlaskConical size={12} />
+                          <span>3 cibles (Mode Test Actif)</span>
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] bg-[rgba(197,160,89,0.12)] border border-[rgba(197,160,89,0.3)] focus-within:border-[#c5a059] transition-all" title="Cliquez pour taper directement le nombre">
+                          <input
+                            type="number"
+                            min={1}
+                            max={500}
+                            value={botCount}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10);
+                              setBotCount(isNaN(val) ? 1 : Math.max(1, Math.min(500, val)));
+                            }}
+                            className="w-12 text-center bg-transparent border-none text-[14px] font-mono font-bold text-[#c5a059] focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text"
+                          />
+                          <span className="text-[11px] text-[rgba(232,228,220,0.6)]">cibles / zone</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Segmented Volume Cards + Custom Direct Input */}
+                    <div className={cn("grid grid-cols-2 sm:grid-cols-5 gap-2", botTestMode && "opacity-40 pointer-events-none")}>
+                      {[
+                        { value: 15, label: '15', tag: 'Éclair' },
+                        { value: 25, label: '25', tag: 'Standard' },
+                        { value: 50, label: '50', tag: 'Approfondi' },
+                        { value: 100, label: '100', tag: 'Max Maps' }
+                      ].map((preset) => {
+                        const isSelected = botCount === preset.value && !botTestMode;
+                        return (
+                          <button
+                            key={preset.value}
+                            type="button"
+                            onClick={() => setBotCount(preset.value)}
+                            className={cn(
+                              "py-2 px-1.5 rounded-[10px] text-center transition-all cursor-pointer border",
+                              isSelected
+                                ? "bg-[linear-gradient(180deg,rgba(197,160,89,0.22),rgba(197,160,89,0.08))] border-[#c5a059] text-[#e8e4dc] shadow-[0_0_15px_rgba(197,160,89,0.15)]"
+                                : "bg-[#0b0b14] border-[rgba(255,255,255,0.06)] text-[rgba(232,228,220,0.6)] hover:border-[rgba(255,255,255,0.15)] hover:text-[#e8e4dc]"
+                            )}
+                          >
+                            <div className="text-[14px] font-mono font-bold">{preset.label}</div>
+                            <div className="text-[9.5px] font-body text-[rgba(232,228,220,0.4)] mt-0.5">{preset.tag}</div>
+                          </button>
+                        );
+                      })}
+
+                      {/* 5th Segment: Custom Editable Input */}
+                      <div
+                        onClick={() => document.getElementById('custom-volume-input')?.focus()}
+                        className={cn(
+                          "py-2 px-1.5 rounded-[10px] text-center transition-all border cursor-text col-span-2 sm:col-span-1 flex flex-col justify-center items-center",
+                          (![15, 25, 50, 100].includes(botCount) && !botTestMode)
+                            ? "bg-[linear-gradient(180deg,rgba(197,160,89,0.22),rgba(197,160,89,0.08))] border-[#c5a059] text-[#e8e4dc] shadow-[0_0_15px_rgba(197,160,89,0.15)]"
+                            : "bg-[#0b0b14] border-[rgba(255,255,255,0.06)] text-[rgba(232,228,220,0.6)] hover:border-[rgba(255,255,255,0.15)] focus-within:border-[rgba(197,160,89,0.6)]"
+                        )}
+                      >
+                        <div className="flex items-center justify-center">
+                          <input
+                            id="custom-volume-input"
+                            type="number"
+                            min={1}
+                            max={500}
+                            value={(![15, 25, 50, 100].includes(botCount) && !botTestMode) ? botCount : ''}
+                            placeholder="Autre..."
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10);
+                              if (!isNaN(val)) {
+                                setBotCount(Math.max(1, Math.min(500, val)));
+                              } else {
+                                setBotCount(1);
+                              }
+                            }}
+                            className={cn(
+                              "w-full text-center bg-transparent border-none text-[14px] font-mono font-bold focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+                              (![15, 25, 50, 100].includes(botCount) && !botTestMode)
+                                ? "text-[#c5a059]"
+                                : "text-[#e8e4dc] placeholder:text-[rgba(232,228,220,0.35)]"
+                            )}
+                          />
+                        </div>
+                        <div className="text-[9.5px] font-body text-[rgba(232,228,220,0.4)] mt-0.5">
+                          {(![15, 25, 50, 100].includes(botCount) && !botTestMode) ? 'Sur-mesure' : 'Personnalisé'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Live Combined Calculation Banner */}
+                    <div className="p-3 rounded-[10px] bg-[rgba(10,10,18,0.7)] border border-[rgba(255,255,255,0.05)] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[12px] font-body">
+                      <div className="text-[rgba(232,228,220,0.6)] flex items-center gap-2">
+                        <Sparkles size={13} className="text-[#c5a059]" />
+                        <span>
+                          <strong className="text-[#e8e4dc]">{botQueries.length}</strong> niche{botQueries.length > 1 ? 's' : ''} &times; <strong className="text-[#e8e4dc]">{botAreas.length}</strong> zone{botAreas.length > 1 ? 's' : ''} = <strong className="text-[#c5a059]">{botQueries.length * botAreas.length}</strong> scan{botQueries.length * botAreas.length > 1 ? 's' : ''} combiné{botQueries.length * botAreas.length > 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div className="font-mono text-[12px] text-[#4ade80] sm:text-right">
+                        Total attendu : <strong>~{(botQueries.length * botAreas.length) * (botTestMode ? 3 : botCount)} prospects</strong>
+                      </div>
+                    </div>
                   </div>
 
+                  {/* ─── Bot-Se Core Features & Controls ─── */}
+                  <div className="space-y-2.5 pt-2 border-t border-[rgba(255,255,255,0.06)]">
+                    <span className="text-[10.5px] font-body font-semibold uppercase tracking-[0.12em] text-[#c5a059] block mb-2">
+                      Paramètres Avancés Bot-Se (.env)
+                    </span>
+
+                    {/* Switch 1: ONLY_NO_WEBSITE */}
+                    <div className="p-3.5 rounded-[12px] bg-[#0f0f1b] border border-[rgba(197,160,89,0.22)] flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-[13px] font-body font-medium text-[#e8e4dc]">
+                            Cibles Sans Site Web Uniquement
+                          </span>
+                          <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-full bg-[rgba(239,68,68,0.15)] text-[#f87171] border border-[rgba(239,68,68,0.3)]">
+                            ONLY_NO_WEBSITE
+                          </span>
+                        </div>
+                        <p className="text-[11.5px] font-body text-[rgba(232,228,220,0.5)] leading-relaxed">
+                          Ignore les commerces ayant déjà un site. Ne capture que les entreprises sans vitrine web (gain de temps 3x et closing maximal).
+                        </p>
+                      </div>
+                      <ToggleSwitch checked={botOnlyNoWebsite} onChange={setBotOnlyNoWebsite} />
+                    </div>
+
+                    {/* Switch 2: TEST_MODE */}
+                    <div className="p-3.5 rounded-[12px] bg-[#0f0f1b] border border-[rgba(255,255,255,0.06)] flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-[13px] font-body font-medium text-[#e8e4dc]">
+                            Mode Test Rapide (Validation 3 leads)
+                          </span>
+                          <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-full bg-[rgba(245,158,11,0.15)] text-[#fbbf24] border border-[rgba(245,158,11,0.3)]">
+                            TEST_MODE
+                          </span>
+                        </div>
+                        <p className="text-[11.5px] font-body text-[rgba(232,228,220,0.5)] leading-relaxed">
+                          Scrappe seulement 3 fiches pour valider vos sélecteurs et la zone avant de lancer un scan massif.
+                        </p>
+                      </div>
+                      <ToggleSwitch checked={botTestMode} onChange={setBotTestMode} />
+                    </div>
+
+                    {/* Switch 3: OPEN_BROWSER (Headed vs Headless) */}
+                    <div className="p-3.5 rounded-[12px] bg-[#0f0f1b] border border-[rgba(255,255,255,0.06)] flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-[13px] font-body font-medium text-[#e8e4dc]">
+                            Afficher le Navigateur à l&apos;Écran
+                          </span>
+                          <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-full bg-[rgba(96,165,250,0.15)] text-[#60a5fa] border border-[rgba(96,165,250,0.3)]">
+                            OPEN_BROWSER
+                          </span>
+                        </div>
+                        <p className="text-[11.5px] font-body text-[rgba(232,228,220,0.5)] leading-relaxed">
+                          Ouvre une fenêtre Chromium visible pour observer les actions et scrolls du bot en direct sur Google Maps.
+                        </p>
+                      </div>
+                      <ToggleSwitch checked={botOpenBrowser} onChange={setBotOpenBrowser} />
+                    </div>
+                  </div>
+
+                  {/* Actions */}
                   <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-[rgba(255,255,255,0.06)]">
                     <button
+                      type="button"
                       onClick={() => setIsBotModalOpen(false)}
-                      className="px-4 py-2 rounded-full text-[13px] font-body text-[rgba(232,228,220,0.5)] hover:text-[#e8e4dc] transition-colors"
+                      className="px-4 py-2 rounded-full text-[13px] font-body text-[rgba(232,228,220,0.5)] hover:text-[#e8e4dc] transition-colors cursor-pointer"
                     >
                       Annuler
                     </button>
                     <AnimatedButton icon={<Play size={14} />} onClick={handleStartScrape}>
-                      Démarrer le Scraping
+                      Démarrer le Scraping Furtif
                     </AnimatedButton>
                   </div>
                 </div>
-              ) : (
-                <div className="py-6 space-y-4">
-                  <div className="flex items-center justify-center gap-3">
-                    <div className="w-5 h-5 border-2 border-[#c5a059] border-t-transparent rounded-full animate-spin" />
-                    <span className="text-[14px] font-body text-[#e8e4dc]">
-                      Scraping en cours sur Google Maps...
-                    </span>
-                  </div>
-                  <div className="bg-[#05050a] border border-[rgba(255,255,255,0.06)] rounded-[8px] p-3 text-[11px] font-mono text-[rgba(232,228,220,0.7)] space-y-1 max-h-[160px] overflow-y-auto">
-                    {scrapeLog.map((log, i) => (
-                      <div key={i}>{log}</div>
-                    ))}
-                  </div>
-                  <div className="text-center pt-2">
-                    <button
-                      onClick={() => setIsBotModalOpen(false)}
-                      className="px-4 py-1.5 rounded-full text-[12px] font-body bg-[#1a1a2c] text-[#e8e4dc] hover:bg-[#25253e]"
-                    >
-                      Fermer & Laisser tourner en tâche de fond
-                    </button>
-                  </div>
-                </div>
-              )}
             </motion.div>
           </div>
         )}

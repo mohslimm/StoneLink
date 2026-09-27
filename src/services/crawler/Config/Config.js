@@ -2,9 +2,18 @@
 // Src/Config/Config.js — Central settings loaded from .env
 // ============================================================
 
-import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
+
+// Native Node 22 env loader (zero external dependency on dotenv)
+try {
+  const envLocal = path.join(process.cwd(), '.env.local');
+  const envMain = path.join(process.cwd(), '.env');
+  const envBotSe = path.join(process.cwd(), '..', 'Bot-Se', '.env');
+  if (fs.existsSync(envLocal)) process.loadEnvFile(envLocal);
+  else if (fs.existsSync(envMain)) process.loadEnvFile(envMain);
+  else if (fs.existsSync(envBotSe)) process.loadEnvFile(envBotSe);
+} catch (e) {}
 
 // ── Env helpers ──────────────────────────────────────────────────────────────
 const bool = (key, fallback) =>

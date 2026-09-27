@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { TopNavigation } from '@/components/ui/custom/TopNavigation'
 import { ToastContainer } from '@/components/ui/custom/Toast'
+import { CrawlerMonitorModal } from '@/components/ui/custom/CrawlerMonitorModal'
 import { PageTransitionLayout } from '@/components/ui/custom/PageTransitionLayout'
 
 export const metadata: Metadata = {
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </PageTransitionLayout>
           </main>
           <ToastContainer />
+          <CrawlerMonitorModal />
         </div>
       </body>
     </html>

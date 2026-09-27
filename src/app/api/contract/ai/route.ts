@@ -157,6 +157,7 @@ Réponds STRICTEMENT avec un objet JSON valide (aucun bloc markdown, aucun texte
     const geminiRes = await callGeminiResilient({
       prompt: systemPrompt,
       preferredModel: 'gemini-3.8-flash',
+      purpose: 'contracts',
     });
     const rawText = geminiRes.text.trim();
 

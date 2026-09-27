@@ -48,6 +48,7 @@ interface CallGeminiOptions {
   preferredModel?: string;
   generationConfig?: any;
   systemInstruction?: string;
+  purpose?: 'calls' | 'contracts' | 'general';
 }
 
 export interface CallGeminiResult {
@@ -55,22 +56,56 @@ export interface CallGeminiResult {
   modelUsed: string;
   fallbackUsed: boolean;
   latencyMs: number;
+  keyPurpose?: string;
 }
 
 /**
- * Robust caller with auto-retry and multi-tier model fallback.
- * Prevents 503 (High Demand Spikes) and 429 errors from breaking sales operations.
+ * Helper to mask API keys in logs for security.
  */
-export async function callGeminiResilient(options: CallGeminiOptions): Promise<CallGeminiResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY non configurée');
+function maskKey(key: string): string {
+  if (!key || key.length < 8) return '***';
+  return `${key.slice(0, 4)}...${key.slice(-4)}`;
+}
+
+/**
+ * Resolves API keys in priority order based on the requested operational purpose.
+ * Segregates quotas (Calls vs Contracts vs General) while providing automatic failover.
+ */
+function getApiKeysForPurpose(purpose?: 'calls' | 'contracts' | 'general'): string[] {
+  const callsKey = process.env.GEMINI_API_KEY_CALLS?.trim();
+  const contractsKey = process.env.GEMINI_API_KEY_CONTRACTS?.trim();
+  const agencyKey = process.env.GEMINI_API_KEY_AGENCY?.trim();
+  const defaultKey = process.env.GEMINI_API_KEY?.trim();
+
+  let ordered: (string | undefined)[] = [];
+
+  if (purpose === 'calls') {
+    // 1. Abdelhadi's call key -> 2. Agency master -> 3. Default fallback -> 4. Contracts key
+    ordered = [callsKey, agencyKey, defaultKey, contractsKey];
+  } else if (purpose === 'contracts') {
+    // 1. Mohamed's contract key -> 2. Agency master -> 3. Default fallback -> 4. Calls key
+    ordered = [contractsKey, agencyKey, defaultKey, callsKey];
+  } else {
+    // General: Agency master -> Default -> Calls -> Contracts
+    ordered = [agencyKey, defaultKey, callsKey, contractsKey];
   }
 
-  const genAI = new GoogleGenerativeAI(apiKey);
+  // Filter out falsy/empty keys and deduplicate
+  const uniqueKeys = Array.from(new Set(ordered.filter((k): k is string => Boolean(k && k.length > 5))));
+  return uniqueKeys;
+}
+
+/**
+ * Robust caller with dual resilience: Multi-Key Quota Cascade + Multi-Tier Model Fallback.
+ * Prevents 503 (High Demand Spikes), 429 (Rate Limits) and Quota exhaustion from breaking sales operations.
+ */
+export async function callGeminiResilient(options: CallGeminiOptions): Promise<CallGeminiResult> {
+  const keys = getApiKeysForPurpose(options.purpose);
+  if (keys.length === 0) {
+    throw new Error('Aucune clé GEMINI_API_KEY configurée dans l\'environnement.');
+  }
+
   const preferred = options.preferredModel || 'gemini-3.8-flash';
-  
-  // Build priority order: preferred first, then remaining models from cascade
   const modelQueue = [
     preferred,
     ...FALLBACK_CASCADE.filter((m) => m !== preferred),
@@ -79,44 +114,66 @@ export async function callGeminiResilient(options: CallGeminiOptions): Promise<C
   const startTime = Date.now();
   let lastError: any = null;
 
-  for (let i = 0; i < modelQueue.length; i++) {
-    const currentModelName = modelQueue[i];
-    try {
-      const model = genAI.getGenerativeModel({
-        model: currentModelName,
-        generationConfig: options.generationConfig,
-        systemInstruction: options.systemInstruction,
-      });
+  // Outer loop: Try keys in priority order
+  for (let keyIdx = 0; keyIdx < keys.length; keyIdx++) {
+    const currentApiKey = keys[keyIdx];
+    const genAI = new GoogleGenerativeAI(currentApiKey);
 
-      const result = await model.generateContent(options.prompt);
-      const text = result.response.text();
-      const latencyMs = Date.now() - startTime;
+    // Inner loop: Try model cascade on current key
+    for (let modelIdx = 0; modelIdx < modelQueue.length; modelIdx++) {
+      const currentModelName = modelQueue[modelIdx];
+      try {
+        const model = genAI.getGenerativeModel({
+          model: currentModelName,
+          generationConfig: options.generationConfig,
+          systemInstruction: options.systemInstruction,
+        });
 
-      return {
-        text,
-        modelUsed: currentModelName,
-        fallbackUsed: currentModelName !== preferred,
-        latencyMs,
-      };
-    } catch (err: any) {
-      lastError = err;
-      const is503orSpike =
-        err?.message?.includes('503') ||
-        err?.message?.includes('high demand') ||
-        err?.message?.includes('Spikes in demand') ||
-        err?.message?.includes('Service Unavailable') ||
-        err?.message?.includes('429');
+        const result = await model.generateContent(options.prompt);
+        const text = result.response.text();
+        const latencyMs = Date.now() - startTime;
 
-      console.warn(
-        `[Gemini Client] Erreur sur ${currentModelName} (${is503orSpike ? 'Pic de charge Google 503' : err.message}). Tentative de basculement...`
-      );
+        return {
+          text,
+          modelUsed: currentModelName,
+          fallbackUsed: currentModelName !== preferred || keyIdx > 0,
+          latencyMs,
+          keyPurpose: options.purpose || 'general',
+        };
+      } catch (err: any) {
+        lastError = err;
+        const msg = err?.message || '';
+        const isQuotaOrAuth =
+          msg.includes('429') ||
+          msg.includes('quota') ||
+          msg.includes('Quota exceeded') ||
+          msg.includes('ResourceExhausted') ||
+          msg.includes('API_KEY_INVALID') ||
+          msg.includes('403') ||
+          msg.includes('401');
 
-      // If it's a 503 spike on the primary, wait 600ms before trying the fallback
-      if (is503orSpike && i < modelQueue.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 600));
+        const is503orSpike =
+          msg.includes('503') ||
+          msg.includes('high demand') ||
+          msg.includes('Spikes in demand') ||
+          msg.includes('Service Unavailable');
+
+        console.warn(
+          `[Gemini Client] Erreur sur clé (${maskKey(currentApiKey)}, rôle: ${options.purpose || 'general'}) / modèle ${currentModelName} : ${isQuotaOrAuth ? 'Quota/Rate Limit (429)' : is503orSpike ? 'Pic 503' : msg}. Basculement en cours...`
+        );
+
+        // If quota limit or bad key, immediately jump to the next API key in the pool!
+        if (isQuotaOrAuth) {
+          break; // Break inner model loop to try next API key
+        }
+
+        // If 503 spike, wait 500ms before trying the next fallback model on this key
+        if (is503orSpike && modelIdx < modelQueue.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
       }
     }
   }
 
-  throw lastError || new Error('Tous les modèles Gemini de secours ont échoué.');
+  throw lastError || new Error('Toutes les clés API et modèles Gemini de secours ont échoué.');
 }

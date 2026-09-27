@@ -3,6 +3,21 @@ import type { Prospect } from '@/types';
 // Migrated from Bot-Se all_leads.json — Total: 702 prospects
 export const mockProspects: Prospect[] = [
   {
+    "id": "slimani-test-vip",
+    "name": "Mohamed Slimani",
+    "company": "Slimani Voyages & Omra",
+    "url": "",
+    "phone": "+213777105611",
+    "email": "contact@slimanivoyages.dz",
+    "score": 0,
+    "sector": "Agence de Voyage",
+    "stage": "nouveau",
+    "lastContact": "Aujourd'hui",
+    "scriptReady": true,
+    "callHistory": [],
+    "notes": "Forte réputation Google Maps (4.9★, 85 avis) mais AUCUN SITE WEB officiel. Les voyageurs cherchant des séjours Omra / Turquie ne trouvent pas de catalogue en ligne et réservent chez les concurrents. | Zone: Alger Centre"
+  },
+  {
     "id": "7d19bd4d-8b33-49f4-907b-22c81010b588",
     "name": "Responsable OceanLinks Best Logistics",
     "company": "OceanLinks Best Logistics",
@@ -10745,4 +10760,8 @@ export const mockObjections: import('@/types').ObjectionItem[] = [
 export const weeklyTrend = [42, 45, 48, 52, 55, 58, 62, 65, 68, 72, 75, 78];
 export const conversionTrend = [18, 19, 19.5, 20, 20.8, 21.5, 22, 22.5, 23, 23.2, 23.4, 23.8];
 export const rdvTrend = [12, 14, 15, 17, 18, 20, 21, 23, 25, 27, 30, 33];
+
+
+
+
 

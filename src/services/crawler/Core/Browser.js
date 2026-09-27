@@ -16,7 +16,13 @@ chromium.use(StealthPlugin());
  * @returns {Promise<{ browser, context, page }>}
  */
 export async function launchBrowser() {
-  const { headless, viewport, locale, timezoneId } = Config.browser;
+  const isHeadless = Config.openBrowser !== undefined 
+    ? !Config.openBrowser 
+    : (Config.browser?.headless !== undefined ? Config.browser.headless : true);
+
+  if (!Config.browser) Config.browser = {};
+  Config.browser.headless = isHeadless;
+  const { viewport, locale, timezoneId } = Config.browser;
 
   // Generate a random modern Chrome Desktop User Agent
   const userAgentGenerator = new UserAgent({ deviceCategory: 'desktop', platform: 'Win32' });
@@ -26,7 +32,34 @@ export async function launchBrowser() {
     userAgent = new UserAgent(/Chrome/, { deviceCategory: 'desktop' }).toString();
   }
 
-  const browser = await chromium.launch({ headless });
+  let browser;
+  const launchArgs = isHeadless
+    ? ['--no-sandbox', '--disable-setuid-sandbox']
+    : ['--no-sandbox', '--disable-setuid-sandbox', '--start-maximized'];
+
+  try {
+    // 1. Prioritize user's real Google Chrome (installed on Windows, bypasses Playwright browser download & maximum stealth)
+    browser = await chromium.launch({
+      channel: 'chrome',
+      headless: isHeadless,
+      args: launchArgs,
+    });
+  } catch (errChrome) {
+    try {
+      // 2. Fallback to Microsoft Edge (present on all Windows 10/11)
+      browser = await chromium.launch({
+        channel: 'msedge',
+        headless: isHeadless,
+        args: launchArgs,
+      });
+    } catch (errEdge) {
+      // 3. Fallback to bundled Playwright chromium
+      browser = await chromium.launch({
+        headless: isHeadless,
+        args: launchArgs,
+      });
+    }
+  }
 
   const context = await browser.newContext({
     viewport,

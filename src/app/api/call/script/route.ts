@@ -114,9 +114,9 @@ function buildDeterministicFallback(req: ScriptRequest): CallScript {
         },
         {
           trigger: 'prix',
-          label: 'Trop cher / Pas de budget',
-          response: `Avant même de parler de tarifs, regardez la maquette gratuitement. Si un seul client supplémentaire par mois rentabilise l'intégralité du site pour les 3 prochaines années, c'est un investissement qui vous rapporte de l'argent.`,
-          pivot: 'Jetons un coup d\'œil à la maquette gratuite d\'abord ?',
+          label: 'Combien ça coûte ? / Trop cher',
+          response: `Nous préparons une proposition chiffrée détaillée sur-mesure que je vous envoie directement en PDF sur WhatsApp juste après notre échange. Comme ça vous avez le détail exact des prestations sans mauvaise surprise. Jetons d'abord un œil à la maquette gratuite pour voir si cela correspond à vos besoins.`,
+          pivot: 'Sur quel numéro WhatsApp puis-je vous transmettre ce devis PDF chiffré ?',
         },
         {
           trigger: 'rappeler',
@@ -193,9 +193,9 @@ function buildDeterministicFallback(req: ScriptRequest): CallScript {
     objections: [
       {
         trigger: 'prix',
-        label: 'Trop cher',
-        response: `Le coût d'un site se mesure à ce qu'il rapporte. Si votre site actuel vous coûte des clients perdus chaque semaine, un site optimisé s'autofinance dès les premiers mois. Regardez d'abord la maquette gratuite pour juger.`,
-        pivot: 'Puis-je vous envoyer le lien pour vous rendre compte de la différence ?',
+        label: 'Combien ça coûte ? / Trop cher',
+        response: `Nous préparons une proposition chiffrée détaillée sur-mesure que je vous envoie directement en PDF sur WhatsApp juste après notre échange. Comme ça vous avez le détail exact des prestations sans mauvaise surprise. L'important aujourd'hui est d'évaluer le gain de clients concrets avec notre maquette gratuite.`,
+        pivot: 'Sur quel numéro WhatsApp puis-je vous transmettre ce devis PDF chiffré ?',
       },
       {
         trigger: 'prestataire',
@@ -221,11 +221,6 @@ function buildDeterministicFallback(req: ScriptRequest): CallScript {
 // ─── Gemini 3.8 Flash Generation ──────────────────────────────────
 
 async function generateWithGemini(req: ScriptRequest) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY missing');
-  }
-
   const prenom = req.contactName.trim() ? (req.contactName.trim().split(' ')[0] ?? req.contactName) : "Responsable";
   const hasWebsite = !!req.website && !req.website.toLowerCase().includes('pas de site') && req.website.trim().length > 3;
   const score = req.lighthouseScore ?? 42;
@@ -247,6 +242,9 @@ ${hasWebsite
   : `Angle : Félicitations pour la réputation et les avis Google Maps, alerte sur l'invisibilité digitale (les clients qui cherchent sur Google ne trouvent aucun site officiel et vont chez les concurrents), proposition d'une vitrine moderne clé en main livrée aujourd'hui.`
 }
 
+RÈGLE D'OR TARIFAIRE ABSOLUE :
+Tu ne dois JAMAIS donner de montant ou de prix brut par téléphone. Si le prospect demande "combien ça coûte ?", le script et les réponses d'objection doivent TOUJOURS pivoter sur le fait qu'une proposition chiffrée détaillée et personnalisée lui sera envoyée immédiatement en document PDF sur WhatsApp juste après l'appel.
+
 Retourne UNIQUEMENT un objet JSON valide avec cette structure exacte :
 {
   "steps": [
@@ -258,10 +256,10 @@ Retourne UNIQUEMENT un objet JSON valide avec cette structure exacte :
     { "id": 6, "phase": "close", "label": "Clôture & RDV", "script": "...", "tip": "...", "durationTarget": 30 }
   ],
   "objections": [
-    { "trigger": "${hasWebsite ? 'prix' : 'facebook'}", "label": "${hasWebsite ? 'Trop cher' : 'Une page Facebook me suffit'}", "response": "...", "pivot": "..." },
-    { "trigger": "${hasWebsite ? 'prestataire' : 'bouche_a_oreille'}", "label": "${hasWebsite ? 'J\'ai déjà quelqu\'un' : 'Le bouche-à-oreille me suffit'}", "response": "...", "pivot": "..." },
-    { "trigger": "${hasWebsite ? 'satisfait' : 'pas_temps'}", "label": "${hasWebsite ? 'Mon site actuel me suffit' : 'Pas le temps de gérer un site'}", "response": "...", "pivot": "..." },
-    { "trigger": "prix", "label": "Tarifs & Budget", "response": "...", "pivot": "..." },
+    { "trigger": "prix", "label": "Combien ça coûte ? / Trop cher", "response": "...", "pivot": "..." },
+    { "trigger": "${hasWebsite ? 'prestataire' : 'facebook'}", "label": "${hasWebsite ? 'J\'ai déjà quelqu\'un' : 'Une page Facebook me suffit'}", "response": "...", "pivot": "..." },
+    { "trigger": "${hasWebsite ? 'satisfait' : 'bouche_a_oreille'}", "label": "${hasWebsite ? 'Mon site actuel me suffit' : 'Le bouche-à-oreille me suffit'}", "response": "...", "pivot": "..." },
+    { "trigger": "pas_temps", "label": "Pas le temps de gérer un site", "response": "...", "pivot": "..." },
     { "trigger": "rappeler", "label": "Rappelez-moi plus tard", "response": "...", "pivot": "..." }
   ]
 }`;
@@ -269,6 +267,7 @@ Retourne UNIQUEMENT un objet JSON valide avec cette structure exacte :
   const geminiRes = await callGeminiResilient({
     prompt,
     preferredModel: 'gemini-3.8-flash',
+    purpose: 'calls',
     generationConfig: {
       responseMimeType: 'application/json',
       temperature: 0.4,

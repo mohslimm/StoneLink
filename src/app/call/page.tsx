@@ -6,11 +6,13 @@ import { useRouter } from 'next/navigation';
 import {
   Loader2, Sparkles, Phone, Mic, MicOff, Pause, PhoneOff, ChevronRight, ChevronLeft, ChevronDown,
   CheckCircle, X, Calendar, Send, Clock, Search, Copy, Check, MessageSquare,
-  ShieldAlert, Globe, MapPin, Building2, Flame, Languages, AlertCircle, Filter, RotateCcw, Star, FileText
+  ShieldAlert, Globe, MapPin, Building2, Flame, Languages, AlertCircle, Filter, RotateCcw, Star, FileText,
+  Bot, Smartphone, Volume2, ShieldCheck
 } from 'lucide-react';
 import { GlassPanel } from '@/components/ui/custom/GlassPanel';
 import { CallTimer } from '@/components/ui/custom/CallTimer';
 import { AnimatedButton } from '@/components/ui/custom/AnimatedButton';
+import { VoiceAgentLiveConsole } from '@/components/ui/custom/VoiceAgentLiveConsole';
 import { useCallStore } from '@/hooks/useCallStore';
 import { useUIStore } from '@/hooks/useUIStore';
 import { useSettingsStore } from '@/hooks/useSettingsStore';
@@ -284,10 +286,34 @@ function PreCallState({ onStartCall }: { onStartCall: (p: typeof mockProspects[0
     }
   }, []);
 
+  const {
+    speakerMode,
+    setSpeakerMode,
+    channelMode,
+    setChannelMode,
+    selectedOffer,
+    setSelectedOffer,
+  } = useCallStore();
+
   const { callingMethod, formatPhoneNumber } = useSettingsStore();
   const phoneFormatted = formatPhoneNumber(selectedProspect.phone);
 
-  const handleDial = (mode?: 'phonelink' | 'whatsapp') => {
+  const hasSite = hasValidWebsite(selectedProspect.url);
+  const scoreColor = selectedProspect.score >= 70 ? '#4ade80' : selectedProspect.score >= 40 ? '#60a5fa' : '#f87171';
+
+  // Smart offer recommendation based on prospect digital presence
+  useEffect(() => {
+    if (!hasSite) {
+      setSelectedOffer('vitrine');
+    } else if (selectedProspect.score < 60) {
+      setSelectedOffer('refonte');
+    } else {
+      setSelectedOffer('seo');
+    }
+  }, [hasSite, selectedProspect.score, setSelectedOffer]);
+
+  const handleDial = (targetMode?: 'phonelink' | 'whatsapp') => {
+    const activeMode = targetMode || channelMode;
     for (let i = 0; i < 3; i++) {
       setTimeout(() => {
         setRipples((prev) => [...prev, { id: ++rippleId.current }]);
@@ -297,7 +323,7 @@ function PreCallState({ onStartCall }: { onStartCall: (p: typeof mockProspects[0
       }, i * 150);
     }
 
-    if (mode === 'whatsapp') {
+    if (activeMode === 'whatsapp') {
       if (phoneFormatted.waUrl) {
         window.open(phoneFormatted.waUrl, '_blank');
       }
@@ -310,9 +336,6 @@ function PreCallState({ onStartCall }: { onStartCall: (p: typeof mockProspects[0
 
     setTimeout(() => onStartCall(selectedProspect), 600);
   };
-
-  const hasSite = hasValidWebsite(selectedProspect.url);
-  const scoreColor = selectedProspect.score >= 70 ? '#4ade80' : selectedProspect.score >= 40 ? '#60a5fa' : '#f87171';
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100dvh-70px)] px-4 py-8">
@@ -497,62 +520,230 @@ function PreCallState({ onStartCall }: { onStartCall: (p: typeof mockProspects[0
           </GlassPanel>
         </motion.div>
 
-        {/* Dual Direct Action Triggers (Phone Link PC & WhatsApp Direct) */}
-        <div className="flex flex-col items-center mt-7 space-y-4">
-          <div className="flex items-center gap-6">
-            {/* Phone Link PC Call Button */}
-            {(callingMethod === 'hybrid' || callingMethod === 'phonelink') && (
-              <div className="flex flex-col items-center">
-                <div className="relative">
-                  {ripples.map((r) => (
-                    <motion.div
-                      key={r.id}
-                      className="absolute inset-0 rounded-full border border-[#4ade80]"
-                      initial={{ scale: 0.8, opacity: 0.7 }}
-                      animate={{ scale: 2.2, opacity: 0 }}
-                      transition={{ duration: 0.8, ease: 'easeOut' }}
-                    />
-                  ))}
-                  <motion.button
-                    type="button"
-                    onClick={() => handleDial('phonelink')}
-                    className="relative w-[72px] h-[72px] rounded-full bg-gradient-to-tr from-[#22c55e] to-[#4ade80] flex items-center justify-center cursor-pointer shadow-[0_0_30px_rgba(74,222,128,0.35)]"
-                    whileHover={{ scale: 1.06 }}
-                    whileTap={{ scale: 0.94 }}
-                    title="Lancer l'appel PC via Phone Link (SIM)"
-                  >
-                    <Phone size={28} className="text-[#060610]" />
-                  </motion.button>
+        {/* ─── Pre-Call Control Matrix ─── */}
+        <div className="mt-6 space-y-4">
+          {/* Control 1: Speaker Mode (Who speaks?) */}
+          <div className="p-4 rounded-[14px] bg-[rgba(17,17,26,0.65)] border border-[rgba(255,255,255,0.06)] backdrop-blur-md">
+            <label className="text-[11px] font-body font-semibold uppercase tracking-[0.1em] text-[#c5a059] flex items-center gap-1.5 mb-2.5">
+              <Mic size={13} />
+              <span>1. Sélection de l&apos;Orateur (Qui mène la discussion ?)</span>
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Option A: Moi-même (Humain) */}
+              <button
+                type="button"
+                onClick={() => setSpeakerMode('human')}
+                className={`p-3.5 rounded-[12px] border text-left transition-all cursor-pointer relative ${
+                  speakerMode === 'human'
+                    ? 'bg-[rgba(197,160,89,0.12)] border-[#c5a059] ring-2 ring-[rgba(197,160,89,0.2)] shadow-[0_0_20px_rgba(197,160,89,0.15)]'
+                    : 'bg-[rgba(10,10,18,0.6)] border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.15)]'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[18px]">🎙️</span>
+                  <span className={`text-[10px] font-body uppercase tracking-[0.08em] px-2 py-0.5 rounded-full font-semibold ${
+                    speakerMode === 'human' ? 'bg-[#c5a059] text-[#060610]' : 'bg-[rgba(255,255,255,0.06)] text-[rgba(232,228,220,0.5)]'
+                  }`}>
+                    Copilote IA Actif
+                  </span>
                 </div>
-                <span className="text-[11px] font-body font-semibold uppercase tracking-[0.1em] text-[#4ade80] mt-2.5">
-                  Appeler PC (Phone Link)
-                </span>
-              </div>
-            )}
+                <h4 className="text-[13.5px] font-body font-semibold text-[#e8e4dc]">
+                  Parler Moi-même (Humain)
+                </h4>
+                <p className="text-[11px] font-body text-[rgba(232,228,220,0.55)] mt-0.5 leading-relaxed">
+                  Vous parlez au micro. L&apos;IA écoute en continu et affiche en temps réel les répliques d&apos;objection idéales.
+                </p>
+              </button>
 
-            {/* WhatsApp Direct Button */}
-            {(callingMethod === 'hybrid' || callingMethod === 'whatsapp') && (
-              <div className="flex flex-col items-center">
-                <motion.button
-                  type="button"
-                  onClick={() => handleDial('whatsapp')}
-                  className="w-[72px] h-[72px] rounded-full bg-gradient-to-tr from-[#2563eb] to-[#60a5fa] flex items-center justify-center cursor-pointer shadow-[0_0_30px_rgba(96,165,250,0.3)]"
-                  whileHover={{ scale: 1.06 }}
-                  whileTap={{ scale: 0.94 }}
-                  title="Ouvrir WhatsApp Web / Desktop"
-                >
-                  <MessageSquare size={28} className="text-[#060610]" />
-                </motion.button>
-                <span className="text-[11px] font-body font-semibold uppercase tracking-[0.1em] text-[#60a5fa] mt-2.5">
-                  WhatsApp Direct
-                </span>
-              </div>
-            )}
+              {/* Option B: Agent Vocal IA */}
+              <button
+                type="button"
+                onClick={() => setSpeakerMode('ai')}
+                className={`p-3.5 rounded-[12px] border text-left transition-all cursor-pointer relative ${
+                  speakerMode === 'ai'
+                    ? 'bg-[rgba(56,189,248,0.12)] border-[#38bdf8] ring-2 ring-[rgba(56,189,248,0.2)] shadow-[0_0_20px_rgba(56,189,248,0.15)]'
+                    : 'bg-[rgba(10,10,18,0.6)] border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.15)]'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[18px]">🤖</span>
+                  <span className={`text-[10px] font-body uppercase tracking-[0.08em] px-2 py-0.5 rounded-full font-semibold ${
+                    speakerMode === 'ai' ? 'bg-[#38bdf8] text-[#060610]' : 'bg-[rgba(255,255,255,0.06)] text-[rgba(232,228,220,0.5)]'
+                  }`}>
+                    100% Autonome
+                  </span>
+                </div>
+                <h4 className="text-[13.5px] font-body font-semibold text-[#e8e4dc]">
+                  Laisser l&apos;IA Parler (Agent Vocal)
+                </h4>
+                <p className="text-[11px] font-body text-[rgba(232,228,220,0.55)] mt-0.5 leading-relaxed">
+                  L&apos;IA prend la parole oralement et converse avec le client. Vous pouvez reprendre la main au micro à tout instant.
+                </p>
+              </button>
+            </div>
           </div>
 
-          <p className="text-[12px] font-body text-[rgba(232,228,220,0.5)] text-center font-mono">
-            {phoneFormatted.telUrl ? `Cible : ${phoneFormatted.displayPhone}` : 'Numéro non renseigné'}
-          </p>
+          {/* Control 2: Call Channel (Where to call?) */}
+          <div className="p-4 rounded-[14px] bg-[rgba(17,17,26,0.65)] border border-[rgba(255,255,255,0.06)] backdrop-blur-md">
+            <label className="text-[11px] font-body font-semibold uppercase tracking-[0.1em] text-[#c5a059] flex items-center gap-1.5 mb-2.5">
+              <Phone size={13} />
+              <span>2. Canal d&apos;Appel (Où composer ?)</span>
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Option SIM */}
+              <button
+                type="button"
+                onClick={() => setChannelMode('phonelink')}
+                className={`p-3.5 rounded-[12px] border text-left transition-all cursor-pointer ${
+                  channelMode === 'phonelink'
+                    ? 'bg-[rgba(74,222,128,0.12)] border-[#4ade80] ring-2 ring-[rgba(74,222,128,0.2)] shadow-[0_0_20px_rgba(74,222,128,0.15)]'
+                    : 'bg-[rgba(10,10,18,0.6)] border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.15)]'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[16px]">📱</span>
+                  <span className="text-[10px] font-body uppercase tracking-[0.08em] px-2 py-0.5 rounded-full bg-[rgba(74,222,128,0.15)] text-[#4ade80] font-semibold">
+                    SIM Mobile Algérie
+                  </span>
+                </div>
+                <h4 className="text-[13.5px] font-body font-semibold text-[#e8e4dc]">
+                  Téléphone Direct (Phone Link)
+                </h4>
+                <p className="text-[11px] font-body text-[rgba(232,228,220,0.5)] mt-0.5">
+                  Compose via l&apos;application Windows Phone Link reliée à votre mobile Android.
+                </p>
+              </button>
+
+              {/* Option WhatsApp */}
+              <button
+                type="button"
+                onClick={() => setChannelMode('whatsapp')}
+                className={`p-3.5 rounded-[12px] border text-left transition-all cursor-pointer ${
+                  channelMode === 'whatsapp'
+                    ? 'bg-[rgba(37,211,102,0.12)] border-[#25d366] ring-2 ring-[rgba(37,211,102,0.2)] shadow-[0_0_20px_rgba(37,211,102,0.15)]'
+                    : 'bg-[rgba(10,10,18,0.6)] border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.15)]'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[16px]">💬</span>
+                  <span className="text-[10px] font-body uppercase tracking-[0.08em] px-2 py-0.5 rounded-full bg-[rgba(37,211,102,0.15)] text-[#25d366] font-semibold">
+                    International / Wi-Fi
+                  </span>
+                </div>
+                <h4 className="text-[13.5px] font-body font-semibold text-[#e8e4dc]">
+                  Appel WhatsApp Direct
+                </h4>
+                <p className="text-[11px] font-body text-[rgba(232,228,220,0.5)] mt-0.5">
+                  Ouvre WhatsApp Web / Desktop pour engager l&apos;appel vocal ou le contact direct.
+                </p>
+              </button>
+            </div>
+          </div>
+
+          {/* Control 3: Strategic Offer Target */}
+          <div className="p-4 rounded-[14px] bg-[rgba(17,17,26,0.65)] border border-[rgba(255,255,255,0.06)] backdrop-blur-md">
+            <label className="text-[11px] font-body font-semibold uppercase tracking-[0.1em] text-[#c5a059] flex items-center gap-1.5 mb-2.5">
+              <Sparkles size={13} />
+              <span>3. Pack & Angle Commercial Cible</span>
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {[
+                { id: 'vitrine', label: 'Vitrine Clé en Main', icon: '🌐', badge: !hasSite ? 'Recommandé' : undefined },
+                { id: 'refonte', label: 'Refonte & Vitesse', icon: '⚡', badge: hasSite && selectedProspect.score < 60 ? 'Recommandé' : undefined },
+                { id: 'seo', label: 'Google Maps & SEO Local', icon: '📍' },
+                { id: 'custom', label: 'Solution Sur-Mesure', icon: '🤖' },
+              ].map((off) => {
+                const isSel = selectedOffer === off.id;
+                return (
+                  <button
+                    key={off.id}
+                    type="button"
+                    onClick={() => setSelectedOffer(off.id)}
+                    className={`p-2.5 rounded-[10px] border text-left transition-all cursor-pointer relative ${
+                      isSel
+                        ? 'bg-[rgba(197,160,89,0.15)] border-[#c5a059] text-[#e8e4dc]'
+                        : 'bg-[rgba(10,10,18,0.5)] border-[rgba(255,255,255,0.06)] text-[rgba(232,228,220,0.7)] hover:border-[rgba(255,255,255,0.12)]'
+                    }`}
+                  >
+                    {off.badge && (
+                      <span className="absolute -top-1.5 right-1.5 text-[8.5px] font-mono px-1.5 py-0.2 rounded-full bg-[#c5a059] text-[#060610] font-bold">
+                        {off.badge}
+                      </span>
+                    )}
+                    <div className="text-[16px] mb-1">{off.icon}</div>
+                    <p className="text-[11.5px] font-body font-semibold truncate">{off.label}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Dynamic Adaptive Launch Trigger */}
+          <div className="flex flex-col items-center pt-2 space-y-3.5">
+            <div className="relative w-full">
+              {ripples.map((r) => (
+                <motion.div
+                  key={r.id}
+                  className="absolute inset-0 rounded-[14px] border border-[#c5a059]"
+                  initial={{ scale: 0.98, opacity: 0.8 }}
+                  animate={{ scale: 1.04, opacity: 0 }}
+                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                />
+              ))}
+              <motion.button
+                type="button"
+                onClick={() => handleDial(channelMode)}
+                className={`w-full py-4 px-6 rounded-[14px] font-body font-semibold text-[14.5px] flex items-center justify-center gap-3 cursor-pointer shadow-xl transition-all ${
+                  speakerMode === 'ai'
+                    ? 'bg-gradient-to-r from-[#0284c7] via-[#38bdf8] to-[#0284c7] shadow-[0_0_25px_rgba(56,189,248,0.3)] text-[#060610]'
+                    : channelMode === 'whatsapp'
+                    ? 'bg-gradient-to-r from-[#16a34a] via-[#22c55e] to-[#16a34a] shadow-[0_0_25px_rgba(34,197,94,0.3)] text-white'
+                    : 'bg-gradient-to-r from-[#c5a059] via-[#dfba73] to-[#c5a059] shadow-[0_0_25px_rgba(197,160,89,0.3)] text-[#060610]'
+                }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {speakerMode === 'ai' ? (
+                  <>
+                    <span className="text-[19px]">🤖</span>
+                    <span>
+                      {channelMode === 'phonelink'
+                        ? "Démarrer l'Appel SIM avec l'Agent Vocal IA"
+                        : "Démarrer l'Appel WhatsApp avec l'Agent Vocal IA"}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    {channelMode === 'phonelink' ? (
+                      <>
+                        <Phone size={18} />
+                        <span>Lancer l&apos;Appel SIM (Moi-même) & Activer Copilote</span>
+                      </>
+                    ) : (
+                      <>
+                        <MessageSquare size={18} />
+                        <span>Ouvrir WhatsApp Direct & Activer Copilote</span>
+                      </>
+                    )}
+                  </>
+                )}
+              </motion.button>
+            </div>
+
+            {/* Target Number */}
+            <p className="text-[12px] font-body text-[rgba(232,228,220,0.5)] text-center font-mono">
+              {phoneFormatted.telUrl ? `Cible : ${phoneFormatted.displayPhone} • ${extractArea(selectedProspect)}` : 'Numéro non renseigné'}
+            </p>
+
+            {/* Strict Pricing Rule Security Notice */}
+            <div className="w-full p-3 rounded-[11px] bg-[rgba(197,160,89,0.06)] border border-[rgba(197,160,89,0.22)] text-[12px] font-body text-[rgba(232,228,220,0.75)] flex items-start gap-2.5">
+              <ShieldAlert size={15} className="text-[#c5a059] flex-shrink-0 mt-0.5" />
+              <div>
+                <strong className="text-[#c5a059] font-medium mr-1">Règle d&apos;or Stepping Stones :</strong>
+                Aucun prix n&apos;est divulgué par téléphone. L&apos;IA et le copilote pivotent systématiquement pour envoyer la proposition chiffrée détaillée en PDF par WhatsApp.
+              </div>
+            </div>
+          </div>
         </div>
       </motion.div>
     </div>
@@ -561,7 +752,17 @@ function PreCallState({ onStartCall }: { onStartCall: (p: typeof mockProspects[0
 
 /* ─── Executive Unified Call Header ─── */
 function UnifiedCallHeader({ onEndCall }: { onEndCall: () => void }) {
-  const { prospect, elapsedSeconds, isMuted, toggleMute, isHeld, toggleHold } = useCallStore();
+  const {
+    prospect,
+    elapsedSeconds,
+    isMuted,
+    toggleMute,
+    isHeld,
+    toggleHold,
+    speakerMode,
+    channelMode,
+    takeoverMicrophone,
+  } = useCallStore();
   const { formatPhoneNumber } = useSettingsStore();
   const [copiedPhone, setCopiedPhone] = useState(false);
 
@@ -584,18 +785,41 @@ function UnifiedCallHeader({ onEndCall }: { onEndCall: () => void }) {
           <Building2 size={18} />
         </div>
         <div className="min-w-0">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <h2 className="text-[16px] font-body font-semibold text-[#e8e4dc] truncate">
               {prospect?.company}
             </h2>
             <span className="hidden sm:inline-block text-[11px] font-body px-2 py-0.5 rounded-full bg-[rgba(255,255,255,0.06)] text-[rgba(232,228,220,0.6)]">
               {prospect?.name}
             </span>
-            {!hasSite && (
+            {!hasSite ? (
               <span className="text-[10px] font-body px-2 py-0.5 rounded-full bg-[rgba(239,68,68,0.15)] text-[#f87171] border border-[rgba(239,68,68,0.3)]">
                 Zéro site web
               </span>
-            )}
+            ) : null}
+
+            {/* Matrix Status Badges */}
+            <div className="flex items-center gap-1.5 ml-1">
+              {speakerMode === 'ai' ? (
+                <span className="text-[10px] font-body px-2 py-0.5 rounded-full bg-[rgba(56,189,248,0.15)] text-[#38bdf8] border border-[rgba(56,189,248,0.3)] font-semibold flex items-center gap-1">
+                  🤖 Agent Vocal IA
+                </span>
+              ) : (
+                <span className="text-[10px] font-body px-2 py-0.5 rounded-full bg-[rgba(197,160,89,0.15)] text-[#c5a059] border border-[rgba(197,160,89,0.3)] font-semibold flex items-center gap-1">
+                  🎙️ Copilote Actif
+                </span>
+              )}
+
+              {channelMode === 'whatsapp' ? (
+                <span className="text-[10px] font-body px-2 py-0.5 rounded-full bg-[rgba(37,211,102,0.12)] text-[#25d366] border border-[rgba(37,211,102,0.25)] font-medium">
+                  💬 WhatsApp
+                </span>
+              ) : (
+                <span className="text-[10px] font-body px-2 py-0.5 rounded-full bg-[rgba(255,255,255,0.05)] text-[rgba(232,228,220,0.6)] border border-[rgba(255,255,255,0.08)] font-medium">
+                  📱 SIM Phone Link
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-3 text-[12px] font-body text-[rgba(232,228,220,0.5)] mt-0.5 flex-wrap">
             {prospect?.phone && (
@@ -664,6 +888,20 @@ function UnifiedCallHeader({ onEndCall }: { onEndCall: () => void }) {
 
       {/* Controls Bar */}
       <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        {speakerMode === 'ai' && (
+          <motion.button
+            type="button"
+            onClick={takeoverMicrophone}
+            className="h-10 px-3 rounded-full bg-[rgba(239,68,68,0.2)] hover:bg-[rgba(239,68,68,0.3)] border border-[#ef4444] text-[#f87171] flex items-center gap-1.5 font-body font-semibold text-[11.5px] shadow-[0_0_15px_rgba(239,68,68,0.25)] cursor-pointer"
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            title="Interrompre l'IA et reprendre la parole au micro"
+          >
+            <ShieldAlert size={14} />
+            <span className="hidden md:inline">Prendre la main</span>
+          </motion.button>
+        )}
+
         <motion.button
           onClick={toggleMute}
           title={isMuted ? "Réactiver le micro" : "Couper le micro"}
@@ -707,9 +945,16 @@ function UnifiedCallHeader({ onEndCall }: { onEndCall: () => void }) {
 }
 
 /* ─── Script Reader Panel (Smart Has-Web vs No-Web) ─── */
-function ScriptReaderPanel({ onRegenerateGemini }: { onRegenerateGemini: () => void }) {
+function ScriptReaderPanel({
+  onRegenerateGemini,
+  languageMode,
+  setLanguageMode,
+}: {
+  onRegenerateGemini: () => void;
+  languageMode: 'fr' | 'ar' | 'en';
+  setLanguageMode: (lang: 'fr' | 'ar' | 'en') => void;
+}) {
   const { currentPhase, completedPhases, advancePhase, jumpToPhase, scriptLoading, script, prospect } = useCallStore();
-  const [languageMode, setLanguageMode] = useState<'fr' | 'ar' | 'en'>('fr');
   const [copiedSpeech, setCopiedSpeech] = useState(false);
 
   const hasSite = hasValidWebsite(prospect?.url);
@@ -1348,6 +1593,7 @@ function OutcomeModal({ onClose }: { onClose: () => void }) {
 export default function Call() {
   const { isActive, startCall, endCall, resetCall } = useCallStore();
   const [showOutcome, setShowOutcome] = useState(false);
+  const [languageMode, setLanguageMode] = useState<'fr' | 'ar' | 'en'>('fr');
 
   // Active call timer
   useEffect(() => {
@@ -1450,10 +1696,19 @@ export default function Call() {
       {/* Single, Unified, Executive Status Bar */}
       <UnifiedCallHeader onEndCall={handleEndCall} />
 
-      {/* Main Dual-Column Grid */}
-      <main className="max-w-[1580px] mx-auto grid grid-cols-1 lg:grid-cols-[1.25fr_1fr] gap-6 p-4 sm:p-6">
-        <ScriptReaderPanel onRegenerateGemini={fetchGeminiScript} />
-        <ObjectionPanel />
+      {/* Main Dual-Column Grid with Voice Agent Live Console */}
+      <main className="max-w-[1580px] mx-auto p-4 sm:p-6 space-y-6">
+        {/* Real-time Voice Agent & Copilot Console */}
+        <VoiceAgentLiveConsole languageMode={languageMode} />
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_1fr] gap-6">
+          <ScriptReaderPanel
+            onRegenerateGemini={fetchGeminiScript}
+            languageMode={languageMode}
+            setLanguageMode={setLanguageMode}
+          />
+          <ObjectionPanel />
+        </div>
       </main>
 
       {/* Outcome Modal */}

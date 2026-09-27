@@ -1,5 +1,31 @@
 [
   {
+    "id": "slimani-test-vip",
+    "PipelineStage": "New",
+    "Notes": "Forte réputation Google Maps mais AUCUN SITE WEB officiel. Perte de clients Omra / Turquie vers les agences avec vitrine.",
+    "ContactedAt": null,
+    "RespondedAt": null,
+    "DailyOutreachDate": null,
+    "Businessname": "Slimani Voyages & Omra",
+    "Googlemapsscore": "4,9",
+    "ReviewCount": "(85)",
+    "Phonenumber": "+213777105611",
+    "Website": "",
+    "IsClosed": false,
+    "Instagramlink": "",
+    "Facebooklink": "",
+    "Linkedinlink": "",
+    "TikToklink": "",
+    "Wilaya": "Alger Centre",
+    "Niche": "Agence de Voyage",
+    "Emailaddress": "contact@slimanivoyages.dz",
+    "WebsiteScore": 0,
+    "Weaknesses": [
+      "Missing Website (Invisible on Google Search)",
+      "Zero Digital Conversion Channel"
+    ]
+  },
+  {
     "id": "7d19bd4d-8b33-49f4-907b-22c81010b588",
     "PipelineStage": "Contacted",
     "Notes": "",
