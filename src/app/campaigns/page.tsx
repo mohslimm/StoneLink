@@ -9,7 +9,7 @@ import {
   Trash2, Play, Search, ShieldCheck, ChevronRight, BarChart2,
   Users, AlertCircle, CheckCircle2, Clock, Globe, Phone, 
   Copy, Check, ExternalLink, ArrowUpDown, X, Layers, Filter,
-  Star, RefreshCw, ChevronDown, Eye, EyeOff, FlaskConical, Globe2, Plus
+  Star, RefreshCw, ChevronDown, Eye, EyeOff, FlaskConical, Globe2, Plus, RotateCcw
 } from 'lucide-react';
 import { GlassPanel } from '@/components/ui/custom/GlassPanel';
 import { AnimatedButton } from '@/components/ui/custom/AnimatedButton';
@@ -17,7 +17,9 @@ import { StatCard } from '@/components/ui/custom/StatCard';
 import { ToggleSwitch } from '@/components/ui/custom/ToggleSwitch';
 import { useUIStore } from '@/hooks/useUIStore';
 import { useCrawlerStore } from '@/hooks/useCrawlerStore';
+import { useProspectsStore } from '@/hooks/useProspectsStore';
 import { mockProspects } from '@/data/prospects';
+import { mapBackendProspect } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface CampaignSummary {
@@ -45,11 +47,16 @@ function hasValidWebsite(url?: string): boolean {
 }
 
 function extractArea(p: any): string {
+  if (p.city && typeof p.city === 'string' && p.city.trim() && p.city.trim() !== 'Général') {
+    return p.city.trim();
+  }
+  if (p.Wilaya && typeof p.Wilaya === 'string' && p.Wilaya.trim()) {
+    return p.Wilaya.trim();
+  }
   if (p.notes && p.notes.includes('Zone:')) {
-    const match = p.notes.match(/Zone:\s*([^|]+)/);
+    const match = p.notes.match(/Zone:\s*([^|\n\r]+)/);
     if (match) return match[1].trim();
   }
-  if (p.city) return p.city.trim();
   return 'Général';
 }
 
@@ -64,7 +71,14 @@ export default function CampaignsPage() {
     setIsMonitorOpen,
     startCrawler,
   } = useCrawlerStore();
-  const [prospects, setProspects] = useState<any[]>(mockProspects);
+  
+  // Shared Global Prospects Store
+  const { prospects, fetchProspects, toggleContacted } = useProspectsStore();
+
+  useEffect(() => {
+    fetchProspects();
+  }, [fetchProspects]);
+
   const [search, setSearch] = useState('');
   const [nicheFilter, setNicheFilter] = useState('all');
   const [areaFilter, setAreaFilter] = useState('all');
@@ -124,7 +138,7 @@ export default function CampaignsPage() {
 
   // Modal Campaign Detail Search & Filter
   const [modalSearch, setModalSearch] = useState('');
-  const [modalFilter, setModalFilter] = useState<'all' | 'noweb' | 'web'>('all');
+  const [modalFilter, setModalFilter] = useState<'all' | 'noweb' | 'web' | 'contacted'>('all');
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
 
   // 1. DYNAMIC EXTRACTION OF NICHES & AREAS FROM SCRAPED PROSPECTS
@@ -250,6 +264,7 @@ export default function CampaignsPage() {
       const hasWeb = hasValidWebsite(l.url);
       if (modalFilter === 'noweb' && hasWeb) return false;
       if (modalFilter === 'web' && !hasWeb) return false;
+      if (modalFilter === 'contacted' && l.stage !== 'contacte') return false;
 
       const q = modalSearch.toLowerCase().trim();
       if (!q) return true;
@@ -261,6 +276,38 @@ export default function CampaignsPage() {
       );
     });
   }, [selectedCampaign, modalFilter, modalSearch]);
+
+  const handleToggleContacted = async (lead: any, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const res = await toggleContacted(lead.id);
+
+    // Keep selectedCampaign in sync in the open modal
+    setSelectedCampaign((prev) => {
+      if (!prev) return null;
+      const updatedLeads = prev.leads.map((l) =>
+        l.id === lead.id
+          ? {
+              ...l,
+              stage: res.isContacted ? 'contacte' : 'nouveau',
+              lastContact: res.isContacted ? "Aujourd'hui" : 'Non contacté',
+            }
+          : l
+      );
+      const contactedLeads = updatedLeads.filter((l) => l.stage === 'contacte').length;
+      return {
+        ...prev,
+        leads: updatedLeads,
+        contactedLeads,
+      };
+    });
+
+    addToast({
+      type: 'success',
+      message: res.isContacted
+        ? `✓ ${res.company} marqué comme Contacté !`
+        : `${res.company} remis en statut nouveau.`,
+    });
+  };
 
   const handleExportCsv = (camp: CampaignSummary) => {
     const headers = ['Nom', 'Entreprise', 'Telephone', 'Email', 'Site', 'Score', 'Statut', 'Notes'];
@@ -332,7 +379,7 @@ export default function CampaignsPage() {
     }
   };
 
-  const hasActiveFilters = nicheFilter !== 'all' || areaFilter !== 'all' || noWebsiteOnly || priorityOnly || search !== '';
+  const hasActiveFilters = nicheFilter !== 'all' || areaFilter !== 'all' || noWebsiteOnly || priorityOnly || search !== '' || sortBy !== 'recent';
 
   return (
     <div className="min-h-[calc(100dvh-56px)] pb-16 pt-6 px-4 sm:px-6 max-w-[1580px] mx-auto">
@@ -477,13 +524,13 @@ export default function CampaignsPage() {
           </div>
 
           {/* Center: Dynamic Dropdowns */}
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Dynamic Niches */}
-            <div className="relative">
+            <div className="relative w-full sm:w-[155px] shrink-0">
               <select
                 value={nicheFilter}
                 onChange={(e) => setNicheFilter(e.target.value)}
-                className="h-10 rounded-[10px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] px-3 pr-8 text-[12.5px] text-[#e8e4dc] focus:outline-none focus:border-[rgba(197,160,89,0.35)] appearance-none cursor-pointer"
+                className="w-full h-10 rounded-[10px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] px-3 pr-8 text-[12.5px] text-[#e8e4dc] focus:outline-none focus:border-[rgba(197,160,89,0.35)] appearance-none cursor-pointer truncate"
               >
                 {dynamicNiches.map((n) => (
                   <option key={n.value} value={n.value} className="bg-[#0e0e18] text-[#e8e4dc]">
@@ -495,11 +542,11 @@ export default function CampaignsPage() {
             </div>
 
             {/* Dynamic Wilayas / Areas */}
-            <div className="relative">
+            <div className="relative w-full sm:w-[170px] shrink-0">
               <select
                 value={areaFilter}
                 onChange={(e) => setAreaFilter(e.target.value)}
-                className="h-10 rounded-[10px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] px-3 pr-8 text-[12.5px] text-[#e8e4dc] focus:outline-none focus:border-[rgba(197,160,89,0.35)] appearance-none cursor-pointer"
+                className="w-full h-10 rounded-[10px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] px-3 pr-8 text-[12.5px] text-[#e8e4dc] focus:outline-none focus:border-[rgba(197,160,89,0.35)] appearance-none cursor-pointer truncate"
               >
                 {dynamicAreas.map((a) => (
                   <option key={a.value} value={a.value} className="bg-[#0e0e18] text-[#e8e4dc]">
@@ -511,11 +558,11 @@ export default function CampaignsPage() {
             </div>
 
             {/* Sort Dropdown */}
-            <div className="relative">
+            <div className="relative w-full sm:w-[165px] shrink-0">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="h-10 rounded-[10px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] px-3 pr-8 text-[12.5px] text-[#e8e4dc] focus:outline-none focus:border-[rgba(197,160,89,0.35)] appearance-none cursor-pointer"
+                className="w-full h-10 rounded-[10px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] px-3 pr-8 text-[12.5px] text-[#e8e4dc] focus:outline-none focus:border-[rgba(197,160,89,0.35)] appearance-none cursor-pointer truncate"
               >
                 <option value="recent" className="bg-[#0e0e18]">Trier par : Récents</option>
                 <option value="leads_desc" className="bg-[#0e0e18]">Trier par : Plus de prospects</option>
@@ -524,13 +571,11 @@ export default function CampaignsPage() {
               </select>
               <ArrowUpDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[rgba(232,228,220,0.4)] pointer-events-none" />
             </div>
-          </div>
 
-          {/* Right: Quick Toggles */}
-          <div className="flex items-center gap-2 flex-wrap">
+            {/* Quick Toggles */}
             <button
               onClick={() => setNoWebsiteOnly(!noWebsiteOnly)}
-              className={`h-10 px-3.5 rounded-[10px] text-[12px] font-body font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`h-10 px-3 rounded-[10px] text-[12px] font-body font-medium flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
                 noWebsiteOnly
                   ? 'bg-[rgba(239,68,68,0.18)] border border-[rgba(239,68,68,0.4)] text-[#f87171] shadow-[0_0_15px_rgba(239,68,68,0.15)]'
                   : 'bg-[#11111a] border border-[rgba(255,255,255,0.08)] text-[rgba(232,228,220,0.65)] hover:border-[rgba(239,68,68,0.3)]'
@@ -542,7 +587,7 @@ export default function CampaignsPage() {
 
             <button
               onClick={() => setPriorityOnly(!priorityOnly)}
-              className={`h-10 px-3.5 rounded-[10px] text-[12px] font-body font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`h-10 px-3 rounded-[10px] text-[12px] font-body font-medium flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
                 priorityOnly
                   ? 'bg-[rgba(197,160,89,0.18)] border border-[rgba(197,160,89,0.4)] text-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.15)]'
                   : 'bg-[#11111a] border border-[rgba(255,255,255,0.08)] text-[rgba(232,228,220,0.65)] hover:border-[rgba(197,160,89,0.3)]'
@@ -560,11 +605,12 @@ export default function CampaignsPage() {
                   setAreaFilter('all');
                   setNoWebsiteOnly(false);
                   setPriorityOnly(false);
+                  setSortBy('recent');
                 }}
-                className="h-10 px-3 rounded-[10px] text-[12px] font-body text-[rgba(232,228,220,0.45)] hover:text-[#e8e4dc] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+                className="w-10 h-10 rounded-[10px] bg-[#11111a] hover:bg-[rgba(197,160,89,0.15)] border border-[rgba(197,160,89,0.35)] text-[#c5a059] flex items-center justify-center transition-all cursor-pointer shrink-0"
                 title="Réinitialiser les filtres"
               >
-                Réinitialiser
+                <RotateCcw size={15} />
               </button>
             )}
           </div>
@@ -611,7 +657,15 @@ export default function CampaignsPage() {
 
                 <div className="flex items-center gap-2 text-[12px] font-body text-[rgba(232,228,220,0.5)] mb-4">
                   <Calendar size={13} className="text-[rgba(232,228,220,0.4)]" />
-                  <span>{camp.date}</span>
+                  <span>
+                    {camp.contactedLeads > 0 ? (
+                      <span className="text-[#4ade80] font-medium">
+                        ✓ {camp.contactedLeads} / {camp.totalLeads} contactés
+                      </span>
+                    ) : (
+                      'Non contacté'
+                    )}
+                  </span>
                 </div>
 
                 {/* Key indicators row */}
@@ -773,6 +827,16 @@ export default function CampaignsPage() {
                     >
                       🌐 Avec site ({selectedCampaign.totalLeads - selectedCampaign.noWebsiteLeads})
                     </button>
+                    <button
+                      onClick={() => setModalFilter('contacted')}
+                      className={`px-3 py-1.5 rounded-[8px] text-[11px] font-body font-medium transition-all ${
+                        modalFilter === 'contacted'
+                          ? 'bg-[rgba(74,222,128,0.2)] text-[#4ade80] border border-[rgba(74,222,128,0.3)]'
+                          : 'bg-[#141424] text-[rgba(232,228,220,0.5)] border border-[rgba(255,255,255,0.06)] hover:text-[#e8e4dc]'
+                      }`}
+                    >
+                      ✓ Contactés ({selectedCampaign.contactedLeads || 0})
+                    </button>
                   </div>
                 </div>
               </div>
@@ -823,8 +887,8 @@ export default function CampaignsPage() {
                                 <ExternalLink size={10} />
                               </a>
                             ) : (
-                              <span className="text-[#fbbf24] flex items-center gap-1">
-                                ⭐ 4.8★ Google Maps
+                              <span className="text-[#f87171] flex items-center gap-1">
+                                🚫 Pas de site web officiel
                               </span>
                             )}
                           </div>
@@ -858,6 +922,30 @@ export default function CampaignsPage() {
                               )}
                             </button>
                           )}
+
+                          {/* Bouton Contacté */}
+                          <button
+                            onClick={(e) => handleToggleContacted(lead, e)}
+                            className={cn(
+                              "h-9 px-3 rounded-[8px] text-[11.5px] font-body font-medium flex items-center gap-1.5 transition-all cursor-pointer",
+                              lead.stage === 'contacte'
+                                ? "bg-[rgba(74,222,128,0.18)] border border-[rgba(74,222,128,0.4)] text-[#4ade80] hover:bg-[rgba(74,222,128,0.28)] shadow-[0_0_12px_rgba(74,222,128,0.15)]"
+                                : "bg-[#19192a] hover:bg-[rgba(197,160,89,0.15)] border border-[rgba(255,255,255,0.08)] hover:border-[rgba(197,160,89,0.35)] text-[rgba(232,228,220,0.7)] hover:text-[#e8e4dc]"
+                            )}
+                            title={lead.stage === 'contacte' ? "Déjà contacté (cliquer pour remettre en nouveau)" : "Marquer ce prospect comme contacté"}
+                          >
+                            {lead.stage === 'contacte' ? (
+                              <>
+                                <CheckCircle2 size={13} className="text-[#4ade80]" />
+                                <span>Contacté</span>
+                              </>
+                            ) : (
+                              <>
+                                <Check size={13} className="text-[rgba(232,228,220,0.4)]" />
+                                <span>Contacté ?</span>
+                              </>
+                            )}
+                          </button>
 
                           <Link
                             href={`/call?id=${lead.id}`}

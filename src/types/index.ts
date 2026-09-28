@@ -7,6 +7,7 @@ export interface Prospect {
   email: string;
   score: number;
   sector: string;
+  city?: string;
   stage: PipelineStage;
   lastContact: string;
   callHistory: CallRecord[];
@@ -14,7 +15,7 @@ export interface Prospect {
   scriptReady: boolean;
 }
 
-export type PipelineStage = 'nouveau' | 'contacte' | 'prototype' | 'ferme' | 'perdu';
+export type PipelineStage = 'nouveau' | 'contacte' | 'recontacter' | 'prototype' | 'ferme' | 'perdu';
 
 export interface CallRecord {
   id: string;
@@ -51,32 +52,36 @@ export interface ObjectionItem {
 export const STAGE_COLORS: Record<PipelineStage, string> = {
   nouveau: '#60a5fa',
   contacte: '#c5a059',
-  prototype: '#4ade80',
+  recontacter: '#f97316',
+  prototype: '#a855f7',
   ferme: '#4ade80',
   perdu: '#f87171',
 };
 
 export const STAGE_LABELS: Record<PipelineStage, string> = {
   nouveau: 'Nouveaux',
-  contacte: 'Contactes',
-  prototype: 'Prototypes envoyes',
-  ferme: 'Fermes',
+  contacte: 'Contactés',
+  recontacter: 'À recontacter',
+  prototype: 'Prototypes envoyés',
+  ferme: 'Fermés',
   perdu: 'Perdus',
 };
 
 export function mapBackendProspect(doc: any): Prospect {
-  const rawStage = doc.stage || 'nouveau';
+  const rawStage = doc.stage || doc.PipelineStage || 'nouveau';
   let stage: PipelineStage = 'nouveau';
 
-  if (['nouveau', 'new'].includes(rawStage)) {
+  if (['nouveau', 'new'].includes(rawStage.toLowerCase())) {
     stage = 'nouveau';
-  } else if (['contacte', 'contacted', 'to_call', 'calling', 'called'].includes(rawStage)) {
+  } else if (['recontacter', 'callback', 'rappeler', 'recontact'].includes(rawStage.toLowerCase())) {
+    stage = 'recontacter';
+  } else if (['contacte', 'contacted', 'to_call', 'calling', 'called'].includes(rawStage.toLowerCase())) {
     stage = 'contacte';
-  } else if (['prototype', 'prototype_sent', 'interested'].includes(rawStage)) {
+  } else if (['prototype', 'prototype_sent', 'interested'].includes(rawStage.toLowerCase())) {
     stage = 'prototype';
-  } else if (['ferme', 'closed', 'closed_won', 'meeting', 'proposal', 'negotiation'].includes(rawStage)) {
+  } else if (['ferme', 'closed', 'closed_won', 'meeting', 'proposal', 'negotiation'].includes(rawStage.toLowerCase())) {
     stage = 'ferme';
-  } else if (['perdu', 'lost', 'closed_lost'].includes(rawStage)) {
+  } else if (['perdu', 'lost', 'closed_lost'].includes(rawStage.toLowerCase())) {
     stage = 'perdu';
   }
 
@@ -89,6 +94,7 @@ export function mapBackendProspect(doc: any): Prospect {
     email: doc.email || 'Pas d\'email',
     score: typeof doc.score === 'number' ? doc.score : (doc.lighthouseScore || 52),
     sector: doc.niche || doc.sector || 'Général',
+    city: doc.city || doc.Wilaya || 'Général',
     stage,
     lastContact: doc.lastContactedAt ? new Date(doc.lastContactedAt).toLocaleDateString('fr-FR') : (doc.lastContact || 'Jamais'),
     callHistory: Array.isArray(doc.callHistory) ? doc.callHistory : [],

@@ -28,17 +28,19 @@ const ActivitySchema = new Schema({
 
 const ProspectSchema = new Schema(
   {
-    companyName: { type: String, required: true },
-    contactName: { type: String, required: true },
-    email: { type: String, required: true, index: true },
-    phone: { type: String },
-    website: { type: String },
+    _id: { type: String },
+    companyName: { type: String, default: 'Sans entreprise' },
+    contactName: { type: String, default: 'Sans contact' },
+    email: { type: String, default: '' },
+    phone: { type: String, default: '' },
+    website: { type: String, default: '' },
 
-    niche: { type: String, required: true },
-    country: { type: String, required: true },
-    city: { type: String, required: true },
+    score: { type: Number, default: 0 },
+    niche: { type: String, default: 'Général' },
+    country: { type: String, default: 'Algérie' },
+    city: { type: String, default: '' },
 
-    stage: { type: String, default: 'new' },
+    stage: { type: String, default: 'nouveau' },
     priority: { type: String, default: 'cold' },
 
     estimatedDealValue: { type: Number },
@@ -46,9 +48,10 @@ const ProspectSchema = new Schema(
     lastReminderAt: { type: Date },
     customizedPrototypeUrl: { type: String },
 
-    notes: { type: [NoteSchema], default: [] },
+    notes: { type: Schema.Types.Mixed, default: '' },
     emails: { type: [EmailSchema], default: [] },
     activities: { type: [ActivitySchema], default: [] },
+    callHistory: { type: Array, default: [] },
 
     aiAssets: {
       siteAdaptation: Schema.Types.Mixed,
@@ -56,11 +59,11 @@ const ProspectSchema = new Schema(
       callScript: Schema.Types.Mixed,
     },
   },
-  { timestamps: true }
+  { timestamps: true, strict: false }
 );
 
-// ✅ IMPORTANT: prevents overwrite in Next.js hot reload
-export type Prospect = InferSchemaType<typeof ProspectSchema>;
-
-const ProspectModel: mongoose.Model<any> = models.Prospect || model('Prospect', ProspectSchema);
+const ProspectModel: mongoose.Model<any> =
+  models.Prospect && models.Prospect.schema.paths['_id']?.instance === 'String'
+    ? models.Prospect
+    : (delete (models as any).Prospect, model('Prospect', ProspectSchema));
 export default ProspectModel;

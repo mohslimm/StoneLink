@@ -2,19 +2,66 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutGrid, List, Search, Plus, MoreHorizontal, X, Phone, Trash2, Globe, Mail, ShieldAlert, Upload } from 'lucide-react';
+import { 
+  LayoutGrid, List, Search, Plus, MoreHorizontal, X, Phone, Trash2, Globe, Mail, 
+  ShieldAlert, Upload, ChevronDown, ArrowUpDown, Star, Filter, CheckCircle2, RotateCcw,
+  FileText, Save, Check
+} from 'lucide-react';
 import { GlassPanel } from '@/components/ui/custom/GlassPanel';
 import { AnimatedButton } from '@/components/ui/custom/AnimatedButton';
 import { useUIStore } from '@/hooks/useUIStore';
+import { useProspectsStore } from '@/hooks/useProspectsStore';
 import { mockProspects } from '@/data/prospects';
 import { STAGE_COLORS, STAGE_LABELS, mapBackendProspect } from '@/types';
 import type { PipelineStage, Prospect, CallRecord } from '@/types';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 
-const stages: PipelineStage[] = ['nouveau', 'contacte', 'prototype', 'ferme', 'perdu'];
+const stages: PipelineStage[] = ['nouveau', 'contacte', 'recontacter', 'prototype', 'ferme', 'perdu'];
 
-function ScoreBadge({ score }: { score: number }) {
+function hasValidWebsite(url?: string): boolean {
+  if (!url) return false;
+  const clean = url.trim().toLowerCase();
+  return clean !== '' &&
+         clean !== 'pas de site web' &&
+         clean !== 'non renseigné' &&
+         clean !== 'aucun' &&
+         clean.length > 3;
+}
+
+function extractArea(p: any): string {
+  if (p.city && typeof p.city === 'string' && p.city.trim() && p.city.trim() !== 'Général') {
+    return p.city.trim();
+  }
+  if (p.Wilaya && typeof p.Wilaya === 'string' && p.Wilaya.trim()) {
+    return p.Wilaya.trim();
+  }
+  if (p.notes && p.notes.includes('Zone:')) {
+    const match = p.notes.match(/Zone:\s*([^|\n\r]+)/);
+    if (match) return match[1].trim();
+  }
+  return 'Général';
+}
+
+function getDisplayNote(notes?: string): string | null {
+  if (!notes) return null;
+  const lines = notes.split('\n').map((l) => l.trim()).filter(Boolean);
+  const userLines = lines.filter((l) => !l.startsWith('Zone:') && !l.startsWith('Faiblesses détectées :'));
+  if (userLines.length > 0) {
+    return userLines.join(' · ');
+  }
+  const clean = lines.join(' · ').replace(/Zone:\s*[^·|]+[·|]?/g, '').trim();
+  return clean.length > 2 ? clean : null;
+}
+
+function ScoreBadge({ score, hasWeb }: { score: number; hasWeb?: boolean }) {
+  if (hasWeb === false || score === 0) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10.5px] font-body font-semibold px-2 py-0.5 rounded-full text-[#f87171] bg-[rgba(239,68,68,0.12)] border border-[rgba(239,68,68,0.22)]">
+        🚫 Sans site
+      </span>
+    );
+  }
   const color = score >= 70 ? '#4ade80' : score >= 40 ? '#60a5fa' : '#f87171';
   const bg = score >= 70 ? 'rgba(74,222,128,0.10)' : score >= 40 ? 'rgba(96,165,250,0.10)' : 'rgba(248,113,113,0.10)';
   return (
@@ -28,7 +75,8 @@ function StatusBadge({ stage }: { stage: PipelineStage }) {
   const colors: Record<PipelineStage, { color: string; bg: string }> = {
     nouveau: { color: '#60a5fa', bg: 'rgba(96,165,250,0.10)' },
     contacte: { color: '#c5a059', bg: 'rgba(197,160,89,0.15)' },
-    prototype: { color: '#4ade80', bg: 'rgba(74,222,128,0.10)' },
+    recontacter: { color: '#f97316', bg: 'rgba(249,115,22,0.15)' },
+    prototype: { color: '#a855f7', bg: 'rgba(168,85,247,0.12)' },
     ferme: { color: '#4ade80', bg: 'rgba(74,222,128,0.10)' },
     perdu: { color: '#f87171', bg: 'rgba(248,113,113,0.10)' },
   };
@@ -120,10 +168,15 @@ function DetailDrawer({
                   <a href={`mailto:${prospect.email}`} className="hover:underline">{prospect.email}</a>
                 </div>
               )}
-              {prospect.url && (
+              {hasValidWebsite(prospect.url) ? (
                 <div className="flex items-center gap-2 text-[13px] font-body text-[rgba(232,228,220,0.7)]">
                   <Globe size={14} className="text-[#c5a059]" />
                   <a href={prospect.url} target="_blank" rel="noreferrer" className="hover:underline truncate">{prospect.url}</a>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-[13px] font-body text-[#f87171]">
+                  <Globe size={14} className="text-[#f87171]" />
+                  <span>🚫 Aucun site web officiel</span>
                 </div>
               )}
             </div>
@@ -132,14 +185,24 @@ function DetailDrawer({
           {/* Score & Niche */}
           <div className="p-6 border-b border-[rgba(255,255,255,0.06)] flex items-center justify-between">
             <div>
-              <h3 className="text-[11px] font-body font-medium uppercase tracking-[0.06em] text-[rgba(232,228,220,0.5)] mb-1">Score Lighthouse</h3>
-              <div className="flex items-baseline gap-2">
-                <span className="text-[32px] font-body font-normal tracking-[-0.02em]"
-                  style={{ color: prospect.score >= 70 ? '#4ade80' : prospect.score >= 40 ? '#60a5fa' : '#f87171' }}>
-                  {prospect.score}
-                </span>
-                <span className="text-[14px] font-body text-[rgba(232,228,220,0.5)]">/100</span>
-              </div>
+              <h3 className="text-[11px] font-body font-medium uppercase tracking-[0.06em] text-[rgba(232,228,220,0.5)] mb-1">
+                {hasValidWebsite(prospect.url) && prospect.score > 0 ? 'Score Lighthouse' : 'Présence Web'}
+              </h3>
+              {hasValidWebsite(prospect.url) && prospect.score > 0 ? (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-[32px] font-body font-normal tracking-[-0.02em]"
+                    style={{ color: prospect.score >= 70 ? '#4ade80' : prospect.score >= 40 ? '#60a5fa' : '#f87171' }}>
+                    {prospect.score}
+                  </span>
+                  <span className="text-[14px] font-body text-[rgba(232,228,220,0.5)]">/100</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="px-2.5 py-1 rounded-full text-[12px] font-body font-semibold text-[#f87171] bg-[rgba(239,68,68,0.12)] border border-[rgba(239,68,68,0.25)]">
+                    🚫 Sans site web
+                  </span>
+                </div>
+              )}
             </div>
             <div className="text-right">
               <h3 className="text-[11px] font-body font-medium uppercase tracking-[0.06em] text-[rgba(232,228,220,0.5)] mb-1">Secteur</h3>
@@ -198,16 +261,27 @@ function DetailDrawer({
           <div className="p-6">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-[11px] font-body font-medium uppercase tracking-[0.06em] text-[rgba(232,228,220,0.5)]">Notes Stratégiques</h3>
-              <span className="text-[10px] text-[rgba(232,228,220,0.4)]">Enregistrement auto</span>
+              <span className="text-[10px] text-[#4ade80] flex items-center gap-1 font-body">
+                <Check size={11} /> Sauvegarde auto
+              </span>
             </div>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               onBlur={handleNotesBlur}
-              placeholder="Ajouter des notes sur le prospect..."
+              placeholder="Ajouter des notes (ex: rappeler demain 14h, ne décroche pas, nouveau numéro, etc.)..."
               rows={4}
               className="w-full p-3 rounded-[10px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] text-[13px] font-body text-[#e8e4dc] placeholder:text-[rgba(232,228,220,0.25)] resize-vertical focus:outline-none focus:border-[#c5a059]"
             />
+            {notes !== prospect.notes && (
+              <button
+                onClick={handleNotesBlur}
+                className="mt-2.5 w-full py-2 rounded-[8px] bg-[rgba(197,160,89,0.18)] hover:bg-[rgba(197,160,89,0.28)] border border-[rgba(197,160,89,0.35)] text-[12px] font-body font-medium text-[#c5a059] flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-[0_2px_12px_rgba(197,160,89,0.1)]"
+              >
+                <Save size={13} />
+                <span>Enregistrer la note maintenant</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -258,7 +332,7 @@ function PipelineCard({
             {prospect.company}
           </p>
         </div>
-        <ScoreBadge score={prospect.score} />
+        <ScoreBadge score={prospect.score} hasWeb={hasValidWebsite(prospect.url)} />
       </div>
 
       <div className="flex items-center gap-2 mt-3 flex-wrap">
@@ -269,6 +343,16 @@ function PipelineCard({
           {prospect.lastContact}
         </span>
       </div>
+
+      {/* Note preview snippet on card */}
+      {getDisplayNote(prospect.notes) && (
+        <div className="mt-2.5 px-2.5 py-1.5 rounded-[8px] bg-[rgba(197,160,89,0.08)] border border-[rgba(197,160,89,0.2)] flex items-start gap-1.5 text-[11.5px] font-body text-[#e8e4dc]">
+          <FileText size={12} className="text-[#c5a059] shrink-0 mt-0.5" />
+          <span className="line-clamp-2 leading-relaxed italic text-[rgba(232,228,220,0.85)]">
+            &ldquo;{getDisplayNote(prospect.notes)}&rdquo;
+          </span>
+        </div>
+      )}
 
       {/* Quick Stage Progression */}
       <div
@@ -436,9 +520,15 @@ function ListView({
                 <td className="px-5 py-3.5">
                   <p className="text-[14px] font-body font-semibold text-[#e8e4dc]">{prospect.name}</p>
                   <p className="text-[12px] font-body text-[#c5a059]">{prospect.company}</p>
+                  {getDisplayNote(prospect.notes) && (
+                    <p className="text-[11px] font-body text-[rgba(232,228,220,0.6)] italic mt-1 line-clamp-1 flex items-center gap-1">
+                      <FileText size={11} className="text-[#c5a059] shrink-0" />
+                      <span>{getDisplayNote(prospect.notes)}</span>
+                    </p>
+                  )}
                 </td>
                 <td className="px-5 py-3.5">
-                  <ScoreBadge score={prospect.score} />
+                  <ScoreBadge score={prospect.score} hasWeb={hasValidWebsite(prospect.url)} />
                 </td>
                 <td className="px-5 py-3.5 text-[13px] font-body text-[rgba(232,228,220,0.65)]">
                   {prospect.sector}
@@ -531,98 +621,54 @@ function PipelineStats({ prospects }: { prospects: Prospect[] }) {
 /* ─── CRM Main Page ─── */
 export default function CRM() {
   const { crmView, setCrmView, addToast } = useUIStore();
+  const {
+    prospects,
+    loading,
+    isFallbackMode,
+    fetchProspects,
+    updateStage,
+    updateNotes,
+    deleteProspect,
+    addProspect,
+    importProspects,
+  } = useProspectsStore();
+
   const [search, setSearch] = useState('');
+  const [nicheFilter, setNicheFilter] = useState('all');
+  const [areaFilter, setAreaFilter] = useState('all');
+  const [stageFilter, setStageFilter] = useState<'all' | PipelineStage>('all');
+  const [noWebsiteOnly, setNoWebsiteOnly] = useState(false);
+  const [priorityOnly, setPriorityOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<'recent' | 'score_asc' | 'score_desc' | 'name_asc'>('recent');
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [isFallbackMode, setIsFallbackMode] = useState(false);
-  
-  const [prospects, setProspects] = useState<Prospect[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Fetch prospects from backend or memory fallback
-  const fetchProspects = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch('/api/prospects');
-      if (!res.ok) throw new Error('Erreur de chargement');
-      const json = await res.json();
-      
-      if (json.source === 'memory_fallback') {
-        setIsFallbackMode(true);
-      }
-      
-      if (json.data && Array.isArray(json.data) && json.data.length > 0) {
-        setProspects(json.data.map(mapBackendProspect));
-      } else {
-        setProspects(mockProspects);
-      }
-    } catch (err) {
-      console.warn('API error, using mock prospects fallback', err);
-      setIsFallbackMode(true);
-      setProspects(mockProspects);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     fetchProspects();
-  }, []);
+  }, [fetchProspects]);
 
   const handleUpdateStage = async (id: string, stage: PipelineStage) => {
-    // 1. Optimistic update
-    setProspects((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, stage } : p))
-    );
+    await updateStage(id, stage);
     if (selectedProspect && selectedProspect.id === id) {
       setSelectedProspect((prev) => (prev ? { ...prev, stage } : null));
     }
     addToast({ type: 'success', message: `Statut mis à jour : ${STAGE_LABELS[stage]}` });
-
-    // 2. Persist to API
-    try {
-      await fetch(`/api/prospects/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stage }),
-      });
-    } catch (err) {
-      console.warn('Server sync error, kept in local state', err);
-    }
   };
 
   const handleUpdateNotes = async (id: string, notes: string) => {
-    setProspects((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, notes } : p))
-    );
+    await updateNotes(id, notes);
     if (selectedProspect && selectedProspect.id === id) {
       setSelectedProspect((prev) => (prev ? { ...prev, notes } : null));
     }
     addToast({ type: 'success', message: 'Notes enregistrées' });
-
-    try {
-      await fetch(`/api/prospects/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notes }),
-      });
-    } catch (err) {
-      console.warn('Server sync error, kept in local state', err);
-    }
   };
 
   const handleDeleteProspect = async (id: string) => {
-    setProspects((prev) => prev.filter((p) => p.id !== id));
+    await deleteProspect(id);
     if (selectedProspect && selectedProspect.id === id) {
       setSelectedProspect(null);
     }
     addToast({ type: 'info', message: 'Prospect supprimé' });
-
-    try {
-      await fetch(`/api/prospects/${id}`, { method: 'DELETE' });
-    } catch (err) {
-      console.warn('Server sync error', err);
-    }
   };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -632,7 +678,6 @@ export default function CRM() {
     if (!file) return;
 
     try {
-      setLoading(true);
       const text = await file.text();
       const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
       if (lines.length < 2) {
@@ -695,7 +740,7 @@ export default function CRM() {
       const resJson = await res.json();
       const importedDocs = (resJson.data || leadsToImport).map(mapBackendProspect);
 
-      setProspects((prev) => [...importedDocs, ...prev]);
+      importProspects(importedDocs);
       addToast({
         type: 'success',
         message: `${importedDocs.length} leads importés avec succès depuis Bot-Search !`,
@@ -704,27 +749,86 @@ export default function CRM() {
       console.error('Import error:', err);
       addToast({ type: 'error', message: "Erreur lors de l'import du fichier CSV" });
     } finally {
-      setLoading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   const handleAddProspect = (newProspect: Prospect) => {
-    setProspects((prev) => [newProspect, ...prev]);
+    addProspect(newProspect);
     setShowAddModal(false);
     addToast({ type: 'success', message: 'Prospect ajouté au pipeline' });
   };
 
+  // Dynamic Extraction of Niches and Areas from CRM prospects
+  const dynamicNiches = useMemo(() => {
+    const set = new Set<string>();
+    prospects.forEach((p) => {
+      if (p.sector) set.add(p.sector);
+    });
+    const list = Array.from(set).sort();
+    return [{ label: 'Toutes les niches', value: 'all' }, ...list.map((n) => ({ label: n, value: n }))];
+  }, [prospects]);
+
+  const dynamicAreas = useMemo(() => {
+    const set = new Set<string>();
+    prospects.forEach((p) => {
+      const area = extractArea(p);
+      if (area && area !== 'Général') set.add(area);
+    });
+    const list = Array.from(set).sort();
+    return [{ label: 'Toutes les wilayas / zones', value: 'all' }, ...list.map((a) => ({ label: a, value: a }))];
+  }, [prospects]);
+
+  // Multi-criteria Filtering & Sorting (matching Campaigns engine)
   const filteredProspects = useMemo(() => {
-    if (!search.trim()) return prospects;
-    const q = search.toLowerCase();
-    return prospects.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.company.toLowerCase().includes(q) ||
-        p.sector.toLowerCase().includes(q)
-    );
-  }, [search, prospects]);
+    return prospects
+      .filter((p) => {
+        const matchNiche = nicheFilter === 'all' || p.sector === nicheFilter;
+        const area = extractArea(p);
+        const matchArea = areaFilter === 'all' || area === areaFilter;
+        const hasWeb = hasValidWebsite(p.url);
+        const matchNoWeb = !noWebsiteOnly || !hasWeb;
+        const matchPriority = !priorityOnly || p.score < 45 || !hasWeb;
+        const matchStage = stageFilter === 'all' || p.stage === stageFilter;
+
+        const q = search.toLowerCase().trim();
+        const matchSearch =
+          !q ||
+          (p.name && p.name.toLowerCase().includes(q)) ||
+          (p.company && p.company.toLowerCase().includes(q)) ||
+          (p.sector && p.sector.toLowerCase().includes(q)) ||
+          (p.phone && p.phone.includes(q)) ||
+          (p.notes && p.notes.toLowerCase().includes(q)) ||
+          area.toLowerCase().includes(q);
+
+        return matchNiche && matchArea && matchNoWeb && matchPriority && matchStage && matchSearch;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'score_asc') return (a.score || 0) - (b.score || 0);
+        if (sortBy === 'score_desc') return (b.score || 0) - (a.score || 0);
+        if (sortBy === 'name_asc') return (a.company || a.name || '').localeCompare(b.company || b.name || '');
+        return 0; // Default recent
+      });
+  }, [prospects, search, nicheFilter, areaFilter, stageFilter, noWebsiteOnly, priorityOnly, sortBy]);
+
+  const hasActiveFilters =
+    search !== '' ||
+    nicheFilter !== 'all' ||
+    areaFilter !== 'all' ||
+    stageFilter !== 'all' ||
+    noWebsiteOnly ||
+    priorityOnly ||
+    sortBy !== 'recent';
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setNicheFilter('all');
+    setAreaFilter('all');
+    setStageFilter('all');
+    setNoWebsiteOnly(false);
+    setPriorityOnly(false);
+    setSortBy('recent');
+  };
 
   return (
     <div className="min-h-[calc(100dvh-56px)] pb-10">
@@ -750,7 +854,9 @@ export default function CRM() {
             CRM & Pipeline
           </h1>
           <span className="text-[11px] font-body font-medium px-2.5 py-1 rounded-full bg-[#11111a] text-[rgba(232,228,220,0.6)]">
-            {prospects.length} prospects
+            {filteredProspects.length === prospects.length
+              ? `${prospects.length} prospects`
+              : `${filteredProspects.length} sur ${prospects.length} prospects`}
           </span>
         </div>
 
@@ -797,18 +903,6 @@ export default function CRM() {
             </button>
           </div>
 
-          {/* Search */}
-          <div className="relative w-48 sm:w-60">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgba(232,228,220,0.5)]" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Rechercher nom, société..."
-              className="w-full h-9 pl-9 pr-3 rounded-[8px] bg-[#11111a] border border-[rgba(255,255,255,0.06)] text-[13px] font-body text-[#e8e4dc] placeholder:text-[rgba(232,228,220,0.30)] focus:outline-none focus:border-[#c5a059]"
-            />
-          </div>
-
           {/* Importer CSV */}
           <AnimatedButton
             variant="secondary"
@@ -832,8 +926,141 @@ export default function CRM() {
         </div>
       </div>
 
+      {/* Dynamic Filter Bar — Matching Campagnes Engine */}
+      <div className="px-6 mt-4">
+        <GlassPanel className="p-3.5 border-[rgba(255,255,255,0.08)]">
+          <div className="flex flex-col 2xl:flex-row items-stretch 2xl:items-center justify-between gap-3">
+            {/* Search Input */}
+            <div className="relative flex-1 min-w-[220px]">
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgba(232,228,220,0.4)]" />
+              <input
+                type="text"
+                placeholder="Rechercher par prospect, entreprise, wilaya, téléphone..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full h-10 rounded-[10px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] pl-9 pr-9 text-[13px] text-[#e8e4dc] placeholder:text-[rgba(232,228,220,0.35)] focus:outline-none focus:border-[rgba(197,160,89,0.35)] transition-colors"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[rgba(232,228,220,0.4)] hover:text-[#e8e4dc]"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            {/* Dropdowns & Filters Container */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Niches */}
+              <div className="relative w-full sm:w-[150px] shrink-0">
+                <select
+                  value={nicheFilter}
+                  onChange={(e) => setNicheFilter(e.target.value)}
+                  className="w-full h-10 rounded-[10px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] px-3 pr-8 text-[12.5px] text-[#e8e4dc] focus:outline-none focus:border-[rgba(197,160,89,0.35)] appearance-none cursor-pointer truncate"
+                >
+                  {dynamicNiches.map((n) => (
+                    <option key={n.value} value={n.value} className="bg-[#0e0e18] text-[#e8e4dc]">
+                      {n.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[rgba(232,228,220,0.4)] pointer-events-none" />
+              </div>
+
+              {/* Wilayas / Zones */}
+              <div className="relative w-full sm:w-[165px] shrink-0">
+                <select
+                  value={areaFilter}
+                  onChange={(e) => setAreaFilter(e.target.value)}
+                  className="w-full h-10 rounded-[10px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] px-3 pr-8 text-[12.5px] text-[#e8e4dc] focus:outline-none focus:border-[rgba(197,160,89,0.35)] appearance-none cursor-pointer truncate"
+                >
+                  {dynamicAreas.map((a) => (
+                    <option key={a.value} value={a.value} className="bg-[#0e0e18] text-[#e8e4dc]">
+                      {a.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[rgba(232,228,220,0.4)] pointer-events-none" />
+              </div>
+
+              {/* Statut Pipeline */}
+              <div className="relative w-full sm:w-[135px] shrink-0">
+                <select
+                  value={stageFilter}
+                  onChange={(e) => setStageFilter(e.target.value as any)}
+                  className="w-full h-10 rounded-[10px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] px-3 pr-8 text-[12.5px] text-[#e8e4dc] focus:outline-none focus:border-[rgba(197,160,89,0.35)] appearance-none cursor-pointer truncate"
+                >
+                  <option value="all" className="bg-[#0e0e18]">Tous statuts</option>
+                  <option value="nouveau" className="bg-[#0e0e18]">Nouveaux</option>
+                  <option value="contacte" className="bg-[#0e0e18]">Contactés</option>
+                  <option value="recontacter" className="bg-[#0e0e18]">À recontacter</option>
+                  <option value="prototype" className="bg-[#0e0e18]">Prototypes</option>
+                  <option value="ferme" className="bg-[#0e0e18]">Fermés</option>
+                  <option value="perdu" className="bg-[#0e0e18]">Perdus</option>
+                </select>
+                <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[rgba(232,228,220,0.4)] pointer-events-none" />
+              </div>
+
+              {/* Sort Dropdown */}
+              <div className="relative w-full sm:w-[155px] shrink-0">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="w-full h-10 rounded-[10px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] px-3 pr-8 text-[12.5px] text-[#e8e4dc] focus:outline-none focus:border-[rgba(197,160,89,0.35)] appearance-none cursor-pointer truncate"
+                >
+                  <option value="recent" className="bg-[#0e0e18]">Trier : Récents</option>
+                  <option value="score_asc" className="bg-[#0e0e18]">Trier : Score faible</option>
+                  <option value="score_desc" className="bg-[#0e0e18]">Trier : Score élevé</option>
+                  <option value="name_asc" className="bg-[#0e0e18]">Trier : Nom (A-Z)</option>
+                </select>
+                <ArrowUpDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[rgba(232,228,220,0.4)] pointer-events-none" />
+              </div>
+
+              {/* Quick Toggle Chips */}
+              <button
+                onClick={() => setNoWebsiteOnly(!noWebsiteOnly)}
+                className={`h-10 px-3 rounded-[10px] text-[12px] font-body font-medium flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
+                  noWebsiteOnly
+                    ? 'bg-[rgba(239,68,68,0.18)] border border-[rgba(239,68,68,0.4)] text-[#f87171] shadow-[0_0_15px_rgba(239,68,68,0.15)]'
+                    : 'bg-[#11111a] border border-[rgba(255,255,255,0.08)] text-[rgba(232,228,220,0.65)] hover:border-[rgba(239,68,68,0.3)]'
+                }`}
+                title="Afficher uniquement les prospects sans site web"
+              >
+                <span>🚫</span>
+                <span>Sans site</span>
+              </button>
+
+              <button
+                onClick={() => setPriorityOnly(!priorityOnly)}
+                className={`h-10 px-3 rounded-[10px] text-[12px] font-body font-medium flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
+                  priorityOnly
+                    ? 'bg-[rgba(197,160,89,0.18)] border border-[rgba(197,160,89,0.4)] text-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.15)]'
+                    : 'bg-[#11111a] border border-[rgba(255,255,255,0.08)] text-[rgba(232,228,220,0.65)] hover:border-[rgba(197,160,89,0.3)]'
+                }`}
+                title="Afficher uniquement les prospects prioritaires"
+              >
+                <Star size={13} className={priorityOnly ? 'fill-[#c5a059]' : ''} />
+                <span>Prioritaires</span>
+              </button>
+
+              {/* Reset Icon Button */}
+              {hasActiveFilters && (
+                <button
+                  onClick={handleResetFilters}
+                  className="w-10 h-10 rounded-[10px] bg-[#11111a] hover:bg-[rgba(197,160,89,0.15)] border border-[rgba(197,160,89,0.35)] text-[#c5a059] flex items-center justify-center transition-all cursor-pointer shrink-0"
+                  title="Réinitialiser tous les filtres"
+                >
+                  <RotateCcw size={15} />
+                </button>
+              )}
+            </div>
+          </div>
+        </GlassPanel>
+      </div>
+
       {/* Stats */}
-      <div className="mt-5">
+      <div className="mt-4">
         <PipelineStats prospects={filteredProspects} />
       </div>
 
@@ -842,6 +1069,24 @@ export default function CRM() {
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center">
             <Loader2 className="animate-spin text-[#c5a059]" size={32} />
+          </div>
+        ) : filteredProspects.length === 0 ? (
+          <div className="py-20 text-center px-4">
+            <div className="w-12 h-12 rounded-full bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] flex items-center justify-center mx-auto mb-3 text-[rgba(232,228,220,0.4)]">
+              <Filter size={20} />
+            </div>
+            <h3 className="font-display font-medium text-[18px] text-[#e8e4dc]">
+              Aucun prospect ne correspond à ces critères
+            </h3>
+            <p className="text-[13px] font-body text-[rgba(232,228,220,0.5)] mt-1 max-w-[420px] mx-auto">
+              Ajustez vos filtres de recherche, niche, zone géographique ou statut pour afficher vos prospects.
+            </p>
+            <button
+              onClick={handleResetFilters}
+              className="mt-4 px-4 py-2 rounded-full text-[12px] font-body bg-[#1a1a28] text-[#c5a059] hover:bg-[#252538] transition-colors cursor-pointer"
+            >
+              Réinitialiser les filtres
+            </button>
           </div>
         ) : crmView === 'kanban' ? (
           <KanbanBoard

@@ -34,18 +34,34 @@ function formatDate(dateStr) {
   }
 }
 
+function hasValidWebsite(url) {
+  if (!url) return false;
+  const clean = url.trim().toLowerCase();
+  return clean !== '' &&
+         clean !== 'pas de site web' &&
+         clean !== 'non renseigné' &&
+         clean !== 'aucun' &&
+         clean.length > 3;
+}
+
 const mappedProspects = rawLeads.map((l, index) => {
   const stage = mapStage(l.PipelineStage);
-  const score = (typeof l.WebsiteScore === 'number' && l.WebsiteScore > 0)
-    ? Math.round(l.WebsiteScore * 10)
-    : (l.Googlemapsscore ? Math.round(parseFloat(l.Googlemapsscore.replace(',', '.')) * 15) : 48);
+  const url = l.Website || '';
+  const hasWeb = hasValidWebsite(url);
 
-  const cleanScore = isNaN(score) ? 50 : Math.min(Math.max(score, 15), 98);
+  let cleanScore = 0;
+  if (hasWeb) {
+    const score = (typeof l.WebsiteScore === 'number' && l.WebsiteScore > 0)
+      ? Math.round(l.WebsiteScore * 10)
+      : (l.Googlemapsscore ? Math.round(parseFloat(l.Googlemapsscore.replace(',', '.')) * 15) : 48);
+    cleanScore = isNaN(score) ? 50 : Math.min(Math.max(score, 15), 98);
+  } else {
+    cleanScore = 0;
+  }
   const company = l.Businessname || `Entreprise #${index + 1}`;
   const name = l.OwnerName && l.OwnerName.trim() ? l.OwnerName.trim() : `Responsable ${company}`;
   const email = l.Emailaddress || '';
   const phone = l.Phonenumber || '';
-  const url = l.Website || '';
   const sector = l.Niche || l.Categories || 'Général';
   const lastContact = formatDate(l.ContactedAt);
 

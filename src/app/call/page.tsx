@@ -16,8 +16,10 @@ import { VoiceAgentLiveConsole } from '@/components/ui/custom/VoiceAgentLiveCons
 import { useCallStore } from '@/hooks/useCallStore';
 import { useUIStore } from '@/hooks/useUIStore';
 import { useSettingsStore } from '@/hooks/useSettingsStore';
+import { useProspectsStore } from '@/hooks/useProspectsStore';
 import { mockProspects, mockObjections } from '@/data/prospects';
 import { generatePitches } from '@/services/pitch/PitchGenerator';
+import { STAGE_LABELS, type PipelineStage } from '@/types';
 
 /* Helper: Check if prospect actually has a website */
 function hasValidWebsite(url?: string): boolean {
@@ -1494,18 +1496,28 @@ function OutcomeModal({ onClose }: { onClose: () => void }) {
   const [notes, setNotes] = useState('');
 
   const outcomes = [
-    { id: 'rdv', label: 'Rendez-vous Conclu', icon: Calendar, color: '#4ade80', bg: 'rgba(74,222,128,0.12)' },
-    { id: 'prototype', label: 'Prototype Validé', icon: Send, color: '#c5a059', bg: 'rgba(197,160,89,0.15)' },
-    { id: 'rappeler', label: 'À Recontacter', icon: Clock, color: '#60a5fa', bg: 'rgba(96,165,250,0.12)' },
-    { id: 'perdu', label: 'Sans Suite / Perdu', icon: X, color: '#f87171', bg: 'rgba(248,113,113,0.12)' },
+    { id: 'rdv', label: 'Rendez-vous Conclu', icon: Calendar, color: '#4ade80', bg: 'rgba(74,222,128,0.12)', stage: 'ferme' as PipelineStage },
+    { id: 'prototype', label: 'Prototype Validé', icon: Send, color: '#a855f7', bg: 'rgba(168,85,247,0.12)', stage: 'prototype' as PipelineStage },
+    { id: 'rappeler', label: 'À Recontacter', icon: Clock, color: '#f97316', bg: 'rgba(249,115,22,0.15)', stage: 'recontacter' as PipelineStage },
+    { id: 'perdu', label: 'Sans Suite / Perdu', icon: X, color: '#f87171', bg: 'rgba(248,113,113,0.12)', stage: 'perdu' as PipelineStage },
   ];
 
-  const handleSave = () => {
-    if (selectedOutcome) {
+  const handleSave = async () => {
+    if (selectedOutcome && prospect) {
       setOutcome(selectedOutcome as 'rdv' | 'prototype' | 'rappeler' | 'perdu');
-      addToast({ type: 'success', message: 'Appel archivé et synchronisé avec le CRM.' });
+      const found = outcomes.find((o) => o.id === selectedOutcome);
+      const newStage = found ? found.stage : 'contacte';
+
+      const { updateStage, updateNotes } = useProspectsStore.getState();
+      await updateStage(prospect.id, newStage);
+      if (notes.trim()) {
+        const fullNotes = prospect.notes ? `${prospect.notes}\n[Appel] ${notes.trim()}` : `[Appel] ${notes.trim()}`;
+        await updateNotes(prospect.id, fullNotes);
+      }
+
+      addToast({ type: 'success', message: `Appel archivé : statut ${STAGE_LABELS[newStage]}.` });
       onClose();
-      setTimeout(() => router.push('/crm'), 800);
+      setTimeout(() => router.push('/crm'), 600);
     }
   };
 

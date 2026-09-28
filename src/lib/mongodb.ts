@@ -29,15 +29,19 @@ async function dbConnect() {
       connectTimeoutMS: 3000,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
-      return mongoose;
+    console.log('\x1b[36m[MongoDB]\x1b[0m 🔄 Connexion à MongoDB Atlas en cours...');
+
+    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((m) => {
+      console.log(`\x1b[32m[MongoDB] ✅ CONNECTÉ AVEC SUCCÈS AU CLUSTER !\x1b[0m (Base: ${m.connection.name || 'stonelink'})`);
+      return m;
     });
   }
 
   try {
     cached.conn = await cached.promise;
-  } catch (e) {
+  } catch (e: any) {
     cached.promise = null;
+    console.error(`\x1b[31m[MongoDB] ❌ ÉCHEC DE CONNEXION :\x1b[0m ${e.message}`);
     throw e;
   }
 

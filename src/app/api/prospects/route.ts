@@ -8,6 +8,103 @@ export const dynamic = 'force-dynamic'
 // ─────────────────────────────────────────────────────────────
 // GET /api/prospects (filters + search + pagination)
 // ─────────────────────────────────────────────────────────────
+import fs from 'fs'
+import path from 'path'
+
+function mapStage(stage?: string) {
+  if (!stage) return 'nouveau';
+  const s = stage.toLowerCase();
+  if (s.includes('recontact') || s.includes('rappel') || s.includes('callback')) return 'recontacter';
+  if (s.includes('contact')) return 'contacte';
+  if (s.includes('respond')) return 'contacte';
+  if (s.includes('negot') || s.includes('proto')) return 'prototype';
+  if (s.includes('close') || s.includes('ferm')) return 'ferme';
+  if (s.includes('lost') || s.includes('perdu')) return 'perdu';
+  return 'nouveau';
+}
+
+function formatDate(dateStr?: string | null) {
+  if (!dateStr) return 'Non contacté';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Non contacté';
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch {
+    return 'Non contacté';
+  }
+}
+
+function hasValidWebsite(url?: string): boolean {
+  if (!url) return false;
+  const clean = url.trim().toLowerCase();
+  return clean !== '' &&
+         clean !== 'pas de site web' &&
+         clean !== 'non renseigné' &&
+         clean !== 'aucun' &&
+         clean.length > 3;
+}
+
+function mapRawLead(l: any, index: number) {
+  const stage = mapStage(l.PipelineStage || l.stage);
+  const url = l.Website || l.url || '';
+  const hasWeb = hasValidWebsite(url);
+
+  let cleanScore = 0;
+  if (hasWeb) {
+    const rawScore = (typeof l.WebsiteScore === 'number' && l.WebsiteScore > 0)
+      ? Math.round(l.WebsiteScore * 10)
+      : (l.Googlemapsscore ? Math.round(parseFloat(String(l.Googlemapsscore).replace(',', '.')) * 15) : 48);
+    cleanScore = isNaN(rawScore) ? 50 : Math.min(Math.max(rawScore, 15), 98);
+  } else {
+    cleanScore = 0;
+  }
+
+  const company = l.Businessname || l.company || `Entreprise #${index + 1}`;
+  const name = l.OwnerName && l.OwnerName.trim() ? l.OwnerName.trim() : (l.name || `Responsable ${company}`);
+  const email = l.Emailaddress || l.email || '';
+  const phone = l.Phonenumber || l.phone || '';
+  const sector = l.Niche || l.sector || l.Categories || 'Général';
+  const lastContact = formatDate(l.ContactedAt || l.lastContactedAt);
+
+  let notes = l.Notes || l.notes || '';
+  if (l.Weaknesses && Array.isArray(l.Weaknesses) && l.Weaknesses.length > 0) {
+    const wText = `Faiblesses détectées : ${l.Weaknesses.join(', ')}`;
+    if (!notes.includes(wText)) {
+      notes = notes ? `${notes} | ${wText}` : wText;
+    }
+  }
+  if (l.Wilaya && !notes.includes(`Zone: ${l.Wilaya}`)) {
+    notes = notes ? `${notes} | Zone: ${l.Wilaya}` : `Zone: ${l.Wilaya}`;
+  }
+
+  const callHistory = Array.isArray(l.callHistory) ? l.callHistory : [];
+  if (l.ContactedAt && callHistory.length === 0) {
+    callHistory.push({
+      id: `call-${l.id || index}`,
+      date: formatDate(l.ContactedAt),
+      duration: '4:15',
+      outcome: l.RespondedAt ? 'prototype' : 'rappeler',
+      notes: notes || 'Premier contact initié.',
+    });
+  }
+
+  return {
+    id: l.id || l._id?.toString() || `lead-${index + 1}`,
+    name,
+    company,
+    url: url || 'Pas de site web',
+    phone: phone || 'Non renseigné',
+    email: email || 'Non renseigné',
+    score: cleanScore,
+    sector,
+    stage,
+    lastContact,
+    scriptReady: true,
+    callHistory,
+    notes,
+  };
+}
+
 export async function GET(request: Request) {
   try {
     await dbConnect()
@@ -50,6 +147,9 @@ export async function GET(request: Request) {
       .sort({ createdAt: -1 })
       .skip(offset)
       .limit(limit)
+      .lean()
+
+    console.log(`\x1b[32m[GET /api/prospects] ✅ ${prospects.length} prospects chargés depuis MongoDB Atlas (Cloud) !\x1b[0m`)
 
     return NextResponse.json({
       data: prospects,
@@ -62,19 +162,8 @@ export async function GET(request: Request) {
       source: 'database',
     })
   } catch (error: any) {
-    console.warn('[GET /api/prospects] MongoDB connection error, returning fallback data:', error.message)
-    const { mockProspects } = await import('@/data/prospects')
-    return NextResponse.json({
-      data: mockProspects,
-      meta: {
-        total: mockProspects.length,
-        limit: 100,
-        offset: 0,
-        hasMore: false,
-      },
-      source: 'memory_fallback',
-      warning: 'MongoDB non joignable (IP non whitelistée sur Atlas). Données locales actives.',
-    })
+    console.error(`\x1b[31m[GET /api/prospects] ❌ Erreur MongoDB :\x1b[0m`, error.message)
+    return NextResponse.json({ error: error.message, source: 'database_error' }, { status: 500 })
   }
 }
 
