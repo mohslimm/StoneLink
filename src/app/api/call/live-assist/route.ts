@@ -44,10 +44,13 @@ function hasValidWebsite(url?: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
+  let capturedLastSpeech = '';
+
   try {
     const body = await req.json();
-    const parsed = LiveAssistSchema.safeParse(body);
+    capturedLastSpeech = typeof body?.lastUserSpeech === 'string' ? body.lastUserSpeech : '';
 
+    const parsed = LiveAssistSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Paramètres invalides', details: parsed.error.flatten() },
@@ -106,13 +109,10 @@ Réponds UNIQUEMENT sous forme d'un objet JSON strict :
       },
     });
 
-    const raw = geminiRes.text.trim();
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error(`JSON format not found in Gemini response: ${raw}`);
-    }
-
-    const parsedData = JSON.parse(jsonMatch[0]);
+    // Robust JSON sanitization: strip markdown code fences and extract JSON object
+    const sanitizedJson = geminiRes.text.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+    const jsonMatch = sanitizedJson.match(/\{[\s\S]*\}/);
+    const parsedData = JSON.parse(jsonMatch ? jsonMatch[0] : sanitizedJson);
     return NextResponse.json({
       success: true,
       source: geminiRes.modelUsed,
@@ -123,19 +123,67 @@ Réponds UNIQUEMENT sous forme d'un objet JSON strict :
   } catch (err: any) {
     console.error('[Live Assist Error]:', err);
 
-    // Fallback response if offline or during network blip
-    const last = (req as any)?.body?.lastUserSpeech?.toLowerCase?.() || '';
-    const isPrice = last.includes('combien') || last.includes('prix') || last.includes('tarif') || last.includes('cout');
+    // Reliable fallback response using captured speech
+    const last = capturedLastSpeech.toLowerCase().trim();
+    const isPrice =
+      last.includes('combien') ||
+      last.includes('prix') ||
+      last.includes('tarif') ||
+      last.includes('cout') ||
+      last.includes('coût') ||
+      last.includes('budget') ||
+      last.includes('cher');
+
+    const isSocial =
+      last.includes('facebook') ||
+      last.includes('insta') ||
+      last.includes('réseau') ||
+      last.includes('reseau');
+
+    const isNoTime =
+      last.includes('temps') ||
+      last.includes('occupé') ||
+      last.includes('occupe');
+
+    const isLater =
+      last.includes('tard') ||
+      last.includes('rappeler') ||
+      last.includes('rappel');
+
+    let spokenResponse = "Je comprends parfaitement. Le plus simple est que je vous partage notre maquette sans engagement pour que vous jugiez sur pièce.";
+    let quickPivot = "Recentrer sur la maquette gratuite";
+    let intent = "autre";
+    let suggestedAction = "speak_and_listen";
+
+    if (isPrice) {
+      spokenResponse = "Nous préparons une proposition chiffrée détaillée sur-mesure que je vous envoie directement en PDF sur WhatsApp juste après notre échange. Comme ça vous avez le détail exact des prestations sans mauvaise surprise.";
+      quickPivot = "Pivot Devis WhatsApp PDF";
+      intent = "question_prix";
+      suggestedAction = "send_whatsapp_devis";
+    } else if (isSocial) {
+      spokenResponse = "Les réseaux sont parfaits pour vos abonnés, mais sur Google, les clients qui ont un besoin urgent recherchent un site officiel. S'ils ne le trouvent pas, ils cliquent directement sur un concurrent.";
+      quickPivot = "Différence Google vs Réseaux";
+      intent = "objection_reseaux";
+      suggestedAction = "speak_and_listen";
+    } else if (isNoTime) {
+      spokenResponse = "C'est précisément pour cela qu'on a tout automatisé : vous n'avez absolument rien à gérer techniquement. Le site fonctionne en totale autonomie.";
+      quickPivot = "Zéro gestion technique";
+      intent = "objection_temps";
+      suggestedAction = "speak_and_listen";
+    } else if (isLater) {
+      spokenResponse = "Absolument. Je vous fais parvenir la maquette par message dès maintenant pour que vous puissiez y jeter un œil tranquillement ce soir.";
+      quickPivot = "Transmission Maquette + Rappel";
+      intent = "accord_rdv";
+      suggestedAction = "speak_and_listen";
+    }
 
     return NextResponse.json({
       success: true,
       source: 'offline_emergency_engine',
-      spokenResponse: isPrice
-        ? "Nous préparons une proposition chiffrée détaillée sur-mesure que je vous envoie directement en PDF sur WhatsApp juste après notre échange. Comme ça vous avez le détail exact des prestations sans mauvaise surprise."
-        : "Je comprends parfaitement. Le plus simple est que je vous partage notre maquette sans engagement pour que vous jugiez sur pièce.",
-      quickPivot: isPrice ? "Pivot Devis WhatsApp PDF" : "Recentrer sur la maquette gratuite",
-      intent: isPrice ? "question_prix" : "autre",
-      suggestedAction: isPrice ? "send_whatsapp_devis" : "speak_and_listen",
+      spokenResponse,
+      quickPivot,
+      intent,
+      suggestedAction,
     });
   }
 }

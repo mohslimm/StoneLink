@@ -50,11 +50,11 @@ export function VoiceAgentLiveConsole({ languageMode }: { languageMode: 'fr' | '
   // Strict WhatsApp PDF Devis message template
   const generateWhatsAppProposalUrl = () => {
     if (!prospect?.phone) return '';
-    const cleanPhone = prospect.phone.replace(/[^0-9]/g, '');
+    const formatted = formatPhoneNumber(prospect.phone);
     const prefilledText = encodeURIComponent(
       `Bonjour ${contactPrenom},\n\nSuite à notre échange téléphonique concernant ${companyName}, voici la proposition chiffrée détaillée et sur-mesure préparée par Stepping Stones Agency :\n\n📄 Offre : ${selectedOffer === 'vitrine' ? 'Pack Vitrine Digitale Clé en Main' : selectedOffer === 'refonte' ? 'Refonte & Haute Performance Web' : 'Solution Digitale Sur-Mesure'}\n\nNous restons à votre entière disposition pour répondre à vos questions et planifier le déploiement.\n\nBien cordialement,\nMohamed Slimani & Abdelhadi Hammaz\nStepping Stones Agency`
     );
-    return `https://wa.me/${cleanPhone}?text=${prefilledText}`;
+    return `${formatted.waUrl}?text=${prefilledText}`;
   };
 
   const handleQuickObjection = (objectionText: string) => {

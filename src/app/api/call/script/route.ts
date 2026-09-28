@@ -271,10 +271,11 @@ Retourne UNIQUEMENT un objet JSON valide avec cette structure exacte :
     generationConfig: {
       responseMimeType: 'application/json',
       temperature: 0.4,
-    }
+    },
   });
 
-  const parsed = JSON.parse(geminiRes.text);
+  const sanitizedJson = geminiRes.text.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+  const parsed = JSON.parse(sanitizedJson);
   return parsed;
 }
 
