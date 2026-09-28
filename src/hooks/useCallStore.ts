@@ -93,7 +93,12 @@ export const useCallStore = create<CallState>((set, get) => ({
       ],
     }),
 
-  endCall: () => set({ isActive: false, isMuted: false, isHeld: false, isAiSpeaking: false, isListening: false }),
+  endCall: () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    set({ isActive: false, isMuted: false, isHeld: false, isAiSpeaking: false, isListening: false });
+  },
 
   incrementTimer: () => {
     const state = get();

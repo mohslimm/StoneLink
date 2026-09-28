@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mic, MicOff, Volume2, VolumeX, Sparkles, MessageSquare, Send,
-  ShieldCheck, AlertTriangle, FileText, ChevronDown, ChevronUp, Copy, Check, ExternalLink
+  ShieldCheck, AlertTriangle, FileText, ChevronDown, ChevronUp, Copy, Check, ExternalLink,
+  PhoneCall
 } from 'lucide-react';
 import { GlassPanel } from '@/components/ui/custom/GlassPanel';
 import { useCallStore } from '@/hooks/useCallStore';
@@ -31,6 +32,8 @@ export function VoiceAgentLiveConsole({ languageMode }: { languageMode: 'fr' | '
     isProcessingAi,
     lastSuggestedText,
     lastPivotAdvice,
+    callStage,
+    markPickup,
     speakText,
     stopSpeaking,
     handleProspectSpeech,
@@ -157,6 +160,48 @@ export function VoiceAgentLiveConsole({ languageMode }: { languageMode: 'fr' | '
           </button>
         </div>
       </div>
+
+      {/* Anti-Ringtone Pickup Shield Banner (Zero Speech During Ringtone) */}
+      {callStage === 'waiting_pickup' ? (
+        <div className="p-3 mb-3.5 rounded-[12px] bg-[rgba(234,179,8,0.08)] border border-[rgba(234,179,8,0.3)] flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <span className="relative flex h-3 w-3 flex-shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#eab308] opacity-75" />
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-[#ca8a04]" />
+            </span>
+            <div>
+              <p className="text-[12.5px] font-body font-semibold text-[#fef08a] flex items-center gap-1.5">
+                <span>⏳ Sonnerie en cours...</span>
+                <span className="text-[10.5px] font-mono px-1.5 py-0.2 rounded bg-[rgba(234,179,8,0.2)] text-[#fef08a] uppercase">Bouclier Anti-Tonalité Actif</span>
+              </p>
+              <p className="text-[11px] font-body text-[rgba(254,240,138,0.7)] mt-0.5">
+                L&apos;IA reste silencieuse pendant les tonalités. Elle répondra automatiquement dès le premier &ldquo;Allô&rdquo; ou cliquez ci-contre :
+              </p>
+            </div>
+          </div>
+
+          <motion.button
+            type="button"
+            onClick={markPickup}
+            className="px-3.5 py-2 rounded-lg bg-[#22c55e] hover:bg-[#16a34a] text-black text-[12px] font-body font-bold flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(34,197,94,0.35)] cursor-pointer flex-shrink-0"
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+          >
+            <PhoneCall size={14} className="text-black" />
+            <span>🟢 Le prospect a décroché (Lancer le pitch)</span>
+          </motion.button>
+        </div>
+      ) : (
+        <div className="px-3 py-1.5 mb-3.5 rounded-[8px] bg-[rgba(34,197,94,0.06)] border border-[rgba(34,197,94,0.2)] flex items-center justify-between text-[11px] font-body text-[#86efac]">
+          <span className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse" />
+            <span>En conversation active avec <strong>{prospect?.company}</strong></span>
+          </span>
+          <span className="text-[rgba(232,228,220,0.5)] font-mono text-[10px]">
+            {speakerMode === 'ai' ? 'IA Vocale Autonome' : 'Copilote Commercial'}
+          </span>
+        </div>
+      )}
 
       {/* Strict Pricing Rule & WhatsApp PDF Devis Banner */}
       <div className="p-2.5 mb-3.5 rounded-[10px] bg-[rgba(197,160,89,0.07)] border border-[rgba(197,160,89,0.22)] flex items-center justify-between gap-3 flex-wrap">

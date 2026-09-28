@@ -1674,10 +1674,14 @@ export default function Call() {
   }, [prospect, script, scriptLoading]);
 
   const handleStartCall = (p: typeof mockProspects[0]) => {
+    setShowOutcome(false);
     startCall(p);
   };
 
   const handleEndCall = () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
     endCall();
     setShowOutcome(true);
   };
@@ -1687,34 +1691,36 @@ export default function Call() {
     resetCall();
   };
 
-  if (!isActive) {
-    return <PreCallState onStartCall={handleStartCall} />;
-  }
-
   return (
-    <div className="min-h-screen bg-[#060610] text-[#e8e4dc] pb-8">
-      {/* Single, Unified, Executive Status Bar */}
-      <UnifiedCallHeader onEndCall={handleEndCall} />
+    <>
+      {!isActive ? (
+        <PreCallState onStartCall={handleStartCall} />
+      ) : (
+        <div className="min-h-screen bg-[#060610] text-[#e8e4dc] pb-8">
+          {/* Single, Unified, Executive Status Bar */}
+          <UnifiedCallHeader onEndCall={handleEndCall} />
 
-      {/* Main Dual-Column Grid with Voice Agent Live Console */}
-      <main className="max-w-[1580px] mx-auto p-4 sm:p-6 space-y-6">
-        {/* Real-time Voice Agent & Copilot Console */}
-        <VoiceAgentLiveConsole languageMode={languageMode} />
+          {/* Main Dual-Column Grid with Voice Agent Live Console */}
+          <main className="max-w-[1580px] mx-auto p-4 sm:p-6 space-y-6">
+            {/* Real-time Voice Agent & Copilot Console */}
+            <VoiceAgentLiveConsole languageMode={languageMode} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_1fr] gap-6">
-          <ScriptReaderPanel
-            onRegenerateGemini={fetchGeminiScript}
-            languageMode={languageMode}
-            setLanguageMode={setLanguageMode}
-          />
-          <ObjectionPanel />
+            <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_1fr] gap-6">
+              <ScriptReaderPanel
+                onRegenerateGemini={fetchGeminiScript}
+                languageMode={languageMode}
+                setLanguageMode={setLanguageMode}
+              />
+              <ObjectionPanel />
+            </div>
+          </main>
         </div>
-      </main>
+      )}
 
-      {/* Outcome Modal */}
+      {/* Outcome Modal: Displays immediately when call ends */}
       <AnimatePresence>
         {showOutcome && <OutcomeModal onClose={handleCloseOutcome} />}
       </AnimatePresence>
-    </div>
+    </>
   );
 }

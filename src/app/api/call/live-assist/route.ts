@@ -84,8 +84,9 @@ ${recentConversation || '(Début de l\'appel)'}
 
 RÈGLES D'OR ABSOLUES :
 1. RÈGLE TARIFAIRE STRICTE : Ne donne JAMAIS de prix ou montant en chiffres par téléphone. Si le prospect demande "c'est combien ?", "combien ça coûte ?", "vos tarifs ?", réponds TOUJOURS que nous lui préparons une proposition chiffrée détaillée sur-mesure qu'on lui envoie directement en PDF sur WhatsApp immédiatement après l'échange.
-2. CONCISION ORALE PARFAITE : La réponse parlée doit être courte, naturelle et punchy (1 à 2 phrases MAXIMUM, moins de 28 mots au total) pour garder un rythme téléphonique dynamique.
-3. TON : Très poli, confiant, chaleureux et orienté action (proposer l'envoi de la maquette gratuite ou le devis WhatsApp).
+2. DÉMARRAGE AU DÉCROCHAGE : Si le prospect dit simplement "Allô ?", "Oui ?", "Bonjour ?", "J'écoute" ou similaire, c'est le début de l'appel ! Fais immédiatement ton accroche personnalisée et élogieuse : salue-le par son prénom (${prenom}), mentionne ${prospect.company}, félicite sa réputation Google Maps, et soulève avec tact l'absence de site internet officiel.
+3. CONCISION ORALE PARFAITE : La réponse parlée doit être courte, naturelle et punchy (1 à 2 phrases MAXIMUM, moins de 28 mots au total) pour garder un rythme téléphonique dynamique.
+4. TON : Très poli, confiant, chaleureux et orienté action (proposer l'envoi de la maquette gratuite ou le devis WhatsApp).
 
 Réponds UNIQUEMENT sous forme d'un objet JSON strict :
 {
@@ -105,7 +106,13 @@ Réponds UNIQUEMENT sous forme d'un objet JSON strict :
       },
     });
 
-    const parsedData = JSON.parse(geminiRes.text);
+    const raw = geminiRes.text.trim();
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error(`JSON format not found in Gemini response: ${raw}`);
+    }
+
+    const parsedData = JSON.parse(jsonMatch[0]);
     return NextResponse.json({
       success: true,
       source: geminiRes.modelUsed,

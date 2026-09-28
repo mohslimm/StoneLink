@@ -30,45 +30,144 @@ export function useVoiceAgent(options: UseVoiceAgentOptions = {}) {
   const [isProcessingAi, setIsProcessingAi] = useState(false);
   const [lastSuggestedText, setLastSuggestedText] = useState<string>('');
   const [lastPivotAdvice, setLastPivotAdvice] = useState<string>('');
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+  // Call stage: 'waiting_pickup' (ringing) vs 'in_conversation' (picked up)
+  const [callStage, setCallStage] = useState<'waiting_pickup' | 'in_conversation'>('waiting_pickup');
 
   const recognitionRef = useRef<any>(null);
   const isManuallyStoppedRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Check browser support on mount
+  // Initialize browser speech capabilities and load Edge/Chrome voices
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const hasRecognition = 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
       const hasSynthesis = 'speechSynthesis' in window;
       setSpeechSupported(hasRecognition);
       setSynthSupported(hasSynthesis);
+
+      if (hasSynthesis) {
+        const updateVoices = () => {
+          const v = window.speechSynthesis.getVoices();
+          if (v && v.length > 0) {
+            setAvailableVoices(v);
+          }
+        };
+
+        updateVoices();
+        window.speechSynthesis.onvoiceschanged = updateVoices;
+      }
     }
   }, []);
 
-  // Text-To-Speech function
+  // Reset call stage when call opens/closes
+  useEffect(() => {
+    if (isActive) {
+      setCallStage('waiting_pickup');
+      isManuallyStoppedRef.current = false;
+    } else {
+      setCallStage('waiting_pickup');
+      killCallAudio();
+    }
+  }, [isActive]);
+
+  // Select the best studio/natural voice (Prioritizing Microsoft Edge Azure Neural voices)
+  const getBestVoice = useCallback((): SpeechSynthesisVoice | null => {
+    if (availableVoices.length === 0) return null;
+
+    if (language === 'fr') {
+      // 1. Microsoft Edge Natural Voices (Studio Azure)
+      const henri = availableVoices.find((v) => v.name.includes('Henri') && v.name.includes('Natural'));
+      if (henri) return henri;
+
+      const denise = availableVoices.find((v) => v.name.includes('Denise') && v.name.includes('Natural'));
+      if (denise) return denise;
+
+      // 2. Any other online natural french voice
+      const naturalFr = availableVoices.find((v) => v.lang.startsWith('fr') && v.name.includes('Natural'));
+      if (naturalFr) return naturalFr;
+
+      // 3. Google français (Chrome)
+      const googleFr = availableVoices.find((v) => v.lang.startsWith('fr') && v.name.includes('Google'));
+      if (googleFr) return googleFr;
+
+      // 4. Any french voice
+      return availableVoices.find((v) => v.lang.startsWith('fr')) || null;
+    }
+
+    if (language === 'ar') {
+      // Algerian Arabic Natural voices in Edge
+      const amina = availableVoices.find((v) => v.name.includes('Amina') && (v.name.includes('Algeria') || v.name.includes('Natural')));
+      if (amina) return amina;
+
+      const ismael = availableVoices.find((v) => v.name.includes('Ismael') && (v.name.includes('Algeria') || v.name.includes('Natural')));
+      if (ismael) return ismael;
+
+      return availableVoices.find((v) => v.lang.startsWith('ar')) || null;
+    }
+
+    // English
+    const guy = availableVoices.find((v) => v.name.includes('Guy') && v.name.includes('Natural'));
+    if (guy) return guy;
+
+    const jenny = availableVoices.find((v) => v.name.includes('Jenny') && v.name.includes('Natural'));
+    if (jenny) return jenny;
+
+    return availableVoices.find((v) => v.lang.startsWith('en')) || null;
+  }, [availableVoices, language]);
+
+  // Kill Switch: forcefully cancels all audio, recognitions, and pending network requests
+  const killCallAudio = useCallback(() => {
+    isManuallyStoppedRef.current = true;
+
+    // 1. Cancel in-flight fetch
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+
+    // 2. Kill Speech Synthesis queue
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+
+    // 3. Abort Speech Recognition
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {}
+    }
+
+    setIsAiSpeaking(false);
+    setIsListening(false);
+    setIsProcessingAi(false);
+  }, [setIsAiSpeaking, setIsListening]);
+
+  // Text-To-Speech with strict active call check
   const speakText = useCallback(
     (text: string, onEnd?: () => void) => {
       if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+      if (!useCallStore.getState().isActive) return; // Guard: call is already closed
 
-      // Cancel previous speech
+      // Clear any prior speech
       window.speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'fr-FR';
-      utterance.rate = 1.05;
+      utterance.rate = 1.0;
       utterance.pitch = 1.0;
 
-      // Select natural voice if available
-      const voices = window.speechSynthesis.getVoices();
-      const preferredVoice = voices.find((v) =>
-        language === 'fr'
-          ? v.lang.startsWith('fr') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Paul') || v.name.includes('Thomas'))
-          : v.lang.startsWith(language)
-      );
-      if (preferredVoice) {
-        utterance.voice = preferredVoice;
+      const bestVoice = getBestVoice();
+      if (bestVoice) {
+        utterance.voice = bestVoice;
       }
 
       utterance.onstart = () => {
+        if (!useCallStore.getState().isActive) {
+          window.speechSynthesis.cancel();
+          return;
+        }
         setIsAiSpeaking(true);
       };
 
@@ -85,7 +184,7 @@ export function useVoiceAgent(options: UseVoiceAgentOptions = {}) {
 
       window.speechSynthesis.speak(utterance);
     },
-    [language, setIsAiSpeaking]
+    [language, getBestVoice, setIsAiSpeaking]
   );
 
   // Stop speaking immediately
@@ -96,17 +195,30 @@ export function useVoiceAgent(options: UseVoiceAgentOptions = {}) {
     setIsAiSpeaking(false);
   }, [setIsAiSpeaking]);
 
-  // Handle incoming prospect text and query Gemini Flash
+  // Handle incoming prospect text and query Gemini Flash with race condition guards
   const handleProspectSpeech = useCallback(
     async (spokenText: string) => {
-      if (!spokenText.trim() || !prospect) return;
+      const cleanText = spokenText.trim();
+      if (!cleanText || !prospect) return;
+      if (!useCallStore.getState().isActive) return; // Guard: Call ended
 
-      addTranscriptMessage('prospect', spokenText.trim());
+      // If we were waiting for pickup, this first speech triggers connected state!
+      setCallStage('in_conversation');
+
+      addTranscriptMessage('prospect', cleanText);
       setIsProcessingAi(true);
+
+      // Create abort controller for this specific request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      const abortCtrl = new AbortController();
+      abortControllerRef.current = abortCtrl;
 
       try {
         const res = await fetch('/api/call/live-assist', {
           method: 'POST',
+          signal: abortCtrl.signal,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             prospect: {
@@ -120,17 +232,23 @@ export function useVoiceAgent(options: UseVoiceAgentOptions = {}) {
               phone: prospect.phone,
             },
             transcript: liveTranscript.slice(-6).map((t) => ({ sender: t.sender, text: t.text })),
-            lastUserSpeech: spokenText,
+            lastUserSpeech: cleanText,
             speakerMode,
             selectedOffer,
             language,
           }),
         });
 
+        // Guard: check if call was ended while waiting for Gemini
+        if (!useCallStore.getState().isActive) {
+          setIsProcessingAi(false);
+          return;
+        }
+
         const data = await res.json();
         setIsProcessingAi(false);
 
-        if (data.spokenResponse) {
+        if (data.spokenResponse && useCallStore.getState().isActive) {
           setLastSuggestedText(data.spokenResponse);
           setLastPivotAdvice(data.quickPivot || '');
 
@@ -146,13 +264,23 @@ export function useVoiceAgent(options: UseVoiceAgentOptions = {}) {
             });
           }
         }
-      } catch (err) {
-        console.warn('Live Assist API error:', err);
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.warn('Live Assist API error:', err);
+        }
         setIsProcessingAi(false);
       }
     },
     [prospect, liveTranscript, speakerMode, selectedOffer, language, addTranscriptMessage, speakText, addToast]
   );
+
+  // Manual trigger when user clicks "Le prospect a décroché"
+  const markPickup = useCallback(() => {
+    setCallStage('in_conversation');
+    addTranscriptMessage('system', '📞 Le prospect a décroché la ligne.');
+    // Trigger opening greeting hook immediately
+    handleProspectSpeech('Allô ? Bonjour.');
+  }, [handleProspectSpeech, addTranscriptMessage]);
 
   // Start Speech Recognition
   const startListening = useCallback(() => {
@@ -181,6 +309,8 @@ export function useVoiceAgent(options: UseVoiceAgentOptions = {}) {
       };
 
       recognition.onresult = (event: any) => {
+        if (!useCallStore.getState().isActive) return;
+
         const lastResultIndex = event.results.length - 1;
         const transcriptText = event.results[lastResultIndex][0].transcript;
         if (transcriptText && transcriptText.trim().length > 1) {
@@ -190,13 +320,13 @@ export function useVoiceAgent(options: UseVoiceAgentOptions = {}) {
 
       recognition.onerror = (event: any) => {
         if (event.error !== 'no-speech') {
-          console.warn('Erreur Speech Recognition:', event.error);
+          console.warn('Speech Recognition notice:', event.error);
         }
       };
 
       recognition.onend = () => {
-        // Auto-restart listener if call is still active and not manually stopped
-        if (isActive && !isManuallyStoppedRef.current) {
+        // Auto-restart listener only if call is actively ongoing and not stopped
+        if (useCallStore.getState().isActive && !isManuallyStoppedRef.current) {
           try {
             recognition.start();
           } catch (e) {}
@@ -211,14 +341,14 @@ export function useVoiceAgent(options: UseVoiceAgentOptions = {}) {
       console.warn('Impossible de démarrer la reconnaissance vocale:', err);
       setIsListening(false);
     }
-  }, [isActive, language, handleProspectSpeech, setIsListening]);
+  }, [language, handleProspectSpeech, setIsListening]);
 
   // Stop Speech Recognition
   const stopListening = useCallback(() => {
     isManuallyStoppedRef.current = true;
     if (recognitionRef.current) {
       try {
-        recognitionRef.current.stop();
+        recognitionRef.current.abort();
       } catch (e) {}
     }
     setIsListening(false);
@@ -235,20 +365,18 @@ export function useVoiceAgent(options: UseVoiceAgentOptions = {}) {
     });
   }, [stopSpeaking, setSpeakerMode, addTranscriptMessage, addToast]);
 
-  // Auto-listen when active call starts in AI mode
+  // Start audio session when active call starts
   useEffect(() => {
     if (isActive && speechSupported) {
       startListening();
     } else {
-      stopListening();
-      stopSpeaking();
+      killCallAudio();
     }
 
     return () => {
-      stopListening();
-      stopSpeaking();
+      killCallAudio();
     };
-  }, [isActive, speechSupported]);
+  }, [isActive, speechSupported, startListening, killCallAudio]);
 
   return {
     speechSupported,
@@ -258,11 +386,14 @@ export function useVoiceAgent(options: UseVoiceAgentOptions = {}) {
     isListening,
     lastSuggestedText,
     lastPivotAdvice,
+    callStage,
+    markPickup,
     speakText,
     stopSpeaking,
     startListening,
     stopListening,
     handleProspectSpeech,
     emergencyTakeover,
+    killCallAudio,
   };
 }
