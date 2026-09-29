@@ -1,10 +1,18 @@
 import mongoose from 'mongoose';
 import dns from 'dns';
 
-// Fix Node.js DNS srv resolution issues (e.g. ECONNREFUSED) by preferring IPv4
+// Fix Node.js DNS srv resolution issues (e.g. ECONNREFUSED) by preferring IPv4 and public DNS
 if (typeof dns.setDefaultResultOrder === 'function') {
   dns.setDefaultResultOrder('ipv4first');
 }
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+} catch {
+  // Ignore if restricted
+}
+
+const DIRECT_REPLICA_FALLBACK =
+  'mongodb://lpiks:7ypmjHukQ7CMiPlW@ac-za5lc36-shard-00-00.ggmoybl.mongodb.net:27017,ac-za5lc36-shard-00-01.ggmoybl.mongodb.net:27017,ac-za5lc36-shard-00-02.ggmoybl.mongodb.net:27017/stonelink?ssl=true&authSource=admin&replicaSet=atlas-rb39ac-shard-0';
 
 let cached = (global as any).mongoose;
 
@@ -31,10 +39,24 @@ async function dbConnect() {
 
     console.log('\x1b[36m[MongoDB]\x1b[0m 🔄 Connexion à MongoDB Atlas en cours...');
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((m) => {
-      console.log(`\x1b[32m[MongoDB] ✅ CONNECTÉ AVEC SUCCÈS AU CLUSTER !\x1b[0m (Base: ${m.connection.name || 'stonelink'})`);
-      return m;
-    });
+    cached.promise = mongoose
+      .connect(MONGODB_URI!, opts)
+      .catch(async (err: any) => {
+        if (
+          err.message &&
+          (err.message.includes('querySrv') ||
+            err.message.includes('ECONNREFUSED') ||
+            err.message.includes('ENOTFOUND'))
+        ) {
+          console.warn('\x1b[33m[MongoDB] ⚠️ DNS SRV bloqué par le FAI/routeur local. Bascule automatique sur ReplicaSet direct...\x1b[0m');
+          return mongoose.connect(DIRECT_REPLICA_FALLBACK, opts);
+        }
+        throw err;
+      })
+      .then((m) => {
+        console.log(`\x1b[32m[MongoDB] ✅ CONNECTÉ AVEC SUCCÈS AU CLUSTER !\x1b[0m (Base: ${m.connection.name || 'stonelink'})`);
+        return m;
+      });
   }
 
   try {
