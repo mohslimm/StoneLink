@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -625,6 +626,7 @@ export default function CRM() {
     prospects,
     loading,
     isFallbackMode,
+    trashCount,
     fetchProspects,
     updateStage,
     updateNotes,
@@ -668,7 +670,7 @@ export default function CRM() {
     if (selectedProspect && selectedProspect.id === id) {
       setSelectedProspect(null);
     }
-    addToast({ type: 'info', message: 'Prospect supprimé' });
+    addToast({ type: 'info', message: 'Prospect déplacé dans la corbeille' });
   };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -902,6 +904,21 @@ export default function CRM() {
               </span>
             </button>
           </div>
+
+          {/* Corbeille */}
+          <Link
+            href="/crm/trash"
+            className="h-9 px-3 rounded-[8px] bg-[#11111a] hover:bg-[rgba(239,68,68,0.1)] border border-[rgba(255,255,255,0.08)] hover:border-[rgba(239,68,68,0.3)] text-[rgba(232,228,220,0.65)] hover:text-[#f87171] transition-all flex items-center gap-2 text-[12px] font-body font-medium cursor-pointer"
+            title="Accéder à la corbeille des prospects supprimés"
+          >
+            <Trash2 size={14} className="text-[#f87171]" />
+            <span className="hidden sm:inline">Corbeille</span>
+            {trashCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-[rgba(239,68,68,0.2)] text-[#f87171] border border-[rgba(239,68,68,0.3)]">
+                {trashCount}
+              </span>
+            )}
+          </Link>
 
           {/* Importer CSV */}
           <AnimatedButton
@@ -1146,7 +1163,9 @@ function AddProspectModal({
     website: '',
     phone: '',
     email: '',
-    sector: 'Sante',
+    sector: 'Agence de voyage',
+    city: 'Alger',
+    notes: '',
   });
 
   const handleSubmit = async () => {
@@ -1161,14 +1180,15 @@ function AddProspectModal({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contactName: formData.contactName || 'Contact',
+          contactName: formData.contactName || `Responsable ${formData.companyName}`,
           companyName: formData.companyName,
           email: formData.email || `contact@${formData.companyName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'lead'}.com`,
           website: formData.website || '',
           phone: formData.phone || '',
-          niche: formData.sector || 'dental',
-          country: 'FR',
-          city: 'Paris',
+          niche: formData.sector || 'Agence de voyage',
+          country: 'Algérie',
+          city: formData.city || 'Alger',
+          notes: formData.notes ? `${formData.notes} | Zone: ${formData.city || 'Alger'}` : `Zone: ${formData.city || 'Alger'}`,
         }),
       });
 
@@ -1176,24 +1196,29 @@ function AddProspectModal({
       const raw = json.data || json;
       const mapped = mapBackendProspect(raw);
       onAdded(mapped);
+      addToast({ type: 'success', message: `Prospect « ${formData.companyName} » créé avec succès !` });
+      onClose();
     } catch (err: any) {
       // Local fallback
       const localP: Prospect = {
         id: 'local_' + Date.now(),
-        name: formData.contactName || 'Nouveau Contact',
+        name: formData.contactName || `Responsable ${formData.companyName}`,
         company: formData.companyName,
         url: formData.website || '',
         phone: formData.phone || '',
         email: formData.email || '',
-        score: 55,
+        score: 0,
         sector: formData.sector,
         stage: 'nouveau',
-        lastContact: 'Aujourd\'hui',
+        city: formData.city || 'Alger',
+        lastContact: 'Non contacté',
         callHistory: [],
-        notes: '',
+        notes: formData.notes ? `${formData.notes} | Zone: ${formData.city}` : `Zone: ${formData.city}`,
         scriptReady: true,
       };
       onAdded(localP);
+      addToast({ type: 'info', message: `Prospect « ${formData.companyName} » ajouté en mémoire locale` });
+      onClose();
     } finally {
       setLoading(false);
     }
@@ -1208,58 +1233,80 @@ function AddProspectModal({
     >
       <div className="absolute inset-0 bg-[rgba(5,5,9,0.75)] backdrop-blur-[8px]" onClick={onClose} />
       <motion.div
-        className="relative w-full max-w-[460px] p-7 rounded-[14px] bg-[rgba(20,20,34,0.98)] border border-[rgba(255,255,255,0.12)] shadow-modal"
+        className="relative w-full max-w-[480px] p-7 rounded-[14px] bg-[rgba(20,20,34,0.98)] border border-[rgba(255,255,255,0.12)] shadow-modal max-h-[90vh] overflow-y-auto"
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
-        <h2 className="font-display text-[28px] font-normal text-[#e8e4dc]">Nouveau Prospect</h2>
-        <div className="space-y-3.5 mt-5">
+        <h2 className="font-display text-[26px] font-normal text-[#e8e4dc]">Nouveau Prospect</h2>
+        <p className="text-[12px] font-body text-[rgba(232,228,220,0.5)] mt-1">
+          Ajout direct dans votre CRM et synchronisation MongoDB Atlas.
+        </p>
+
+        <div className="space-y-3 mt-5">
           <input
             className="w-full h-10 px-3.5 rounded-[8px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] text-[13px] font-body text-[#e8e4dc] focus:outline-none focus:border-[#c5a059]"
-            placeholder="Nom du contact"
-            value={formData.contactName}
-            onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
-          />
-          <input
-            className="w-full h-10 px-3.5 rounded-[8px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] text-[13px] font-body text-[#e8e4dc] focus:outline-none focus:border-[#c5a059]"
-            placeholder="Entreprise *"
+            placeholder="Entreprise * (ex: Atlas Voyages)"
             value={formData.companyName}
             onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
           />
           <input
             className="w-full h-10 px-3.5 rounded-[8px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] text-[13px] font-body text-[#e8e4dc] focus:outline-none focus:border-[#c5a059]"
-            placeholder="Email"
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            placeholder="Nom du contact / Responsable"
+            value={formData.contactName}
+            onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
           />
+          <div className="grid grid-cols-2 gap-2.5">
+            <input
+              className="w-full h-10 px-3.5 rounded-[8px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] text-[13px] font-body text-[#e8e4dc] focus:outline-none focus:border-[#c5a059]"
+              placeholder="Téléphone (05/06/07...)"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            />
+            <input
+              className="w-full h-10 px-3.5 rounded-[8px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] text-[13px] font-body text-[#e8e4dc] focus:outline-none focus:border-[#c5a059]"
+              placeholder="Wilaya (ex: Alger, Oran)"
+              value={formData.city}
+              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <select
+              className="w-full h-10 px-3 rounded-[8px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] text-[12.5px] font-body text-[#e8e4dc] focus:outline-none focus:border-[#c5a059]"
+              value={formData.sector}
+              onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
+            >
+              <option value="Agence de voyage">Agence de voyage</option>
+              <option value="Santé / Dentaire">Santé / Dentaire</option>
+              <option value="Immobilier">Immobilier</option>
+              <option value="Juridique / Avocats">Juridique / Avocats</option>
+              <option value="BTP & Construction">BTP & Construction</option>
+              <option value="E-commerce">E-commerce</option>
+              <option value="Général">Général</option>
+            </select>
+            <input
+              className="w-full h-10 px-3.5 rounded-[8px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] text-[13px] font-body text-[#e8e4dc] focus:outline-none focus:border-[#c5a059]"
+              placeholder="Email (optionnel)"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+          </div>
           <input
             className="w-full h-10 px-3.5 rounded-[8px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] text-[13px] font-body text-[#e8e4dc] focus:outline-none focus:border-[#c5a059]"
-            placeholder="Site web (https://...)"
+            placeholder="Site web (laisser vide si aucun site)"
             value={formData.website}
             onChange={(e) => setFormData({ ...formData, website: e.target.value })}
           />
           <input
             className="w-full h-10 px-3.5 rounded-[8px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] text-[13px] font-body text-[#e8e4dc] focus:outline-none focus:border-[#c5a059]"
-            placeholder="Téléphone"
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            placeholder="Notes (ex: intéressé par refonte web...)"
+            value={formData.notes}
+            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
           />
-          <select
-            className="w-full h-10 px-3 rounded-[8px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] text-[13px] font-body text-[#e8e4dc] focus:outline-none focus:border-[#c5a059]"
-            value={formData.sector}
-            onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
-          >
-            <option value="Sante">Santé / Dentaire</option>
-            <option value="Immobilier">Immobilier</option>
-            <option value="Juridique">Juridique / Avocats</option>
-            <option value="E-commerce">E-commerce</option>
-            <option value="BTP">BTP & Construction</option>
-            <option value="Voyage">Voyage & Tourisme</option>
-          </select>
         </div>
+
         <div className="flex gap-3 mt-6">
           <AnimatedButton variant="secondary" className="flex-1" onClick={onClose} disabled={loading}>
             Annuler

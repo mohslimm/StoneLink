@@ -115,13 +115,26 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const { searchParams } = new URL(request.url);
+  const permanent = searchParams.get('permanent') === 'true';
 
   try {
     await dbConnect();
     const col = (await import('mongoose')).default.connection.db!.collection('prospects');
-    await col.deleteOne({ $or: [{ _id: id }, { id: id }] });
-    console.log(`\x1b[32m[DELETE /api/prospects/${id}] ✅ Supprimé définitivement de MongoDB Atlas (Cloud)\x1b[0m`);
-    return NextResponse.json({ message: 'Prospect supprimé définitivement de MongoDB' });
+
+    if (permanent) {
+      await col.deleteOne({ $or: [{ _id: id }, { id: id }] });
+      console.log(`\x1b[32m[DELETE /api/prospects/${id}] ✅ Supprimé définitivement de MongoDB Atlas (Cloud)\x1b[0m`);
+      return NextResponse.json({ message: 'Prospect supprimé définitivement de MongoDB' });
+    } else {
+      const now = new Date();
+      await col.updateOne(
+        { $or: [{ _id: id }, { id: id }] },
+        { $set: { isDeleted: true, deletedAt: now, updatedAt: now } }
+      );
+      console.log(`\x1b[32m[DELETE /api/prospects/${id}] 🗑️ Déplacé vers la corbeille (Soft Delete)\x1b[0m`);
+      return NextResponse.json({ message: 'Prospect déplacé dans la corbeille' });
+    }
   } catch (error: any) {
     console.error(`\x1b[31m[DELETE /api/prospects/${id}] ❌ Erreur suppression MongoDB :\x1b[0m`, error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -25,8 +25,8 @@ async function dbConnect() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 3000,
-      connectTimeoutMS: 3000,
+      serverSelectionTimeoutMS: 8000,
+      connectTimeoutMS: 8000,
     };
 
     console.log('\x1b[36m[MongoDB]\x1b[0m 🔄 Connexion à MongoDB Atlas en cours...');

@@ -13,6 +13,8 @@ export interface Prospect {
   callHistory: CallRecord[];
   notes: string;
   scriptReady: boolean;
+  isDeleted?: boolean;
+  deletedAt?: string | null;
 }
 
 export type PipelineStage = 'nouveau' | 'contacte' | 'recontacter' | 'prototype' | 'ferme' | 'perdu';
@@ -102,5 +104,7 @@ export function mapBackendProspect(doc: any): Prospect {
       ? doc.notes.map((n: any) => typeof n === 'string' ? n : n.content).join('\n')
       : (typeof doc.notes === 'string' ? doc.notes : ''),
     scriptReady: !!doc.aiAssets?.callScript || !!doc.scriptReady,
+    isDeleted: !!doc.isDeleted,
+    deletedAt: doc.deletedAt ? new Date(doc.deletedAt).toISOString() : null,
   };
 }

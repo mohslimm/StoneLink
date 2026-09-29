@@ -53,6 +53,9 @@ const ProspectSchema = new Schema(
     activities: { type: [ActivitySchema], default: [] },
     callHistory: { type: Array, default: [] },
 
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
+
     aiAssets: {
       siteAdaptation: Schema.Types.Mixed,
       logoConcept: Schema.Types.Mixed,

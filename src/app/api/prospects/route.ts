@@ -120,7 +120,16 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') ?? '100', 10)
     const offset = parseInt(searchParams.get('offset') ?? '0', 10)
 
+    const trash = searchParams.get('trash') === 'true'
+
     const query: any = {}
+
+    // ─── Soft Delete / Trash Filter ──────────
+    if (trash) {
+      query.isDeleted = true
+    } else {
+      query.isDeleted = { $ne: true }
+    }
 
     // ─── Filters ─────────────────────────────
     if (niche && niche !== 'all') query.niche = niche
@@ -137,19 +146,23 @@ export async function GET(request: Request) {
         { contactName: { $regex: q, $options: 'i' } },
         { city: { $regex: q, $options: 'i' } },
         { email: { $regex: q, $options: 'i' } },
+        { phone: { $regex: q, $options: 'i' } },
       ]
     }
 
     // ─── Query DB ───────────────────────────
     const total = await Prospect.countDocuments(query)
+    const trashCount = await Prospect.countDocuments({ isDeleted: true })
+
+    const sortField: any = trash ? { deletedAt: -1, updatedAt: -1 } : { createdAt: -1 }
 
     const prospects = await Prospect.find(query)
-      .sort({ createdAt: -1 })
+      .sort(sortField)
       .skip(offset)
       .limit(limit)
       .lean()
 
-    console.log(`\x1b[32m[GET /api/prospects] ✅ ${prospects.length} prospects chargés depuis MongoDB Atlas (Cloud) !\x1b[0m`)
+    console.log(`\x1b[32m[GET /api/prospects] ✅ ${prospects.length} prospects (${trash ? 'corbeille' : 'actifs'}) chargés depuis MongoDB Atlas !\x1b[0m`)
 
     return NextResponse.json({
       data: prospects,
@@ -158,6 +171,7 @@ export async function GET(request: Request) {
         limit,
         offset,
         hasMore: offset + limit < total,
+        trashCount,
       },
       source: 'database',
     })

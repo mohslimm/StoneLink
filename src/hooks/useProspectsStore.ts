@@ -8,11 +8,13 @@ interface ProspectsState {
   loading: boolean;
   isLoaded: boolean;
   isFallbackMode: boolean;
+  trashCount: number;
 
   fetchProspects: (force?: boolean) => Promise<void>;
   updateStage: (id: string, stage: PipelineStage) => Promise<void>;
   updateNotes: (id: string, notes: string) => Promise<void>;
   deleteProspect: (id: string) => Promise<void>;
+  restoreProspect: (id: string) => Promise<void>;
   addProspect: (prospect: Prospect) => void;
   importProspects: (prospects: Prospect[]) => void;
   toggleContacted: (id: string) => Promise<{ isContacted: boolean; company: string }>;
@@ -23,6 +25,7 @@ export const useProspectsStore = create<ProspectsState>((set, get) => ({
   loading: false,
   isLoaded: false,
   isFallbackMode: false,
+  trashCount: 0,
 
   fetchProspects: async (force = false) => {
     // Avoid redundant fetches if already loaded
@@ -38,15 +41,19 @@ export const useProspectsStore = create<ProspectsState>((set, get) => ({
         set({ isFallbackMode: true });
       }
 
+      const trashCount = typeof json.meta?.trashCount === 'number' ? json.meta.trashCount : 0;
+
       if (json.data && Array.isArray(json.data) && json.data.length > 0) {
         set({
           prospects: json.data.map(mapBackendProspect),
+          trashCount,
           isLoaded: true,
           loading: false,
         });
       } else {
         set({
           prospects: mockProspects,
+          trashCount,
           isLoaded: true,
           loading: false,
         });
@@ -116,12 +123,35 @@ export const useProspectsStore = create<ProspectsState>((set, get) => ({
   deleteProspect: async (id: string) => {
     set((state) => ({
       prospects: state.prospects.filter((p) => p.id !== id),
+      trashCount: state.trashCount + 1,
     }));
 
     try {
       await fetch(`/api/prospects/${id}`, { method: 'DELETE' });
     } catch (err) {
       console.warn('[useProspectsStore] Delete error:', err);
+    }
+  },
+
+  restoreProspect: async (id: string) => {
+    try {
+      const res = await fetch(`/api/prospects/${id}/restore`, { method: 'POST' });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data) {
+          const restored = mapBackendProspect(json.data);
+          set((state) => ({
+            prospects: [restored, ...state.prospects],
+            trashCount: Math.max(0, state.trashCount - 1),
+          }));
+          return;
+        }
+      }
+      set((state) => ({
+        trashCount: Math.max(0, state.trashCount - 1),
+      }));
+    } catch (err) {
+      console.warn('[useProspectsStore] Restore error:', err);
     }
   },
 
