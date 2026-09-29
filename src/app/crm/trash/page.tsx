@@ -15,6 +15,7 @@ import { useProspectsStore } from '@/hooks/useProspectsStore';
 import { STAGE_COLORS, STAGE_LABELS } from '@/types';
 import type { PipelineStage } from '@/types';
 import { cn } from '@/lib/utils';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 
 interface DeletedProspect {
   _id: string;
@@ -70,6 +71,19 @@ export default function TrashPage() {
   useEffect(() => {
     loadTrash();
   }, []);
+
+  // Real-time synchronization for Trash page
+  const { isConnected: isRealtimeConnected } = useRealtimeSync({
+    onDeleted: () => loadTrash(),
+    onRestored: (doc) => {
+      if (doc) {
+        setDeletedList((prev) => prev.filter((p) => (p.id || p._id) !== (doc.id || doc._id)));
+      } else {
+        loadTrash();
+      }
+    },
+    onRefresh: () => loadTrash(),
+  });
 
   // Restore single prospect
   const handleRestore = async (prospect: DeletedProspect) => {

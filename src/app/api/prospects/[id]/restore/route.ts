@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
+import { emitRealtimeEvent } from '@/lib/events';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,7 @@ export async function POST(
     }
 
     console.log(`\x1b[32m[POST /api/prospects/${id}/restore] 🔄 Prospect restauré avec succès depuis la corbeille !\x1b[0m`);
+    emitRealtimeEvent('prospect:restored', { id, prospect: result });
     return NextResponse.json({ message: 'Prospect restauré avec succès', data: result });
   } catch (error: any) {
     console.error(`\x1b[31m[POST /api/prospects/${id}/restore] ❌ Erreur restauration :\x1b[0m`, error.message);

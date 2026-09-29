@@ -17,6 +17,7 @@ import { STAGE_COLORS, STAGE_LABELS, mapBackendProspect } from '@/types';
 import type { PipelineStage, Prospect, CallRecord } from '@/types';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 
 const stages: PipelineStage[] = ['nouveau', 'contacte', 'recontacter', 'prototype', 'ferme', 'perdu'];
 
@@ -645,6 +646,9 @@ export default function CRM() {
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // Real-time multi-user SSE synchronization
+  const { isConnected: isRealtimeConnected } = useRealtimeSync();
+
   useEffect(() => {
     fetchProspects();
   }, [fetchProspects]);
@@ -860,6 +864,15 @@ export default function CRM() {
               ? `${prospects.length} prospects`
               : `${filteredProspects.length} sur ${prospects.length} prospects`}
           </span>
+          {isRealtimeConnected && (
+            <span
+              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-body font-medium text-[#4ade80] bg-[rgba(74,222,128,0.1)] border border-[rgba(74,222,128,0.22)]"
+              title="Synchronisation temps réel active (SSE)"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-[#4ade80] animate-pulse" />
+              <span>En direct</span>
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-3">

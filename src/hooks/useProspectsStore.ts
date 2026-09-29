@@ -18,6 +18,12 @@ interface ProspectsState {
   addProspect: (prospect: Prospect) => void;
   importProspects: (prospects: Prospect[]) => void;
   toggleContacted: (id: string) => Promise<{ isContacted: boolean; company: string }>;
+
+  // Real-time synchronization handlers
+  onRemoteDeleted: (id: string, permanent: boolean) => void;
+  onRemoteRestored: (doc: any) => void;
+  onRemoteUpdated: (id: string, changes: any) => void;
+  onRemoteCreated: (doc: any) => void;
 }
 
 export const useProspectsStore = create<ProspectsState>((set, get) => ({
@@ -164,6 +170,45 @@ export const useProspectsStore = create<ProspectsState>((set, get) => ({
   importProspects: (newProspects: Prospect[]) => {
     set((state) => ({
       prospects: [...newProspects, ...state.prospects],
+    }));
+  },
+
+  onRemoteDeleted: (id: string, permanent: boolean) => {
+    set((state) => ({
+      prospects: state.prospects.filter((p) => p.id !== id),
+      trashCount: permanent ? state.trashCount : state.trashCount + 1,
+    }));
+  },
+
+  onRemoteRestored: (doc: any) => {
+    const restored = doc ? mapBackendProspect(doc) : null;
+    set((state) => ({
+      prospects: restored
+        ? (state.prospects.some((p) => p.id === restored.id) ? state.prospects : [restored, ...state.prospects])
+        : state.prospects,
+      trashCount: Math.max(0, state.trashCount - 1),
+    }));
+  },
+
+  onRemoteUpdated: (id: string, changes: any) => {
+    set((state) => ({
+      prospects: state.prospects.map((p) => {
+        if (p.id !== id) return p;
+        return {
+          ...p,
+          stage: changes.stage ? changes.stage : p.stage,
+          notes: changes.notes !== undefined ? (typeof changes.notes === 'string' ? changes.notes : p.notes) : p.notes,
+          lastContact: changes.lastContact || p.lastContact,
+        };
+      }),
+    }));
+  },
+
+  onRemoteCreated: (doc: any) => {
+    const created = doc ? mapBackendProspect(doc) : null;
+    if (!created) return;
+    set((state) => ({
+      prospects: state.prospects.some((p) => p.id === created.id) ? state.prospects : [created, ...state.prospects],
     }));
   },
 }));

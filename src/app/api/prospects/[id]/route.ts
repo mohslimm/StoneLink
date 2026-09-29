@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Prospect from '@/models/Prospect';
+import { emitRealtimeEvent } from '@/lib/events';
 
 export const dynamic = 'force-dynamic';
 
@@ -103,6 +104,7 @@ export async function PATCH(
     }
 
     console.log(`\x1b[32m[PATCH /api/prospects/${id}] ✅ Mis à jour dans MongoDB Atlas (Cloud) : stage=${body.stage || 'inchangé'}\x1b[0m`);
+    emitRealtimeEvent('prospect:updated', { id, ...body });
     return NextResponse.json(prospect);
   } catch (error: any) {
     console.error(`\x1b[31m[PATCH /api/prospects/${id}] ❌ Erreur MongoDB :\x1b[0m`, error.message);
@@ -125,6 +127,7 @@ export async function DELETE(
     if (permanent) {
       await col.deleteOne({ $or: [{ _id: id }, { id: id }] });
       console.log(`\x1b[32m[DELETE /api/prospects/${id}] ✅ Supprimé définitivement de MongoDB Atlas (Cloud)\x1b[0m`);
+      emitRealtimeEvent('prospect:deleted', { id, permanent: true });
       return NextResponse.json({ message: 'Prospect supprimé définitivement de MongoDB' });
     } else {
       const now = new Date();
@@ -133,6 +136,7 @@ export async function DELETE(
         { $set: { isDeleted: true, deletedAt: now, updatedAt: now } }
       );
       console.log(`\x1b[32m[DELETE /api/prospects/${id}] 🗑️ Déplacé vers la corbeille (Soft Delete)\x1b[0m`);
+      emitRealtimeEvent('prospect:deleted', { id, permanent: false, deletedAt: now.toISOString() });
       return NextResponse.json({ message: 'Prospect déplacé dans la corbeille' });
     }
   } catch (error: any) {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import dbConnect from '@/lib/mongodb'
 import Prospect from '@/models/Prospect'
 import { ProspectSchema } from '@/lib/validators'
+import { emitRealtimeEvent } from '@/lib/events'
 
 export const dynamic = 'force-dynamic'
 
@@ -233,6 +234,8 @@ export async function POST(request: Request) {
         },
       ],
     })
+
+    emitRealtimeEvent('prospect:created', { prospect: newProspect })
 
     return NextResponse.json(
       { data: newProspect, source: 'database' },

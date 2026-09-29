@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
+import { emitRealtimeEvent } from '@/lib/events';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,7 @@ export async function DELETE() {
 
     const result = await col.deleteMany({ isDeleted: true });
     console.log(`\x1b[32m[DELETE /api/prospects/trash] 🧹 Corbeille vidée : ${result.deletedCount} prospects supprimés définitivement\x1b[0m`);
+    emitRealtimeEvent('prospect:trash_emptied', { deletedCount: result.deletedCount });
 
     return NextResponse.json({
       message: 'Corbeille vidée avec succès',
@@ -35,6 +37,7 @@ export async function POST(request: Request) {
         { $set: { isDeleted: false, deletedAt: null, updatedAt: new Date() } }
       );
       console.log(`\x1b[32m[POST /api/prospects/trash] 🔄 Tous les prospects restaurés : ${result.modifiedCount}\x1b[0m`);
+      emitRealtimeEvent('prospect:bulk_restored', { modifiedCount: result.modifiedCount });
       return NextResponse.json({
         message: 'Tous les prospects ont été restaurés',
         restoredCount: result.modifiedCount,
