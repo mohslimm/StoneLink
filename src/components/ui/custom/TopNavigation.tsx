@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { label: 'Cockpit', path: '/' },
+  { label: 'Copilot IA', path: '/copilot' },
   { label: 'CRM', path: '/crm' },
   { label: 'Appels', path: '/call' },
   { label: 'Campagnes', path: '/campaigns' },

@@ -173,12 +173,14 @@ async function saveAndSync(reason = 'completed') {
     fs.writeFileSync(allLeadsPath, JSON.stringify(existingLeads, null, 2), 'utf8');
     addLog(`⚡ ${addedCount} nouveaux leads fusionnés dans la base (${existingLeads.length} au total).`);
 
-    // 3. Trigger seed_and_migrate to update prospects.ts
+    // 3. Trigger sync_atlas to inject directly into MongoDB Atlas and update local fallback
     try {
-      addLog(`🔄 Mise à jour du CRM StoneLink...`);
+      addLog(`🔄 Synchronisation directe vers MongoDB Atlas...`);
+      execSync('node scripts/sync_atlas.js', { stdio: 'ignore' });
       execSync('node scripts/seed_and_migrate.js', { stdio: 'ignore' });
+      addLog(`✅ Prospects synchronisés dans MongoDB Atlas avec succès !`);
     } catch (err) {
-      addLog(`⚠️ Migration CRM : ${err.message}`);
+      addLog(`⚠️ Synchronisation Atlas : ${err.message}`);
     }
   }
 
