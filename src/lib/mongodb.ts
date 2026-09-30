@@ -12,7 +12,7 @@ try {
 }
 
 const DIRECT_REPLICA_FALLBACK =
-  'mongodb://lpiks:7ypmjHukQ7CMiPlW@ac-za5lc36-shard-00-00.ggmoybl.mongodb.net:27017,ac-za5lc36-shard-00-01.ggmoybl.mongodb.net:27017,ac-za5lc36-shard-00-02.ggmoybl.mongodb.net:27017/stonelink?ssl=true&authSource=admin&replicaSet=atlas-rb39ac-shard-0';
+  process.env.MONGODB_REPLICA_URI || process.env.MONGODB_URI || '';
 
 let cached = (global as any).mongoose;
 

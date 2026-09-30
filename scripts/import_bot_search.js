@@ -99,8 +99,7 @@ async function run() {
   const leads = parseCsv(targetFile);
   console.log(`✅ ${leads.length} leads extraits avec succès !`);
 
-  // Try MongoDB Atlas insertion
-  const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://steppingstonesdevcontact_db_user:rBwWegtSuJ0kT5BL@ac-za5lc36-shard-00-00.ggmoybl.mongodb.net:27017,ac-za5lc36-shard-00-01.ggmoybl.mongodb.net:27017,ac-za5lc36-shard-00-02.ggmoybl.mongodb.net:27017/stonelink?ssl=true&authSource=admin&replicaSet=atlas-qj1r3v-shard-0';
+  const MONGODB_URI = process.env.MONGODB_URI || '';
 
   try {
     console.log('🔄 Connexion à MongoDB Atlas...');

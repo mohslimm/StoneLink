@@ -25,8 +25,8 @@ if (fs.existsSync(envPath)) {
   });
 }
 
-const PRIMARY_URI = process.env.MONGODB_URI || 'mongodb+srv://lpiks:7ypmjHukQ7CMiPlW@cluster0.ggmoybl.mongodb.net/stonelink?retryWrites=true&w=majority';
-const DIRECT_REPLICA_FALLBACK = 'mongodb://lpiks:7ypmjHukQ7CMiPlW@ac-za5lc36-shard-00-00.ggmoybl.mongodb.net:27017,ac-za5lc36-shard-00-01.ggmoybl.mongodb.net:27017,ac-za5lc36-shard-00-02.ggmoybl.mongodb.net:27017/stonelink?ssl=true&authSource=admin&replicaSet=atlas-rb39ac-shard-0';
+const PRIMARY_URI = process.env.MONGODB_URI || '';
+const DIRECT_REPLICA_FALLBACK = process.env.MONGODB_REPLICA_URI || process.env.MONGODB_URI || '';
 
 function hasValidWebsite(url) {
   if (!url) return false;
