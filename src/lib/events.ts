@@ -6,7 +6,8 @@ export type RealtimeEventType =
   | 'prospect:updated'
   | 'prospect:created'
   | 'prospect:trash_emptied'
-  | 'prospect:bulk_restored';
+  | 'prospect:bulk_restored'
+  | 'copilot:focus_updated';
 
 export interface RealtimeEvent {
   type: RealtimeEventType;
