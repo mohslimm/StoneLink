@@ -94,7 +94,7 @@ export async function PATCH(
     await dbConnect();
     const col = (await import('mongoose')).default.connection.db!.collection('prospects');
     const prospect = await col.findOneAndUpdate(
-      { $or: [{ _id: id }, { id: id }] },
+      { $or: [{ _id: id as any }, { id: id }] },
       { $set: { ...body, updatedAt: new Date() } },
       { returnDocument: 'after' }
     );
@@ -125,14 +125,14 @@ export async function DELETE(
     const col = (await import('mongoose')).default.connection.db!.collection('prospects');
 
     if (permanent) {
-      await col.deleteOne({ $or: [{ _id: id }, { id: id }] });
+      await col.deleteOne({ $or: [{ _id: id as any }, { id: id }] });
       console.log(`\x1b[32m[DELETE /api/prospects/${id}] ✅ Supprimé définitivement de MongoDB Atlas (Cloud)\x1b[0m`);
       emitRealtimeEvent('prospect:deleted', { id, permanent: true });
       return NextResponse.json({ message: 'Prospect supprimé définitivement de MongoDB' });
     } else {
       const now = new Date();
       await col.updateOne(
-        { $or: [{ _id: id }, { id: id }] },
+        { $or: [{ _id: id as any }, { id: id }] },
         { $set: { isDeleted: true, deletedAt: now, updatedAt: now } }
       );
       console.log(`\x1b[32m[DELETE /api/prospects/${id}] 🗑️ Déplacé vers la corbeille (Soft Delete)\x1b[0m`);

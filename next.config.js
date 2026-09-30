@@ -1,7 +1,3 @@
-if (process.env.NODE_ENV !== 'production' && process.argv.some((arg) => arg.includes('build'))) {
-  process.env.NODE_ENV = 'production';
-}
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // ─── Turbopack (remplace Webpack, 5-10x plus rapide en dev) ───

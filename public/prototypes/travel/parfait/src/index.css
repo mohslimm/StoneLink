@@ -1,0 +1,310 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════
+   PARFAIT VOYAGES — DESIGN SYSTEM
+   Tailwind CSS v4 (CSS-first config)
+═══════════════════════════════════════════════ */
+
+@theme {
+  /* Colors */
+  --color-primary: #0b3b8f;
+  --color-primary-light: #1a56c5;
+  --color-primary-dark: #072a63;
+  --color-secondary: #e63946;
+  --color-secondary-light: #f16b75;
+  --color-accent: #C9A96E;
+  --color-accent-light: #dbbf8a;
+  --color-accent-dark: #a8834a;
+  --color-cream: #FAF7F2;
+  --color-cream-dark: #f0ebe1;
+  --color-night: #0A0A0F;
+  --color-night-soft: #12121a;
+  --color-glass: rgba(11, 59, 143, 0.08);
+
+  /* Fonts */
+  --font-family-display: 'Cormorant Garamond', Georgia, serif;
+  --font-family-body: 'Inter', system-ui, sans-serif;
+  --font-family-mono: 'DM Mono', monospace;
+  --font-family-arabic: 'Amiri', serif;
+
+  /* Spacing extras */
+  --spacing-18: 4.5rem;
+  --spacing-22: 5.5rem;
+  --spacing-72: 18rem;
+  --spacing-84: 21rem;
+  --spacing-96: 24rem;
+
+  /* Border radius */
+  --radius-4xl: 2rem;
+  --radius-5xl: 2.5rem;
+}
+
+/* ─── Global Reset ─── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: auto; /* Lenis handles this */
+}
+
+body {
+  font-family: var(--font-family-body);
+  background-color: var(--color-cream);
+  color: var(--color-night);
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ─── Custom Cursor ─── */
+.cursor-none { cursor: none; }
+
+/* ─── Typography ─── */
+.font-display { font-family: var(--font-family-display); }
+.font-body    { font-family: var(--font-family-body); }
+.font-mono    { font-family: var(--font-family-mono); }
+.font-arabic  { font-family: var(--font-family-arabic); }
+
+/* ─── Gradient Text ─── */
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 60%, var(--color-primary-light) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-gold {
+  background: linear-gradient(135deg, var(--color-accent-dark) 0%, var(--color-accent-light) 50%, var(--color-accent-dark) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ─── Glassmorphism ─── */
+.glass {
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.glass-dark {
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background: rgba(10, 10, 15, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  background: rgba(250, 247, 242, 0.85);
+  border: 1px solid rgba(201, 169, 110, 0.2);
+}
+
+/* ─── Card Shadows ─── */
+.shadow-premium {
+  box-shadow: 0 20px 60px rgba(0, 98, 51, 0.12), 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.shadow-gold {
+  box-shadow: 0 8px 32px rgba(201, 169, 110, 0.3);
+}
+
+.shadow-card {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* ─── Skeleton Shimmer ─── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #e8e2d9 25%, #f5f0e8 50%, #e8e2d9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 0.5rem;
+}
+
+/* ─── Ken Burns ─── */
+@keyframes kenburns {
+  0%   { transform: scale(1)    translateX(0)     translateY(0); }
+  50%  { transform: scale(1.05) translateX(-1%)   translateY(-1%); }
+  100% { transform: scale(1.08) translateX(-2%)   translateY(-1.5%); }
+}
+
+.kenburns {
+  animation: kenburns 10s ease-in-out infinite alternate;
+}
+
+/* ─── Scroll Indicator ─── */
+@keyframes scrollBounce {
+  0%, 100% { transform: translateY(0); opacity: 1; }
+  50%       { transform: translateY(10px); opacity: 0.5; }
+}
+
+.scroll-bounce {
+  animation: scrollBounce 1.8s ease-in-out infinite;
+}
+
+/* ─── Floating Circles ─── */
+@keyframes float1 {
+  0%, 100% { transform: translateY(0px) translateX(0px) rotate(0deg); }
+  33%       { transform: translateY(-30px) translateX(15px) rotate(120deg); }
+  66%       { transform: translateY(15px) translateX(-10px) rotate(240deg); }
+}
+@keyframes float2 {
+  0%, 100% { transform: translateY(0px) translateX(0px); }
+  50%       { transform: translateY(-20px) translateX(-25px); }
+}
+@keyframes float3 {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50%       { transform: translateY(25px) scale(1.1); }
+}
+
+.float-1 { animation: float1 8s ease-in-out infinite; }
+.float-2 { animation: float2 11s ease-in-out infinite; }
+.float-3 { animation: float3 7s ease-in-out infinite; }
+
+/* ─── Nav bar transition ─── */
+.nav-scrolled {
+  background: rgba(250, 247, 242, 0.92) !important;
+  backdrop-filter: blur(20px) !important;
+  border-bottom: 1px solid rgba(201, 169, 110, 0.2) !important;
+}
+
+/* ─── Horizontal snap scroll ─── */
+.snap-container {
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 1rem;
+  padding: 0.5rem;
+}
+.snap-container::-webkit-scrollbar { display: none; }
+.snap-item {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  width: 280px;
+}
+
+/* ─── Progress Bar (NProgress-style) ─── */
+.progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* ─── SVG Checkmark ─── */
+.checkmark-circle { stroke: var(--color-primary); }
+.checkmark-path   { stroke: white; }
+
+/* ─── Bento Grid ─── */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: auto auto;
+  gap: 1.25rem;
+}
+
+.bento-large  { grid-column: span 2; grid-row: span 2; }
+.bento-tall   { grid-row: span 2; }
+.bento-wide   { grid-column: span 2; }
+
+@media (max-width: 768px) {
+  .bento-grid   { grid-template-columns: 1fr; }
+  .bento-large  { grid-column: span 1; grid-row: span 1; }
+  .bento-tall   { grid-row: span 1; }
+  .bento-wide   { grid-column: span 1; }
+}
+
+/* ─── Custom scrollbar ─── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--color-cream-dark); }
+::-webkit-scrollbar-thumb {
+  background: var(--color-accent);
+  border-radius: 9999px;
+}
+
+/* ─── Selection ─── */
+::selection {
+  background: var(--color-primary);
+  color: white;
+}
+
+/* ─── Focus visible ─── */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+/* ─── Utilities ─── */
+.section-padding { padding: 5rem 0; }
+.container-custom {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+@media (min-width: 640px)  { .container-custom { padding: 0 2rem; } }
+@media (min-width: 1024px) { .container-custom { padding: 0 3rem; } }
+
+/* ─── Decorative line ─── */
+.deco-line {
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-accent) 0%, transparent 100%);
+  border-radius: 9999px;
+}
+
+/* ─── Wave divider  ─── */
+.wave-divider { overflow: hidden; line-height: 0; }
+.wave-divider svg { display: block; }
+
+/* ─── Image overlay ─── */
+.img-overlay {
+  background: linear-gradient(
+    to top,
+    rgba(10, 10, 15, 0.85) 0%,
+    rgba(10, 10, 15, 0.4) 50%,
+    transparent 100%
+  );
+}
+
+/* ─── Typewriter cursor ─── */
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+.typewriter-cursor { animation: blink 1s step-end infinite; }
+
+/* ─── Pulse animation ─── */
+@keyframes pulseSoft {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 98, 51, 0.3); }
+  50%       { transform: scale(1.03); box-shadow: 0 0 0 8px rgba(0, 98, 51, 0); }
+}
+.pulse-soft { animation: pulseSoft 2s ease-in-out infinite; }
+
+/* ─── Price tag ─── */
+.price-badge {
+  font-family: var(--font-family-mono);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  color: white;
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+}
+
+/* ─── Star rating ─── */
+.star { color: var(--color-accent); }
+
+/* ─── Mobile first helpers ─── */
+@media (max-width: 640px) {
+  .section-padding { padding: 3rem 0; }
+  h1.hero-title { font-size: clamp(2.5rem, 8vw, 4rem); }
+}

@@ -1,0 +1,68 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-obsidian: #0A0B10;
+  --color-obsidian-soft: #11131A;
+  --color-gold: #D4AF37;
+  --color-gold-hover: #C5A059;
+  
+  --font-heading: "Playfair Display", serif;
+  --font-body: "Plus Jakarta Sans", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-obsidian text-gray-50 font-body antialiased selection:bg-gold selection:text-obsidian;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-wide;
+  }
+
+  /* Custom scrollbar for premium feel */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-obsidian;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gold/30 rounded-full hover:bg-gold/50 transition-colors;
+  }
+}
+
+@utility text-gradient-gold {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-gold via-[#F3E5AB] to-gold;
+}
+
+/* Custom styling for date and time inputs */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(72%) sepia(26%) saturate(1005%) hue-rotate(3deg) brightness(95%) contrast(85%); /* Gold color */
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  background: rgba(212, 175, 55, 0.1);
+  transform: scale(1.1);
+}
+
+/* Removing default focus outlines for a cleaner look */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+}
+
+/* Global cursor pointers for interactive elements */
+button, 
+[role="button"],
+a,
+select,
+input[type="submit"],
+input[type="button"] {
+  cursor: pointer !important;
+}

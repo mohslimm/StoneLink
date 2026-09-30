@@ -8,6 +8,7 @@ export interface Prospect {
   score: number;
   sector: string;
   city?: string;
+  campaignId?: string;
   stage: PipelineStage;
   lastContact: string;
   callHistory: CallRecord[];

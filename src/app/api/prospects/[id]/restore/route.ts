@@ -15,7 +15,7 @@ export async function POST(
     const col = (await import('mongoose')).default.connection.db!.collection('prospects');
 
     const result = await col.findOneAndUpdate(
-      { $or: [{ _id: id }, { id: id }] },
+      { $or: [{ _id: id as any }, { id: id }] },
       { $set: { isDeleted: false, deletedAt: null, updatedAt: new Date() } },
       { returnDocument: 'after' }
     );
