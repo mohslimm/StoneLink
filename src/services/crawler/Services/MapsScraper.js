@@ -13,7 +13,7 @@ const SEL = {
   searchBtn:   'button[aria-label="Rechercher"], button[aria-label="Search"]',
   feed:        'div[role="feed"]',
   card:        'div[role="feed"] .Nv2PK',
-  endOfList:   '[jsaction*="pane.resultSection.endOfResults"]',
+  endOfList:   '[jsaction*="pane.resultSection.endOfResults"], .HlvSq, [role="feed"] p.fontTitleSmall',
 
   // Detail panel
   name:        'h1.DUwDvf, h1[class*="fontHeadlineLarge"]',
@@ -33,53 +33,69 @@ const SEL = {
  */
 async function humanType(page, selector, text) {
   await page.click(selector);
-  await sleep(300);
+  await sleep(200);
 
   for (const char of text) {
     await page.keyboard.type(char);                          // type one character
-    await sleep(randomDelay(Config.delays.betweenKeystrokes)); // wait between chars
+    await sleep(randomDelay({ min: 40, max: 120 }));          // fast fluid typing
   }
 }
 
 // ── Scroll Logic ──────────────────────────────────────────────────────────────
 
-async function scrollUntilLoaded(page, targetCount) {
-  const MAX_SCROLLS = 60;
-  const STUCK_LIMIT = 6;
+async function scrollUntilLoaded(page, targetCount, options = {}) {
+  const MAX_SCROLLS = 30;
+  const STUCK_LIMIT = 3;
 
-  console.log(`🔄  Scrolling sidebar — target: ${targetCount} results…`);
-  console.log('─'.repeat(50));
+  const log = options.onLog || console.log;
+  log(`🔄 Défilement de la liste Google Maps (Cible: ${targetCount} résultats)...`);
 
   let prevCount  = 0;
   let stuckCount = 0;
 
   for (let i = 1; i <= MAX_SCROLLS; i++) {
+    if (options.isCancelled?.()) {
+      log('🛑 Arrêt demandé pendant le défilement.');
+      break;
+    }
+
     // Count visible result cards
     const count = await page.$$eval(
       SEL.card,
       (els) => els.filter((el) => el.innerText?.trim().length > 0).length
-    );
-
-    console.log(`   [${String(i).padStart(2, '0')}/${MAX_SCROLLS}] Cards: ${count}/${targetCount}`);
+    ).catch(() => 0);
 
     if (count >= targetCount) {
-      console.log(`✅  Target reached.\n`);
+      log(`✅ Objectif atteint : ${count}/${targetCount} fiches chargées.`);
       break;
     }
 
-    // End-of-list sentinel
+    // End-of-list sentinel selector
     const ended = await page.$(SEL.endOfList)
-      .then((el) => el?.isVisible().catch(() => false) ?? false);
-    if (ended) {
-      console.warn(`⚠️  End of results at ${count} cards.\n`);
+      .then((el) => el?.isVisible().catch(() => false) ?? false)
+      .catch(() => false);
+
+    // End-of-list text detection inside the feed
+    const reachedEndText = await page.evaluate(() => {
+      const feed = document.querySelector('div[role="feed"]');
+      if (!feed) return false;
+      const text = feed.innerText || '';
+      return text.includes("Vous avez atteint la fin de la liste") || 
+             text.includes("You've reached the end of the list") ||
+             text.includes("Fin des résultats") ||
+             text.includes("fin de la liste");
+    }).catch(() => false);
+
+    if (ended || reachedEndText) {
+      log(`📍 Fin des résultats Google Maps détectée (${count} fiches disponibles dans cette zone).`);
       break;
     }
 
-    // Stuck detection
-    if (count === prevCount) {
+    // Stuck detection (if no new cards appear for 3 consecutive scrolls)
+    if (count === prevCount && count > 0) {
       stuckCount++;
       if (stuckCount >= STUCK_LIMIT) {
-        console.warn(`⚠️  No new cards after ${STUCK_LIMIT} scrolls — proceeding with ${count}.\n`);
+        log(`📍 Aucune fiche supplémentaire trouvée après ${STUCK_LIMIT} défilements — Total disponible : ${count} fiches.`);
         break;
       }
     } else {
@@ -88,27 +104,36 @@ async function scrollUntilLoaded(page, targetCount) {
 
     prevCount = count;
 
-    // Scroll the feed element directly — progressive depth
-    const amount = 600 + i * 40;
-    await page.evaluate(
-      ({ sel, amt }) => { document.querySelector(sel)?.scrollBy(0, amt); },
-      { sel: SEL.feed, amt: amount }
-    );
+    if (i % 2 === 0 || count !== prevCount) {
+      options.onStatusUpdate?.({
+        currentLead: `Défilement Google Maps: ${count} fiches repérées...`,
+      });
+    }
 
-    await randomSleep(Config.delays.betweenScrolls);
+    // Scroll the feed element directly — progressive depth
+    const amount = 800 + i * 50;
+    await page.evaluate(
+      ({ sel, amt }) => { 
+        const feed = document.querySelector(sel);
+        if (feed) feed.scrollBy(0, amt); 
+      },
+      { sel: SEL.feed, amt: amount }
+    ).catch(() => {});
+
+    await sleep(1400);
   }
 
-  const final = await page.$$eval(SEL.card, (els) => els.length);
-  console.log(`🏷️  Final card count: ${final}\n`);
+  const final = await page.$$eval(SEL.card, (els) => els.length).catch(() => 0);
+  log(`🏷️ Total de fiches repérées sur la carte : ${final}`);
 }
 
 // ── Detail panel extraction ────────────────────────────────────────────────────
 
 async function extractFromPanel(page) {
-  await randomSleep(Config.delays.afterResultClick);
+  await sleep(1000);
 
   const get = async (sel) =>
-    page.locator(sel).first().textContent({ timeout: 5000 })
+    page.locator(sel).first().textContent({ timeout: 4000 })
       .then((t) => clean(t))
       .catch(() => '');
 
@@ -123,10 +148,10 @@ async function extractFromPanel(page) {
       if (!found.TikToklink    && href.includes('tiktok.com'))    found.TikToklink    = a.href;
     });
     return found;
-  });
+  }).catch(() => ({ Instagramlink: '', Facebooklink: '', Linkedinlink: '', TikToklink: '' }));
 
   // Check for "Closed" text
-  const closedText = await page.$$eval(SEL.closed, (els) => els.map(el => el.innerText).join(' '));
+  const closedText = await page.$$eval(SEL.closed, (els) => els.map(el => el.innerText).join(' ')).catch(() => '');
   const isClosed = /fermé définitivement|permanently closed/i.test(closedText);
 
   return {
@@ -135,7 +160,7 @@ async function extractFromPanel(page) {
     ReviewCount:     await get(SEL.reviews),
     Phonenumber:     await get(SEL.phone),
     Website: await page.locator(SEL.website).first()
-      .getAttribute('href', { timeout: 5000 }).catch(() => '') ?? '',
+      .getAttribute('href', { timeout: 4000 }).catch(() => '') ?? '',
     IsClosed: isClosed,
     ...socialLinks
   };
@@ -150,125 +175,125 @@ async function extractFromPanel(page) {
  * @param {import('playwright').Page} page
  * @param {string} area
  * @param {string} query
+ * @param {object} [options]
+ * @param {Function} [options.onLeadFound]
+ * @param {Function} [options.onLog]
+ * @param {Function} [options.onStatusUpdate]
+ * @param {Function} [options.isCancelled]
  * @returns {Promise<Array>} Array of raw lead objects
  */
-export async function scrapeMaps(page, area, query) {
+export async function scrapeMaps(page, area, query, options = {}) {
   const { targetCount } = Config;
   const searchTerm = `${query} ${area}`;
+  const log = options.onLog || console.log;
 
-  console.log(`🗺️  Opening Google Maps…`);
+  log(`🗺️ Navigation vers Google Maps pour "${searchTerm}"...`);
   await page.goto('https://www.google.com/maps', {
     waitUntil: 'domcontentloaded',
     timeout: 60000,
   });
 
   // ── Detect and handle Google's consent wall ──────────────────────────────
-  // From some regions (Algeria, etc.) Google does a FULL-PAGE redirect to
-  // consent.google.com — NOT a popup modal. We must check the URL to know
-  // which page we actually landed on.
-  await sleep(2000); // let any redirect settle
+  await sleep(1500);
   const currentUrl = page.url();
-  console.log(`📍  Landed on: ${currentUrl}`);
 
   if (currentUrl.includes('consent.google.com')) {
-    console.log('🍪  Full-page consent wall detected — accepting…');
-
+    log('🍪 Consentement Google détecté, validation...');
     try {
-      // The "Accept all" button on consent.google.com matches these patterns
       const acceptBtn = page.locator('button').filter({ hasText: /accept|accepter|tout/i });
       await acceptBtn.first().click({ timeout: 10000 });
-
-      // Wait for the redirect back to Maps
       await page.waitForURL('**/maps**', { timeout: 20000 });
-      console.log('✅  Consent accepted — redirected back to Maps.');
+      log('✅ Consentement validé.');
     } catch (err) {
-      console.error('❌  Could not click consent button:', err.message);
-      throw err;
+      console.error('❌ Échec clic consentement:', err.message);
     }
-
   } else if (currentUrl.includes('google.com/maps')) {
-    // Already on Maps — check for a modal consent overlay (rare)
     const modalBtn = await page.locator('button').filter({ hasText: /accept|accepter/i })
-      .first().isVisible({ timeout: 3000 }).catch(() => false);
-
+      .first().isVisible({ timeout: 2000 }).catch(() => false);
     if (modalBtn) {
-      console.log('🍪  Modal consent overlay detected — accepting…');
-      await page.locator('button').filter({ hasText: /accept|accepter/i }).first().click();
-    } else {
-      console.log('✅  On Maps directly — no consent needed.');
+      await page.locator('button').filter({ hasText: /accept|accepter/i }).first().click().catch(() => {});
     }
   }
 
-  // ── Wait for the search box to be ready ──────────────────────────────────
-  console.log('⏳  Waiting for search box…');
+  if (options.isCancelled?.()) return [];
+
+  // ── Wait for the search box ──────────────────────────────────
+  options.onStatusUpdate?.({ currentLead: `Initialisation de la recherche : ${searchTerm}...` });
   await page.waitForSelector(SEL.searchBox, { timeout: 30000 });
-  console.log('✅  Search box found.');
 
-  await randomSleep(Config.delays.afterSearch);
-
-
-
-  // ── Type the search query letter by letter ───────────────────────────────────
-  console.log(`⌨️  Typing: "${searchTerm}"`);
-
-  // Clear the search box first (essential for multi-area loops)
+  // ── Type the search query ───────────────────────────────────
+  log(`⌨️ Recherche : "${searchTerm}"`);
   await page.click(SEL.searchBox);
   await page.keyboard.press('Control+A');
   await page.keyboard.press('Backspace');
-  await sleep(300);
+  await sleep(200);
 
   await humanType(page, SEL.searchBox, searchTerm);
-
-  // Small pause then press Enter — mimics real user behaviour
-  await sleep(400);
+  await sleep(300);
   await page.keyboard.press('Enter');
-  console.log(`🔎  Search submitted — waiting for results…`);
+
+  if (options.isCancelled?.()) return [];
 
   // ── Wait for the results feed ─────────────────────────────────────────────
   await page.waitForSelector(SEL.feed, { timeout: 30000 });
-  await randomSleep(Config.delays.afterSearch);
+  await sleep(1500);
 
-  // ── Scroll until we have enough cards ─────────────────────────────────────
-  await scrollUntilLoaded(page, targetCount);
+  // ── Scroll until we have enough cards (or end of list) ────────────────────
+  await scrollUntilLoaded(page, targetCount, options);
+
+  if (options.isCancelled?.()) return [];
 
   // ── Collect ALL card URLs in one shot BEFORE clicking anything ───────────
-  // Google Maps lazily removes off-screen card DOM nodes as you scroll.
-  // Re-querying page.$$(SEL.card) inside the loop causes index drift and
-  // repeated clicks on the same businesses.
-  // Solution: read all hrefs in a single $$eval, then navigate to each URL.
   const cardUrls = await page.$$eval(
-    `${SEL.card} a[href*="/maps/place/"]`,
-    (anchors) => [...new Set(anchors.map((a) => a.href))]  // dedupe URLs too
-  );
+    `${SEL.card} a[href*="/maps/place/"], div[role="feed"] a[href*="/maps/place/"]`,
+    (anchors) => [...new Set(anchors.map((a) => a.href))]
+  ).catch(() => []);
 
   const toVisit = cardUrls.slice(0, targetCount);
-  console.log(`🗂️  Collected ${toVisit.length} unique card URLs — starting extraction…\n`);
+  log(`🗂️ [${area}] ${toVisit.length} fiches réelles trouvées — Lancement de l'extraction détaillée...`);
 
   // ── Navigate to each card URL directly ───────────────────────────────────
   const leads = [];
 
   for (let i = 0; i < toVisit.length; i++) {
+    if (options.isCancelled?.()) {
+      log('🛑 Arrêt demandé pendant l\'extraction.');
+      break;
+    }
+
     const url = toVisit[i];
-    console.log(`📍  [${i + 1}/${toVisit.length}] Navigating to card…`);
+    options.onStatusUpdate?.({
+      currentLead: `Extraction fiche ${i + 1}/${toVisit.length} : ${area}...`,
+    });
 
     try {
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 25000 });
       const lead = await extractFromPanel(page);
-      
+
       if (lead.IsClosed) {
-        console.warn(`   🛑 Skipping "${lead.Businessname}" (Permanently Closed)`);
+        log(`   ⏩ [${i + 1}/${toVisit.length}] ${lead.Businessname || 'Commerce'} — Fermé définitivement (Ignoré)`);
         continue;
       }
 
       leads.push(lead);
-      console.log(`   ✔ ${lead.Businessname || '(no name)'} | ☎ ${lead.Phonenumber || '—'} | ⭐ ${lead.Googlemapsscore || '—'} (${lead.ReviewCount || '0'} revs)`);
+
+      // ── STREAM IN REAL-TIME TO RUNNER! ──────────────────────────────────
+      if (options.onLeadFound) {
+        const shouldStop = await options.onLeadFound(lead, i + 1, toVisit.length);
+        if (shouldStop) {
+          log(`🎯 Objectif atteint pour cette zone.`);
+          break;
+        }
+      }
     } catch (err) {
-      console.warn(`   ⚠️  Skipping card ${i + 1}: ${err.message}`);
+      log(`   ⚠️ Erreur extraction fiche ${i + 1}: ${err.message}`);
     }
 
-    await randomSleep(Config.delays.betweenLeads);
+    if (options.isCancelled?.()) break;
+
+    await sleep(600);
   }
 
-  console.log(`\n🏁  Maps scrape complete. ${leads.length} leads collected.\n`);
+  log(`🏁 [${area}] Extraction terminée : ${leads.length} fiches analysées.`);
   return leads;
 }

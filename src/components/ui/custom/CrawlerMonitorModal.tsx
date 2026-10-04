@@ -102,8 +102,12 @@ export function CrawlerMonitorModal() {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+      <div 
+        onClick={() => setIsMonitorOpen(false)}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+      >
         <motion.div
+          onClick={(e) => e.stopPropagation()}
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
@@ -328,13 +332,27 @@ export function CrawlerMonitorModal() {
                   <span>{isStopping ? "Arrêt en cours..." : "Arrêter le Bot (Conserver les leads)"}</span>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => setIsMonitorOpen(false)}
-                  className="px-5 py-2 rounded-full text-[12.5px] font-body bg-[#1a1a2c] hover:bg-[#25253e] text-[#e8e4dc] border border-[rgba(255,255,255,0.08)] transition-colors cursor-pointer"
-                >
-                  Réduire & Laisser tourner en tâche de fond
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMonitorOpen(false);
+                      router.push('/crm');
+                    }}
+                    className="px-4 py-2 rounded-full text-[12.5px] font-body bg-[rgba(197,160,89,0.15)] hover:bg-[rgba(197,160,89,0.25)] text-[#c5a059] border border-[rgba(197,160,89,0.35)] transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>Aller au CRM (Laisser tourner)</span>
+                    <ArrowRight size={13} />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsMonitorOpen(false)}
+                    className="px-4 py-2 rounded-full text-[12.5px] font-body bg-[#1a1a2c] hover:bg-[#25253e] text-[#e8e4dc] border border-[rgba(255,255,255,0.08)] transition-colors cursor-pointer"
+                  >
+                    Réduire
+                  </button>
+                </div>
               </>
             ) : (
               <>

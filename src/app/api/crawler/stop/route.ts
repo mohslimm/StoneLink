@@ -79,9 +79,9 @@ export async function POST(req: Request) {
 
       fs.writeFileSync(allLeadsPath, JSON.stringify(existingLeads, null, 2), 'utf8');
 
-      // Trigger seed_and_migrate
-      exec('node scripts/seed_and_migrate.js', (err) => {
-        if (err) console.error('[Crawler Stop] seed_and_migrate error:', err.message);
+      // Trigger sync_atlas and seed_and_migrate to immediately push preserved leads to MongoDB Atlas
+      exec('node scripts/sync_atlas.js && node scripts/seed_and_migrate.js', (err) => {
+        if (err) console.error('[Crawler Stop] sync error:', err.message);
       });
     }
 

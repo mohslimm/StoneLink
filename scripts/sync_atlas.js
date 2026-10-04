@@ -159,6 +159,8 @@ async function syncToAtlas() {
           stage: 'nouveau',
           priority: 'cold',
           notes: noteText,
+          runDate: lead.RunDate || lead.runDate || new Date().toISOString(),
+          campaignId: lead.CampaignID || lead.campaignId || '',
           isDeleted: false,
           activities: [
             {

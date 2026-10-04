@@ -9,6 +9,8 @@ export interface Prospect {
   sector: string;
   city?: string;
   campaignId?: string;
+  createdAt?: string;
+  runDate?: string;
   stage: PipelineStage;
   lastContact: string;
   callHistory: CallRecord[];
@@ -98,6 +100,9 @@ export function mapBackendProspect(doc: any): Prospect {
     score: typeof doc.score === 'number' ? doc.score : (doc.lighthouseScore || 52),
     sector: doc.niche || doc.sector || 'Général',
     city: doc.city || doc.Wilaya || 'Général',
+    campaignId: doc.campaignId || doc.CampaignID || undefined,
+    createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : (doc.RunDate || doc.runDate || undefined),
+    runDate: doc.runDate || doc.RunDate || (doc.createdAt ? new Date(doc.createdAt).toISOString() : undefined),
     stage,
     lastContact: doc.lastContactedAt ? new Date(doc.lastContactedAt).toLocaleDateString('fr-FR') : (doc.lastContact || 'Jamais'),
     callHistory: Array.isArray(doc.callHistory) ? doc.callHistory : [],

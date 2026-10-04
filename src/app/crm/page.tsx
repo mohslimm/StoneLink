@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { GlassPanel } from '@/components/ui/custom/GlassPanel';
 import { AnimatedButton } from '@/components/ui/custom/AnimatedButton';
+import { LuxurySelect } from '@/components/ui/custom/LuxurySelect';
 import { useUIStore } from '@/hooks/useUIStore';
 import { useProspectsStore } from '@/hooks/useProspectsStore';
 import { mockProspects } from '@/data/prospects';
@@ -20,6 +21,23 @@ import { Loader2 } from 'lucide-react';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 
 const stages: PipelineStage[] = ['nouveau', 'contacte', 'recontacter', 'prototype', 'ferme', 'perdu'];
+
+const stageOptions = [
+  { label: 'Tous statuts', value: 'all' },
+  { label: 'Nouveaux', value: 'nouveau', color: STAGE_COLORS.nouveau },
+  { label: 'Contactés', value: 'contacte', color: STAGE_COLORS.contacte },
+  { label: 'À recontacter', value: 'recontacter', color: STAGE_COLORS.recontacter },
+  { label: 'Prototypes', value: 'prototype', color: STAGE_COLORS.prototype },
+  { label: 'Fermés', value: 'ferme', color: STAGE_COLORS.ferme },
+  { label: 'Perdus', value: 'perdu', color: STAGE_COLORS.perdu },
+];
+
+const sortOptions = [
+  { label: 'Trier : Récents', value: 'recent' },
+  { label: 'Trier : Score faible', value: 'score_asc' },
+  { label: 'Trier : Score élevé', value: 'score_desc' },
+  { label: 'Trier : Nom (A-Z)', value: 'name_asc' },
+];
 
 function hasValidWebsite(url?: string): boolean {
   if (!url) return false;
@@ -54,6 +72,30 @@ function getDisplayNote(notes?: string): string | null {
   }
   const clean = lines.join(' · ').replace(/Zone:\s*[^·|]+[·|]?/g, '').trim();
   return clean.length > 2 ? clean : null;
+}
+
+export function getLeadBatchInfo(p: any): { label: string; dateStr: string; key: string; isToday: boolean; isYesterday: boolean } {
+  const raw = p.runDate || p.createdAt || p.RunDate;
+  if (!raw) {
+    return { label: 'Initial', dateStr: 'Initial', key: 'initial', isToday: false, isYesterday: false };
+  }
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) {
+    return { label: 'Initial', dateStr: 'Initial', key: 'initial', isToday: false, isYesterday: false };
+  }
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday = d.toDateString() === yesterday.toDateString();
+
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const dateStr = `${day}/${month}`;
+  const key = `${d.getFullYear()}-${month}-${day}`;
+  const label = isToday ? `Aujourd'hui (${dateStr})` : isYesterday ? `Hier (${dateStr})` : `Lot du ${dateStr}`;
+
+  return { label, dateStr, key, isToday, isYesterday };
 }
 
 function ScoreBadge({ score, hasWeb }: { score: number; hasWeb?: boolean }) {
@@ -151,7 +193,25 @@ function DetailDrawer({
               <X size={18} />
             </button>
             <h2 className="font-display text-[30px] font-normal text-[#e8e4dc] leading-tight pr-8">{prospect.name}</h2>
-            <p className="text-[16px] font-body text-[#c5a059] mt-1">{prospect.company}</p>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <p className="text-[16px] font-body text-[#c5a059]">{prospect.company}</p>
+              {(() => {
+                const b = getLeadBatchInfo(prospect);
+                if (b.dateStr === 'Initial') return null;
+                return (
+                  <span className={cn(
+                    "text-[10.5px] font-mono px-2 py-0.5 rounded border tracking-wide",
+                    b.isToday
+                      ? "bg-[rgba(74,222,128,0.12)] border-[rgba(74,222,128,0.35)] text-[#4ade80]"
+                      : b.isYesterday
+                      ? "bg-[rgba(245,158,11,0.12)] border-[rgba(245,158,11,0.35)] text-[#fbbf24]"
+                      : "bg-[rgba(197,160,89,0.10)] border-[rgba(197,160,89,0.25)] text-[#c5a059]"
+                  )}>
+                    {b.label}
+                  </span>
+                );
+              })()}
+            </div>
           </div>
 
           {/* Contact Info */}
@@ -341,6 +401,22 @@ function PipelineCard({
         <span className="text-[11px] font-body font-medium uppercase tracking-[0.06em] px-2 py-0.5 rounded-full bg-[rgba(255,255,255,0.06)] text-[rgba(232,228,220,0.65)]">
           {prospect.sector}
         </span>
+        {(() => {
+          const b = getLeadBatchInfo(prospect);
+          if (b.dateStr === 'Initial') return null;
+          return (
+            <span className={cn(
+              "text-[10px] font-mono px-1.5 py-0.5 rounded border tracking-wide",
+              b.isToday
+                ? "bg-[rgba(74,222,128,0.12)] border-[rgba(74,222,128,0.35)] text-[#4ade80]"
+                : b.isYesterday
+                ? "bg-[rgba(245,158,11,0.12)] border-[rgba(245,158,11,0.35)] text-[#fbbf24]"
+                : "bg-[rgba(197,160,89,0.10)] border-[rgba(197,160,89,0.25)] text-[#c5a059]"
+            )}>
+              Lot {b.dateStr}
+            </span>
+          );
+        })()}
         <span className="text-[11px] font-body text-[rgba(232,228,220,0.35)]">
           {prospect.lastContact}
         </span>
@@ -520,7 +596,25 @@ function ListView({
                 onClick={() => onSelect(prospect)}
               >
                 <td className="px-5 py-3.5">
-                  <p className="text-[14px] font-body font-semibold text-[#e8e4dc]">{prospect.name}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-[14px] font-body font-semibold text-[#e8e4dc]">{prospect.name}</p>
+                    {(() => {
+                      const b = getLeadBatchInfo(prospect);
+                      if (b.dateStr === 'Initial') return null;
+                      return (
+                        <span className={cn(
+                          "text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border tracking-wide whitespace-nowrap",
+                          b.isToday
+                            ? "bg-[rgba(74,222,128,0.12)] border-[rgba(74,222,128,0.35)] text-[#4ade80]"
+                            : b.isYesterday
+                            ? "bg-[rgba(245,158,11,0.12)] border-[rgba(245,158,11,0.35)] text-[#fbbf24]"
+                            : "bg-[rgba(197,160,89,0.10)] border-[rgba(197,160,89,0.25)] text-[#c5a059]"
+                        )}>
+                          Lot {b.dateStr}
+                        </span>
+                      );
+                    })()}
+                  </div>
                   <p className="text-[12px] font-body text-[#c5a059]">{prospect.company}</p>
                   {getDisplayNote(prospect.notes) && (
                     <p className="text-[11px] font-body text-[rgba(232,228,220,0.6)] italic mt-1 line-clamp-1 flex items-center gap-1">
@@ -542,17 +636,13 @@ function ListView({
                   {prospect.lastContact}
                 </td>
                 <td className="px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
-                  <select
+                  <LuxurySelect
                     value={prospect.stage}
-                    onChange={(e) => onUpdateStage(prospect.id, e.target.value as PipelineStage)}
-                    className="h-8 px-2.5 rounded-[6px] bg-[#141422] border border-[rgba(255,255,255,0.1)] text-[11px] font-body text-[#e8e4dc] focus:outline-none focus:border-[#c5a059]"
-                  >
-                    {stages.map((s) => (
-                      <option key={s} value={s}>
-                        {STAGE_LABELS[s]}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => onUpdateStage(prospect.id, val as PipelineStage)}
+                    options={stageOptions.filter((s) => s.value !== 'all')}
+                    className="w-[130px]"
+                    align="right"
+                  />
                 </td>
               </tr>
             ))}
@@ -639,6 +729,7 @@ export default function CRM() {
   const [search, setSearch] = useState('');
   const [nicheFilter, setNicheFilter] = useState('all');
   const [areaFilter, setAreaFilter] = useState('all');
+  const [batchFilter, setBatchFilter] = useState('all');
   const [stageFilter, setStageFilter] = useState<'all' | PipelineStage>('all');
   const [noWebsiteOnly, setNoWebsiteOnly] = useState(false);
   const [priorityOnly, setPriorityOnly] = useState(false);
@@ -785,6 +876,33 @@ export default function CRM() {
     return [{ label: 'Toutes les wilayas / zones', value: 'all' }, ...list.map((a) => ({ label: a, value: a }))];
   }, [prospects]);
 
+  // Dynamic Extraction of Scrape Batches / Dates from CRM prospects
+  const dynamicBatches = useMemo(() => {
+    const batchMap = new Map<string, { label: string; count: number; sortKey: string }>();
+    prospects.forEach((p) => {
+      const info = getLeadBatchInfo(p);
+      if (info.key !== 'initial') {
+        if (!batchMap.has(info.key)) {
+          batchMap.set(info.key, { label: info.label, count: 1, sortKey: info.key });
+        } else {
+          batchMap.get(info.key)!.count++;
+        }
+      }
+    });
+
+    const sorted = Array.from(batchMap.entries()).sort((a, b) => b[1].sortKey.localeCompare(a[1].sortKey));
+
+    return [
+      { label: 'Tous les scans / arrivages', value: 'all' },
+      { label: "Aujourd'hui", value: 'today' },
+      { label: 'Hier', value: 'yesterday' },
+      ...sorted.map(([key, item]) => ({
+        label: `${item.label} (${item.count})`,
+        value: key,
+      })),
+    ];
+  }, [prospects]);
+
   // Multi-criteria Filtering & Sorting (matching Campaigns engine)
   const filteredProspects = useMemo(() => {
     return prospects
@@ -792,6 +910,18 @@ export default function CRM() {
         const matchNiche = nicheFilter === 'all' || p.sector === nicheFilter;
         const area = extractArea(p);
         const matchArea = areaFilter === 'all' || area === areaFilter;
+
+        // Batch / Date filter
+        const batchInfo = getLeadBatchInfo(p);
+        let matchBatch = true;
+        if (batchFilter === 'today') {
+          matchBatch = batchInfo.isToday;
+        } else if (batchFilter === 'yesterday') {
+          matchBatch = batchInfo.isYesterday;
+        } else if (batchFilter !== 'all') {
+          matchBatch = batchInfo.key === batchFilter;
+        }
+
         const hasWeb = hasValidWebsite(p.url);
         const matchNoWeb = !noWebsiteOnly || !hasWeb;
         const matchPriority = !priorityOnly || p.score < 45 || !hasWeb;
@@ -807,7 +937,7 @@ export default function CRM() {
           (p.notes && p.notes.toLowerCase().includes(q)) ||
           area.toLowerCase().includes(q);
 
-        return matchNiche && matchArea && matchNoWeb && matchPriority && matchStage && matchSearch;
+        return matchNiche && matchArea && matchBatch && matchNoWeb && matchPriority && matchStage && matchSearch;
       })
       .sort((a, b) => {
         if (sortBy === 'score_asc') return (a.score || 0) - (b.score || 0);
@@ -815,12 +945,13 @@ export default function CRM() {
         if (sortBy === 'name_asc') return (a.company || a.name || '').localeCompare(b.company || b.name || '');
         return 0; // Default recent
       });
-  }, [prospects, search, nicheFilter, areaFilter, stageFilter, noWebsiteOnly, priorityOnly, sortBy]);
+  }, [prospects, search, nicheFilter, areaFilter, batchFilter, stageFilter, noWebsiteOnly, priorityOnly, sortBy]);
 
   const hasActiveFilters =
     search !== '' ||
     nicheFilter !== 'all' ||
     areaFilter !== 'all' ||
+    batchFilter !== 'all' ||
     stageFilter !== 'all' ||
     noWebsiteOnly ||
     priorityOnly ||
@@ -830,6 +961,7 @@ export default function CRM() {
     setSearch('');
     setNicheFilter('all');
     setAreaFilter('all');
+    setBatchFilter('all');
     setStageFilter('all');
     setNoWebsiteOnly(false);
     setPriorityOnly(false);
@@ -957,9 +1089,9 @@ export default function CRM() {
       </div>
 
       {/* Dynamic Filter Bar — Matching Campagnes Engine */}
-      <div className="px-6 mt-4">
-        <GlassPanel className="p-3.5 border-[rgba(255,255,255,0.08)]">
-          <div className="flex flex-col 2xl:flex-row items-stretch 2xl:items-center justify-between gap-3">
+      <div className="px-6 mt-4 relative z-30">
+        <GlassPanel className="p-3.5 border-[rgba(255,255,255,0.08)] relative z-30 overflow-visible">
+          <div className="flex flex-col 2xl:flex-row items-stretch 2xl:items-center justify-between gap-3 relative z-30">
             {/* Search Input */}
             <div className="relative flex-1 min-w-[220px]">
               <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgba(232,228,220,0.4)]" />
@@ -981,71 +1113,57 @@ export default function CRM() {
             </div>
 
             {/* Dropdowns & Filters Container */}
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap relative z-30">
               {/* Niches */}
-              <div className="relative w-full sm:w-[150px] shrink-0">
-                <select
-                  value={nicheFilter}
-                  onChange={(e) => setNicheFilter(e.target.value)}
-                  className="w-full h-10 rounded-[10px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] px-3 pr-8 text-[12.5px] text-[#e8e4dc] focus:outline-none focus:border-[rgba(197,160,89,0.35)] appearance-none cursor-pointer truncate"
-                >
-                  {dynamicNiches.map((n) => (
-                    <option key={n.value} value={n.value} className="bg-[#0e0e18] text-[#e8e4dc]">
-                      {n.label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[rgba(232,228,220,0.4)] pointer-events-none" />
-              </div>
+              <LuxurySelect
+                value={nicheFilter}
+                onChange={setNicheFilter}
+                options={dynamicNiches}
+                placeholder="Toutes les niches"
+                className="w-full sm:w-[155px] shrink-0"
+                title="Filtrer par secteur d'activité / niche"
+              />
 
               {/* Wilayas / Zones */}
-              <div className="relative w-full sm:w-[165px] shrink-0">
-                <select
-                  value={areaFilter}
-                  onChange={(e) => setAreaFilter(e.target.value)}
-                  className="w-full h-10 rounded-[10px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] px-3 pr-8 text-[12.5px] text-[#e8e4dc] focus:outline-none focus:border-[rgba(197,160,89,0.35)] appearance-none cursor-pointer truncate"
-                >
-                  {dynamicAreas.map((a) => (
-                    <option key={a.value} value={a.value} className="bg-[#0e0e18] text-[#e8e4dc]">
-                      {a.label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[rgba(232,228,220,0.4)] pointer-events-none" />
-              </div>
+              <LuxurySelect
+                value={areaFilter}
+                onChange={setAreaFilter}
+                options={dynamicAreas}
+                placeholder="Toutes les wilayas"
+                className="w-full sm:w-[170px] shrink-0"
+                title="Filtrer par wilaya ou ville"
+              />
+
+              {/* Sessions de Scan / Arrivages */}
+              <LuxurySelect
+                value={batchFilter}
+                onChange={setBatchFilter}
+                options={dynamicBatches}
+                placeholder="Tous les scans"
+                className="w-full sm:w-[180px] shrink-0"
+                title="Filtrer par arrivage ou date de scan"
+              />
 
               {/* Statut Pipeline */}
-              <div className="relative w-full sm:w-[135px] shrink-0">
-                <select
-                  value={stageFilter}
-                  onChange={(e) => setStageFilter(e.target.value as any)}
-                  className="w-full h-10 rounded-[10px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] px-3 pr-8 text-[12.5px] text-[#e8e4dc] focus:outline-none focus:border-[rgba(197,160,89,0.35)] appearance-none cursor-pointer truncate"
-                >
-                  <option value="all" className="bg-[#0e0e18]">Tous statuts</option>
-                  <option value="nouveau" className="bg-[#0e0e18]">Nouveaux</option>
-                  <option value="contacte" className="bg-[#0e0e18]">Contactés</option>
-                  <option value="recontacter" className="bg-[#0e0e18]">À recontacter</option>
-                  <option value="prototype" className="bg-[#0e0e18]">Prototypes</option>
-                  <option value="ferme" className="bg-[#0e0e18]">Fermés</option>
-                  <option value="perdu" className="bg-[#0e0e18]">Perdus</option>
-                </select>
-                <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[rgba(232,228,220,0.4)] pointer-events-none" />
-              </div>
+              <LuxurySelect
+                value={stageFilter}
+                onChange={(val) => setStageFilter(val as any)}
+                options={stageOptions}
+                placeholder="Tous statuts"
+                className="w-full sm:w-[145px] shrink-0"
+                title="Filtrer par étape du pipeline"
+              />
 
               {/* Sort Dropdown */}
-              <div className="relative w-full sm:w-[155px] shrink-0">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="w-full h-10 rounded-[10px] bg-[#11111a] border border-[rgba(255,255,255,0.08)] px-3 pr-8 text-[12.5px] text-[#e8e4dc] focus:outline-none focus:border-[rgba(197,160,89,0.35)] appearance-none cursor-pointer truncate"
-                >
-                  <option value="recent" className="bg-[#0e0e18]">Trier : Récents</option>
-                  <option value="score_asc" className="bg-[#0e0e18]">Trier : Score faible</option>
-                  <option value="score_desc" className="bg-[#0e0e18]">Trier : Score élevé</option>
-                  <option value="name_asc" className="bg-[#0e0e18]">Trier : Nom (A-Z)</option>
-                </select>
-                <ArrowUpDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[rgba(232,228,220,0.4)] pointer-events-none" />
-              </div>
+              <LuxurySelect
+                value={sortBy}
+                onChange={(val) => setSortBy(val as any)}
+                options={sortOptions}
+                icon={<ArrowUpDown size={13} />}
+                className="w-full sm:w-[160px] shrink-0"
+                align="right"
+                title="Trier la liste des prospects"
+              />
 
               {/* Quick Toggle Chips */}
               <button
@@ -1090,12 +1208,12 @@ export default function CRM() {
       </div>
 
       {/* Stats */}
-      <div className="mt-4">
+      <div className="mt-4 relative z-10">
         <PipelineStats prospects={filteredProspects} />
       </div>
 
       {/* Content */}
-      <div className="mt-4 relative min-h-[350px]">
+      <div className="mt-4 relative z-0 min-h-[350px]">
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center">
             <Loader2 className="animate-spin text-[#c5a059]" size={32} />

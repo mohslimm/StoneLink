@@ -241,7 +241,7 @@ async function run() {
 
     for (const query of Config.searchQueries) {
       for (const area of Config.searchAreas) {
-        // Check for cancellation
+        // Check for cancellation before starting an area
         if (fs.existsSync(stopSignalPath)) {
           addLog('🛑 Signal d’arrêt détecté ! Interruption immédiate du scraping...');
           await saveAndSync('stopped');
@@ -257,85 +257,145 @@ async function run() {
           currentLead: `Recherche Google Maps pour ${query} à ${area}...`,
         });
 
-        const rawLeads = await scrapeMaps(page, area, query);
-        addLog(`🌐 Enrichissement de ${rawLeads.length} leads trouvés...`);
+        let areaQuotaReached = false;
 
-        for (let i = 0; i < rawLeads.length; i++) {
-          // Check for cancellation between leads
-          if (fs.existsSync(stopSignalPath)) {
-            addLog('🛑 Signal d’arrêt détecté ! Interruption immédiate du scraping...');
-            await saveAndSync('stopped');
-            return;
+        await scrapeMaps(page, area, query, {
+          onLog: (msg) => addLog(msg),
+          onStatusUpdate: (patch) => writeStatus(patch),
+          isCancelled: () => fs.existsSync(stopSignalPath),
+          onLeadFound: async (lead, cardIndex, totalCardsInArea) => {
+            if (fs.existsSync(stopSignalPath)) return true;
+
+            const leadTitle = lead.Businessname || lead.Website || 'Commerce inconnu';
+            const hasWebsite = !!lead.Website && lead.Website.trim() !== '' && !lead.Website.toLowerCase().includes('pas de site') && lead.Website.length > 3;
+
+            // 1. Filter: Only no website
+            if (Config.onlyNoWebsite && hasWebsite) {
+              addLog(`   ⏩ [${cardIndex}/${totalCardsInArea}] ${leadTitle} a déjà un site (${lead.Website}) — Ignoré ('Sans site uniquement' actif).`);
+              writeStatus({
+                currentLead: `Ignoré (a un site) : ${leadTitle}`,
+              });
+              return false;
+            }
+
+            // 2. Web enrichment (if website exists)
+            let extra = {};
+            if (lead.Website && hasWebsite) {
+              try {
+                extra = await enrichWebsite(context, lead.Website);
+              } catch (e) {}
+            }
+
+            // 3. LinkedIn owner (for non-Algerian targets)
+            const ALGERIAN_WILAYAS = [
+              'alger', 'oran', 'annaba', 'bejaia', 'constantine', 'blida', 'setif', 
+              'tizi ouzou', 'tlemcen', 'batna', 'biskra', 'boumerdes', 'tipaza', 
+              'chlef', 'mostaganem', 'skikda', 'sidi bel abbes', 'jijel', 'medea',
+              'tiaret', 'ouargla', 'tebessa', 'el oued', 'bordj bou arreridj'
+            ];
+            const isAlgerian = ALGERIAN_WILAYAS.some(w => area.toLowerCase().includes(w));
+            let ownerInfo = { OwnerName: '', OwnerLinkedIn: '' };
+            if (!isAlgerian && lead.Businessname) {
+              try {
+                ownerInfo = await scrapeLinkedInOwner(context, lead.Businessname, area);
+              } catch (e) {}
+            }
+
+            const campaignId = `${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${area.replace(/[^a-z0-9]/gi, '')}`;
+
+            const mergedLead = {
+              id: crypto.randomUUID(),
+              ...lead,
+              Wilaya: area,
+              Niche: query,
+              PipelineStage: 'New',
+              Notes: '',
+              ContactedAt: null,
+              RespondedAt: null,
+              DailyOutreachDate: null,
+              CampaignID: campaignId,
+              RunDate: new Date().toISOString(),
+              Emailaddress: extra.Emailaddress || '',
+              Instagramlink: extra.Instagramlink || lead.Instagramlink || '',
+              Facebooklink: extra.Facebooklink || lead.Facebooklink || '',
+              Linkedinlink: extra.Linkedinlink || lead.Linkedinlink || '',
+              WhatsAppLink: extra.WhatsAppLink || lead.WhatsAppLink || '',
+              TikToklink: extra.TikToklink || lead.TikToklink || '',
+              WebsiteScore: extra.WebsiteScore !== undefined ? extra.WebsiteScore : (hasWebsite ? 5 : 0),
+              Weaknesses: extra.Weaknesses || (!hasWebsite ? ['Pas de site internet professionnel'] : []),
+              OwnerName: ownerInfo.OwnerName || '',
+              OwnerLinkedIn: ownerInfo.OwnerLinkedIn || '',
+            };
+
+            // Deduplication within current run
+            const isDuplicate = newlyScrapedLeads.some(e =>
+              (mergedLead.Website && e.Website && mergedLead.Website === e.Website) ||
+              (mergedLead.Businessname && e.Businessname && mergedLead.Businessname.toLowerCase() === e.Businessname.toLowerCase() && mergedLead.Wilaya === e.Wilaya)
+            );
+
+            if (isDuplicate) {
+              addLog(`   ⏩ [Doublon] ${leadTitle} déjà enregistré dans ce scan.`);
+              return false;
+            }
+
+            newlyScrapedLeads.push(mergedLead);
+
+            // Live progressive feedback in logs
+            const siteBadge = hasWebsite ? `🌐 ${mergedLead.Website}` : `🚫 Sans site internet`;
+            const phoneBadge = mergedLead.Phonenumber ? `📞 ${mergedLead.Phonenumber}` : `⚠️ Sans tél`;
+            addLog(`✔ [${area}] ${mergedLead.Businessname || 'Entreprise'} — ${phoneBadge} — ${siteBadge} (${newlyScrapedLeads.length}/${totalTarget})`);
+
+            // Live updates to status & results files (Streaming in Real-Time to UI!)
+            writeStatus({
+              currentCount: newlyScrapedLeads.length,
+              currentLead: `${mergedLead.Businessname} (${area})`,
+            });
+            writeResults(newlyScrapedLeads, 'running');
+
+            // Incremental disk safety persistence into all_leads.json
+            if (!Config.testMode) {
+              try {
+                const allLeadsPath = path.join(dataDir, 'all_leads.json');
+                let existingLeads = [];
+                if (fs.existsSync(allLeadsPath)) {
+                  try { existingLeads = JSON.parse(fs.readFileSync(allLeadsPath, 'utf8')); } catch (e) { existingLeads = []; }
+                }
+                const exists = existingLeads.some(e =>
+                  (mergedLead.Website && e.Website && mergedLead.Website === e.Website) ||
+                  (mergedLead.Businessname && e.Businessname && mergedLead.Businessname.toLowerCase() === e.Businessname.toLowerCase() && mergedLead.Wilaya === e.Wilaya)
+                );
+                if (!exists) {
+                  existingLeads.unshift(mergedLead);
+                  fs.writeFileSync(allLeadsPath, JSON.stringify(existingLeads, null, 2), 'utf8');
+                }
+              } catch (e) {}
+            }
+
+            // Test mode check
+            if (Config.testMode && newlyScrapedLeads.length >= 3) {
+              addLog(`   🧪 [Mode Test] Quota de 3 prospects atteint pour la validation.`);
+              areaQuotaReached = true;
+              return true;
+            }
+
+            return false;
           }
+        });
 
-          const lead = rawLeads[i];
-          const leadTitle = lead.Businessname || lead.Website || 'Commerce inconnu';
-          addLog(`   [${i + 1}/${rawLeads.length}] Vérification : ${leadTitle}`);
-
-          writeStatus({
-            currentLead: leadTitle,
-            currentCount: newlyScrapedLeads.length,
-          });
-
-          const hasWebsite = !!lead.Website && lead.Website.trim() !== '' && !lead.Website.toLowerCase().includes('pas de site') && lead.Website.length > 3;
-          if (Config.onlyNoWebsite && hasWebsite) {
-            addLog(`   ⏩ [Skippé] 'Sans Site Uniquement' actif — ${lead.Businessname} a déjà un site.`);
-            continue;
-          }
-
-          if (Config.testMode && newlyScrapedLeads.length >= 3) {
-            addLog(`   🧪 [Mode Test] Quota de 3 prospects atteint pour la validation.`);
-            break;
-          }
-
-          let extra = {};
-          if (lead.Website) {
-            extra = await enrichWebsite(context, lead.Website);
-          }
-
-          const ALGERIAN_WILAYAS = ['alger', 'oran', 'annaba', 'bejaia', 'constantine', 'blida', 'setif', 'tizi ouzou'];
-          const isAlgerian = ALGERIAN_WILAYAS.some(w => area.toLowerCase().includes(w));
-
-          let ownerInfo = { OwnerName: '', OwnerLinkedIn: '' };
-          if (!isAlgerian && lead.Businessname) {
-            ownerInfo = await scrapeLinkedInOwner(context, lead.Businessname, area);
-          }
-
-          const campaignId = `${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${area.replace(/[^a-z0-9]/gi, '')}`;
-
-          const mergedLead = {
-            id: crypto.randomUUID(),
-            ...lead,
-            Wilaya: area,
-            Niche: query,
-            PipelineStage: 'New',
-            Notes: '',
-            ContactedAt: null,
-            RespondedAt: null,
-            DailyOutreachDate: null,
-            CampaignID: campaignId,
-            RunDate: new Date().toISOString(),
-            Emailaddress: extra.Emailaddress || '',
-            Instagramlink: extra.Instagramlink || '',
-            Facebooklink: extra.Facebooklink || '',
-            Linkedinlink: extra.Linkedinlink || '',
-            WhatsAppLink: extra.WhatsAppLink || '',
-            TikToklink: extra.TikToklink || '',
-            WebsiteScore: extra.WebsiteScore !== undefined ? extra.WebsiteScore : 5,
-            Weaknesses: extra.Weaknesses || [],
-            OwnerName: ownerInfo.OwnerName || '',
-            OwnerLinkedIn: ownerInfo.OwnerLinkedIn || '',
-          };
-
-          newlyScrapedLeads.push(mergedLead);
-
-          // Progressive write
-          writeStatus({
-            currentCount: newlyScrapedLeads.length,
-            currentLead: `Capturé : ${leadTitle}`,
-          });
-          writeResults(newlyScrapedLeads, 'running');
+        // Check if stopped during area
+        if (fs.existsSync(stopSignalPath)) {
+          addLog('🛑 Signal d’arrêt détecté ! Interruption immédiate du scraping...');
+          await saveAndSync('stopped');
+          return;
         }
+
+        if (Config.testMode && (areaQuotaReached || newlyScrapedLeads.length >= 3)) {
+          break;
+        }
+      }
+
+      if (Config.testMode && newlyScrapedLeads.length >= 3) {
+        break;
       }
     }
 
