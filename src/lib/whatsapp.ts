@@ -226,7 +226,8 @@ export const AI_TONE_OPTIONS: AiToneOption[] = [
 export async function generateWhatsAppAiMessage(
   prospect: any,
   tone: string = 'ultra_persuasive',
-  customInstructions?: string
+  customInstructions?: string,
+  prototype?: { name?: string; prototypeUrl?: string; flyerUrl?: string; description?: string; sector?: string }
 ): Promise<string> {
   try {
     const res = await fetch('/api/ai/whatsapp', {
@@ -236,6 +237,11 @@ export async function generateWhatsAppAiMessage(
         prospect,
         tone,
         customInstructions,
+        targetSector: prototype?.sector,
+        prototypeName: prototype?.name,
+        prototypeUrl: prototype?.prototypeUrl,
+        flyerUrl: prototype?.flyerUrl,
+        prototypeDescription: prototype?.description,
       }),
     });
 
@@ -253,19 +259,21 @@ export async function generateWhatsAppAiMessage(
   const contact = prospect?.name ? ` ${prospect.name}` : '';
   const comp = prospect?.company || 'votre établissement';
   const city = prospect?.city ? ` à ${prospect.city}` : '';
+  const activeProtoUrl = prototype?.prototypeUrl || 'https://parfait-voyage.vercel.app/';
+  const activeFlyerUrl = prototype?.flyerUrl || 'https://flyer-parfait-voyage.vercel.app/';
 
   if (tone === 'short_punchy') {
     return `Salam alaykoum${contact},
 
 Ravi de notre échange pour ${comp}${city} !
 
-Voici le prototype ultra-rapide conçu spécialement pour les agences de voyage :
-👉 https://parfait-voyage.vercel.app/
+Voici le prototype ultra-rapide conçu spécialement pour votre activité :
+👉 ${activeProtoUrl}
 
 100 % accessible même avec une faible connexion 3G/4G. Vos clients réservent sans bug.
 
 Consultez nos 3 formules ici :
-👉 https://flyer-parfait-voyage.vercel.app/
+👉 ${activeFlyerUrl}
 
 Dites-moi quand vous avez 2 minutes pour en discuter ✈️🌍`;
   }
