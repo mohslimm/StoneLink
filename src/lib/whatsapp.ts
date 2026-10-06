@@ -58,7 +58,69 @@ Une vitrine épurée, rassurante et ultra-rapide permettant à vos patients de d
 
 Je reste à votre disposition pour adapter la charte et vos spécialités sous 48h.`,
     prototypeUrl: 'https://zekri-clinic.vercel.app/',
+  },
+  {
+    id: 'custom_message',
+    name: 'Message Personnalisé Libre',
+    sector: 'Personnalisé',
+    message: `Salam alaykoum,
+
+Ravi de notre échange ! Voici le lien de votre prototype sur-mesure :
+👉 https://parfait-voyage.vercel.app/
+
+N'hésitez pas à me faire vos retours 🌍`,
   }
+];
+
+export const EMOJI_PALETTES = [
+  {
+    category: 'Voyage & Algérie',
+    icon: '✈️',
+    emojis: ['✈️', '🌍', '🌴', '🏖️', '🕌', '🕋', '🗺️', '🏨', '🛳️', '🌅', '🧳', '📍', '💺', '🎫', '🏝️', '🧭', '🇩🇿', '🚗', '🚌', '⛰️'],
+  },
+  {
+    category: 'Actions & CTA',
+    icon: '👉',
+    emojis: ['👉', '🚀', '⚡', '📞', '💬', '📩', '🎯', '🔥', '✨', '⭐', '🔔', '👀', '💡', '📲', '👇', '🔗', '📌', '📢', '⏰', '⏳'],
+  },
+  {
+    category: 'Business & Tarifs',
+    icon: '💼',
+    emojis: ['✅', '🤝', '💼', '🏆', '👑', '💎', '📈', '📊', '💰', '🏷️', '🔒', '🛡️', '⭐', '💯', '👏', '🎯', '💳', '🎁', '📑', '🔑'],
+  },
+  {
+    category: 'Santé & Clinique',
+    icon: '🦷',
+    emojis: ['🏥', '🦷', '🩺', '💊', '👨‍⚕️', '👩‍⚕️', '✨', '🩹', '💉', '🤍', '🪥', '⚕️', '🧴', '🔬'],
+  },
+  {
+    category: 'Expressions & Smileys',
+    icon: '😊',
+    emojis: ['👋', '😊', '🤝', '🙏', '👍', '👌', '🙌', '🌟', '🎉', '😃', '💪', '🔥', '🤩', '🫡', '❤️', '💡', '😎', '☀️'],
+  }
+];
+
+export const QUICK_EMOJIS = [
+  '✈️', '👉', '🌍', '🚀', '📞', '📍', '⭐', '🔥', '💬', '🌴', '🕌', '🕋', '✅', '🤝', '💰', '🦷', '🏥', '💎', '🏆', '✨', '👍', '💡', '📲', '🇩🇿'
+];
+
+export const QUICK_SNIPPETS = [
+  {
+    label: '🔗 Lien Prototype',
+    text: '👉 https://parfait-voyage.vercel.app/',
+  },
+  {
+    label: '📑 Lien Flyer',
+    text: '👉 https://flyer-parfait-voyage.vercel.app/',
+  },
+  {
+    label: '✈️ 3 Formules',
+    text: '✈️ One-Page : idéale pour l\'Omra et le Sud\n✈️ Agence Pro : site complet + tableau de bord\n✈️ Sur-mesure : plateforme complète avec réservation',
+  },
+  {
+    label: '👋 Salutation',
+    text: 'Salam alaykoum,\n\n',
+  },
 ];
 
 /**

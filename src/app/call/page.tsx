@@ -21,6 +21,7 @@ import { mockProspects, mockObjections } from '@/data/prospects';
 import { generatePitches } from '@/services/pitch/PitchGenerator';
 import { STAGE_LABELS, type PipelineStage } from '@/types';
 import { TRAVEL_AGENCY_PROTOTYPE_MESSAGE, openWhatsAppDirect, formatPhoneForWhatsApp } from '@/lib/whatsapp';
+import { WhatsAppBulkModal } from '@/components/ui/custom/WhatsAppBulkModal';
 
 /* Helper: Check if prospect actually has a website */
 function hasValidWebsite(url?: string): boolean {
@@ -253,6 +254,7 @@ function PreCallState({ onStartCall }: { onStartCall: (p: typeof mockProspects[0
   const [areaFilter, setAreaFilter] = useState('all');
   const [noWebsiteOnly, setNoWebsiteOnly] = useState(false);
   const [priorityOnly, setPriorityOnly] = useState(false);
+  const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
   const [ripples, setRipples] = useState<{ id: number }[]>([]);
   const rippleId = useRef(0);
 
@@ -529,24 +531,22 @@ function PreCallState({ onStartCall }: { onStartCall: (p: typeof mockProspects[0
               </span>
               <button
                 type="button"
-                onClick={() => {
-                  const formatted = formatPhoneForWhatsApp(selectedProspect.phone);
-                  if (formatted) {
-                    openWhatsAppDirect(formatted, TRAVEL_AGENCY_PROTOTYPE_MESSAGE);
-                    useProspectsStore.getState().updateStage(selectedProspect.id, 'prototype');
-                    addToast({ type: 'success', message: `WhatsApp ouvert & prospect passé en « Prototypes envoyés » !` });
-                  } else {
-                    addToast({ type: 'error', message: 'Numéro de téléphone absent ou invalide' });
-                  }
-                }}
+                onClick={() => setIsWhatsAppOpen(true)}
                 className="h-8 px-3 rounded-[8px] bg-[rgba(34,197,94,0.14)] hover:bg-[rgba(34,197,94,0.25)] border border-[rgba(34,197,94,0.35)] text-[#4ade80] text-[11.5px] font-body font-semibold flex items-center gap-1.5 transition-all cursor-pointer hover:scale-[1.02]"
               >
                 <Send size={12} />
-                <span>Envoyer Prototype WhatsApp</span>
+                <span>Rédiger & Envoyer WhatsApp</span>
               </button>
             </div>
           </GlassPanel>
         </motion.div>
+
+        {/* WhatsApp Modal with full emoji support */}
+        <WhatsAppBulkModal
+          isOpen={isWhatsAppOpen}
+          onClose={() => setIsWhatsAppOpen(false)}
+          prospects={[selectedProspect as any]}
+        />
 
         {/* ─── Pre-Call Control Matrix ─── */}
         <div className="mt-6 space-y-4">

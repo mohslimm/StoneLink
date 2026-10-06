@@ -849,23 +849,8 @@ export default function CRM() {
   }, [fetchProspects]);
 
   const handleOpenWhatsApp = (prospect: Prospect) => {
-    const formatted = formatPhoneForWhatsApp(prospect.phone);
-    if (!formatted) {
-      addToast({
-        type: 'error',
-        message: `Numéro de téléphone absent ou invalide pour « ${prospect.company} »`,
-      });
-      return;
-    }
-    openWhatsAppDirect(formatted, TRAVEL_AGENCY_PROTOTYPE_MESSAGE);
-    updateStage(prospect.id, 'prototype');
-    if (selectedProspect && selectedProspect.id === prospect.id) {
-      setSelectedProspect((prev) => (prev ? { ...prev, stage: 'prototype' } : null));
-    }
-    addToast({
-      type: 'success',
-      message: `WhatsApp ouvert & deal passé en « Prototypes envoyés » pour ${prospect.company} !`,
-    });
+    setBulkModalProspects([prospect]);
+    setIsBulkWhatsAppOpen(true);
   };
 
   const handleUpdateStage = async (id: string, stage: PipelineStage) => {
@@ -877,15 +862,8 @@ export default function CRM() {
     if (stage === 'prototype') {
       const p = prospects.find((item) => item.id === id);
       if (p) {
-        const formatted = formatPhoneForWhatsApp(p.phone);
-        if (formatted) {
-          openWhatsAppDirect(formatted, TRAVEL_AGENCY_PROTOTYPE_MESSAGE);
-          addToast({
-            type: 'success',
-            message: `Deal passé en « Prototypes envoyés » → WhatsApp lancé pour ${p.company} !`,
-          });
-          return;
-        }
+        setBulkModalProspects([p]);
+        setIsBulkWhatsAppOpen(true);
       }
     }
 
