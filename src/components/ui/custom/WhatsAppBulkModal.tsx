@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Send, Phone, CheckCircle2, AlertCircle, Copy, Check, ExternalLink, 
   Sparkles, RotateCcw, ArrowRight, ShieldCheck, Play, Pause, Layers,
-  Smile, Edit3, Eye, Trash2, Plus, MessageSquare, Building2, User, MapPin
+  Smile, Edit3, Eye, Trash2, Plus, MessageSquare, Building2, User, MapPin,
+  Loader2, Wand2, RefreshCw
 } from 'lucide-react';
 import type { Prospect } from '@/types';
 import { 
@@ -14,6 +15,9 @@ import {
   EMOJI_PALETTES,
   QUICK_EMOJIS,
   QUICK_SNIPPETS,
+  AI_TONE_OPTIONS,
+  type AiToneOption,
+  generateWhatsAppAiMessage,
   formatPhoneForWhatsApp, 
   isValidWhatsAppPhone, 
   buildWhatsAppUrl, 
@@ -48,15 +52,11 @@ export function WhatsAppBulkModal({
   const [showEmojiPicker, setShowEmojiPicker] = useState<boolean>(false);
   const [selectedEmojiCategory, setSelectedEmojiCategory] = useState<string>('Voyage & Algérie');
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // AI Generation State
+  const [selectedTone, setSelectedTone] = useState<'ultra_persuasive' | 'short_punchy' | 'relational' | 'darija_pro'>('ultra_persuasive');
+  const [isGeneratingAi, setIsGeneratingAi] = useState<boolean>(false);
 
-  // Sync state when opened
-  useEffect(() => {
-    if (isOpen) {
-      setSentMap({});
-      setCurrentIndex(0);
-    }
-  }, [isOpen]);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isSingleMode = prospects.length === 1;
   const singleProspect = isSingleMode ? prospects[0] : null;
@@ -78,6 +78,53 @@ export function WhatsAppBulkModal({
 
   const validCount = enrichedProspects.filter((p) => p.isValidPhone).length;
   const sentCount = enrichedProspects.filter((p) => p.isSent).length;
+
+  // Generate AI message on initial open for a prospect
+  useEffect(() => {
+    if (isOpen && prospects.length > 0) {
+      setSentMap({});
+      setCurrentIndex(0);
+      const targetLead = prospects[0];
+      
+      // Auto-generate high-conversion AI message tailored to this lead
+      const triggerInitialAiGeneration = async () => {
+        setIsGeneratingAi(true);
+        try {
+          const generated = await generateWhatsAppAiMessage(targetLead, selectedTone);
+          if (generated) {
+            setMessage(generated);
+          }
+        } catch (err) {
+          console.warn('Initial AI generation fallback', err);
+        } finally {
+          setIsGeneratingAi(false);
+        }
+      };
+
+      triggerInitialAiGeneration();
+    }
+  }, [isOpen, prospects, selectedTone]);
+
+  const handleGenerateAi = async (tone: typeof selectedTone = selectedTone, targetLead?: Prospect) => {
+    const lead = targetLead || (isSingleMode ? singleProspect : enrichedProspects[currentIndex] || enrichedProspects[0]);
+    if (!lead) return;
+
+    setSelectedTone(tone);
+    setIsGeneratingAi(true);
+    try {
+      const generated = await generateWhatsAppAiMessage(lead, tone);
+      setMessage(generated);
+      const toneObj = AI_TONE_OPTIONS.find((t) => t.id === tone);
+      addToast({
+        type: 'success',
+        message: `Message IA généré pour « ${lead.company} » (${toneObj?.label}) ✨`,
+      });
+    } catch (err) {
+      addToast({ type: 'error', message: 'Erreur lors de la génération IA' });
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
 
   const handleTemplateChange = (templateId: string) => {
     setSelectedTemplateId(templateId);
@@ -196,7 +243,7 @@ export function WhatsAppBulkModal({
 
         {/* Modal Window */}
         <motion.div
-          className="relative w-full max-w-[980px] max-h-[94vh] bg-[rgba(15,15,32,0.98)] border border-[rgba(197,160,89,0.3)] shadow-[0_20px_60px_rgba(0,0,0,0.8)] rounded-[16px] flex flex-col overflow-hidden backdrop-blur-[24px]"
+          className="relative w-full max-w-[1000px] max-h-[94vh] bg-[rgba(15,15,32,0.98)] border border-[rgba(197,160,89,0.3)] shadow-[0_20px_60px_rgba(0,0,0,0.8)] rounded-[16px] flex flex-col overflow-hidden backdrop-blur-[24px]"
           initial={{ scale: 0.95, opacity: 0, y: 15 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 15 }}
@@ -208,7 +255,7 @@ export function WhatsAppBulkModal({
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="px-2.5 py-0.5 rounded-full text-[10.5px] font-mono uppercase tracking-[0.1em] bg-[rgba(197,160,89,0.15)] text-[#c5a059] border border-[rgba(197,160,89,0.3)] flex items-center gap-1">
                   <Sparkles size={11} />
-                  <span>{isSingleMode ? 'Message WhatsApp & Emojis' : 'Campagne WhatsApp & Emojis'}</span>
+                  <span>IA Copywriter WhatsApp & Emojis</span>
                 </span>
                 <span className="text-[12px] font-body text-[rgba(232,228,220,0.6)]">
                   {isSingleMode && singleProspect ? `Destinataire : ${singleProspect.company}` : `${prospects.length} prospects sélectionnés`}
@@ -216,12 +263,12 @@ export function WhatsAppBulkModal({
               </div>
               <h2 className="font-display text-[24px] sm:text-[28px] font-normal text-[#e8e4dc] mt-1.5 leading-tight">
                 {isSingleMode && singleProspect 
-                  ? `Rédiger un Message WhatsApp pour « ${singleProspect.company} »`
-                  : 'Éditeur de Messages WhatsApp & Envoi Prototypes'
+                  ? `Message WhatsApp IA pour « ${singleProspect.company} »`
+                  : 'Générateur IA & Envoi de Messages WhatsApp'
                 }
               </h2>
               <p className="text-[12.5px] font-body text-[rgba(232,228,220,0.5)] mt-0.5">
-                Personnalisez le texte avec des emojis, liens de démo et tarifs avant d&apos;envoyer sur WhatsApp.
+                L&apos;IA génère un message percutant et professionnel avec vos emojis, liens de démo et tarifs.
               </p>
             </div>
 
@@ -233,32 +280,53 @@ export function WhatsAppBulkModal({
             </button>
           </div>
 
-          {/* Stats & Quick Actions Bar */}
-          <div className="px-6 py-3 bg-[rgba(10,10,22,0.6)] border-b border-[rgba(255,255,255,0.06)] flex items-center justify-between gap-3 flex-wrap text-[12px] font-body">
-            <div className="flex items-center gap-4">
-              <span className="text-[#e8e4dc]">
-                {isSingleMode ? (
-                  <>Destinataire : <strong className="text-[#c5a059]">{singleProspect?.company}</strong></>
-                ) : (
-                  <>Sélection : <strong className="text-[#c5a059]">{prospects.length}</strong> prospect{prospects.length > 1 ? 's' : ''}</>
-                )}
+          {/* AI Tone Selector & Quick Action Bar */}
+          <div className="px-6 py-3 bg-[rgba(10,10,22,0.7)] border-b border-[rgba(255,255,255,0.06)] flex items-center justify-between gap-3 flex-wrap text-[12px] font-body">
+            {/* Tone Selector Pills */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-[#c5a059] pr-1 flex items-center gap-1">
+                <Wand2 size={12} />
+                <span>Ton IA :</span>
               </span>
-              <span className="text-[rgba(232,228,220,0.6)]">
-                Téléphones valides : <strong className="text-[#4ade80]">{validCount}</strong>
-              </span>
-              <span className="text-[rgba(232,228,220,0.6)]">
-                Statut : <strong className="text-[#a855f7]">{sentCount}</strong> / {prospects.length} envoyé{sentCount > 1 ? 's' : ''}
-              </span>
+              {AI_TONE_OPTIONS.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => handleGenerateAi(t.id)}
+                  disabled={isGeneratingAi}
+                  className={cn(
+                    "px-2.5 py-1 rounded-[6px] text-[11.5px] font-body transition-all cursor-pointer flex items-center gap-1.5 border",
+                    selectedTone === t.id
+                      ? "bg-[rgba(197,160,89,0.22)] text-[#e8e4dc] border-[#c5a059] font-medium shadow-sm"
+                      : "bg-[rgba(255,255,255,0.03)] text-[rgba(232,228,220,0.6)] border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.15)] hover:text-[#e8e4dc]"
+                  )}
+                  title={t.desc}
+                >
+                  <span>{t.icon}</span>
+                  <span>{t.label}</span>
+                </button>
+              ))}
             </div>
 
+            {/* Quick Regenerate & Copy buttons */}
             <div className="flex items-center gap-2">
               <button
-                onClick={handleResetTemplate}
-                className="px-2.5 py-1.5 rounded-[8px] bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.08)] text-[rgba(232,228,220,0.6)] hover:text-[#e8e4dc] border border-[rgba(255,255,255,0.06)] flex items-center gap-1.5 transition-colors cursor-pointer text-[11px]"
-                title="Rétablir le modèle de base"
+                type="button"
+                onClick={() => handleGenerateAi(selectedTone)}
+                disabled={isGeneratingAi}
+                className="px-3 py-1.5 rounded-[8px] bg-[rgba(197,160,89,0.15)] hover:bg-[rgba(197,160,89,0.25)] text-[#c5a059] hover:text-[#e8e4dc] border border-[rgba(197,160,89,0.35)] flex items-center gap-1.5 transition-colors cursor-pointer text-[11.5px] font-medium disabled:opacity-50"
               >
-                <RotateCcw size={12} />
-                <span>Réinitialiser</span>
+                {isGeneratingAi ? (
+                  <>
+                    <Loader2 size={13} className="animate-spin text-[#c5a059]" />
+                    <span>Génération IA...</span>
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw size={13} />
+                    <span>Régénérer par IA</span>
+                  </>
+                )}
               </button>
 
               <button
@@ -267,7 +335,7 @@ export function WhatsAppBulkModal({
                 title="Copier le message complet avec emojis"
               >
                 {copiedMessage ? <Check size={13} className="text-[#4ade80]" /> : <Copy size={13} />}
-                <span>{copiedMessage ? 'Copié !' : 'Copier texte'}</span>
+                <span>{copiedMessage ? 'Copié !' : 'Copier'}</span>
               </button>
 
               {!isSingleMode && (
@@ -441,6 +509,14 @@ export function WhatsAppBulkModal({
               {/* Textarea or WhatsApp Live Preview */}
               {activeTab === 'edit' ? (
                 <div className="relative flex-1 flex flex-col min-h-[250px]">
+                  {isGeneratingAi && (
+                    <div className="absolute inset-0 bg-[rgba(14,14,26,0.85)] backdrop-blur-sm rounded-[12px] z-10 flex flex-col items-center justify-center gap-2.5">
+                      <Loader2 size={24} className="animate-spin text-[#c5a059]" />
+                      <p className="text-[12.5px] font-body text-[#e8e4dc] font-medium">
+                        L&apos;IA génère un message percutant et professionnel...
+                      </p>
+                    </div>
+                  )}
                   <textarea
                     ref={textareaRef}
                     value={message}
@@ -451,7 +527,7 @@ export function WhatsAppBulkModal({
                   />
                   <div className="flex items-center justify-between text-[11px] font-body text-[rgba(232,228,220,0.4)] mt-1.5 px-1">
                     <span>Longueur : <strong>{message.length}</strong> caractères</span>
-                    <span className="text-[#c5a059]">Emojis & liens supportés ✓</span>
+                    <span className="text-[#c5a059]">Généré & optimisé par IA ✓</span>
                   </div>
                 </div>
               ) : (
@@ -588,7 +664,7 @@ export function WhatsAppBulkModal({
                           Envoi Pas à Pas (WhatsApp Web)
                         </h4>
                         <p className="text-[11px] font-body text-[rgba(232,228,220,0.6)]">
-                          Ouvre la conversation pré-remplie avec vos emojis et met à jour le deal.
+                          Ouvre la conversation pré-remplie avec le message IA et met à jour le deal.
                         </p>
                       </div>
                     </div>
@@ -610,7 +686,7 @@ export function WhatsAppBulkModal({
                     </div>
 
                     <div className="overflow-y-auto divide-y divide-[rgba(255,255,255,0.04)] p-1">
-                      {enrichedProspects.map((p) => (
+                      {enrichedProspects.map((p, idx) => (
                         <div
                           key={p.id}
                           className={cn(
@@ -663,13 +739,23 @@ export function WhatsAppBulkModal({
                                 <span>Envoyé</span>
                               </span>
                             ) : p.isValidPhone ? (
-                              <button
-                                onClick={() => handleSendIndividual(p)}
-                                className="px-3 py-1.5 rounded-[8px] bg-[rgba(34,197,94,0.12)] hover:bg-[rgba(34,197,94,0.22)] border border-[rgba(34,197,94,0.35)] text-[#4ade80] text-[11.5px] font-body font-medium flex items-center gap-1.5 transition-all cursor-pointer hover:scale-[1.02]"
-                              >
-                                <Send size={12} />
-                                <span>WhatsApp</span>
-                              </button>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleGenerateAi(selectedTone, p)}
+                                  title={`Générer message IA personnalisé pour ${p.company}`}
+                                  className="w-7 h-7 rounded-[7px] bg-[rgba(197,160,89,0.12)] hover:bg-[rgba(197,160,89,0.22)] text-[#c5a059] flex items-center justify-center transition-colors cursor-pointer border border-[rgba(197,160,89,0.25)]"
+                                >
+                                  <Wand2 size={12} />
+                                </button>
+                                <button
+                                  onClick={() => handleSendIndividual(p)}
+                                  className="px-3 py-1.5 rounded-[8px] bg-[rgba(34,197,94,0.12)] hover:bg-[rgba(34,197,94,0.22)] border border-[rgba(34,197,94,0.35)] text-[#4ade80] text-[11.5px] font-body font-medium flex items-center gap-1.5 transition-all cursor-pointer hover:scale-[1.02]"
+                                >
+                                  <Send size={12} />
+                                  <span>WhatsApp</span>
+                                </button>
+                              </div>
                             ) : (
                               <span className="text-[11px] font-body text-[rgba(232,228,220,0.3)] italic">
                                 Non joignable
@@ -688,7 +774,7 @@ export function WhatsAppBulkModal({
           {/* Footer */}
           <div className="p-4 bg-[rgba(20,20,38,0.95)] border-t border-[rgba(255,255,255,0.08)] flex items-center justify-between gap-3">
             <span className="text-[12px] font-body text-[rgba(232,228,220,0.5)]">
-              Statut synchronisé en temps réel avec le CRM & MongoDB Atlas
+              Moteur IA Gemini Flash activé · Synchronisation temps réel avec MongoDB Atlas
             </span>
             <div className="flex items-center gap-2.5">
               <button

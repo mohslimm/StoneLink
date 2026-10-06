@@ -188,3 +188,119 @@ export function openWhatsAppDirect(phone?: string, message?: string): boolean {
   window.open(url, '_blank', 'noopener,noreferrer');
   return true;
 }
+
+export interface AiToneOption {
+  id: 'ultra_persuasive' | 'short_punchy' | 'relational' | 'darija_pro';
+  label: string;
+  icon: string;
+  desc: string;
+}
+
+export const AI_TONE_OPTIONS: AiToneOption[] = [
+  {
+    id: 'ultra_persuasive',
+    label: 'Ultra-Persuasif',
+    icon: '🌟',
+    desc: 'Pitch complet, argumenté avec prototype et 3 formules',
+  },
+  {
+    id: 'short_punchy',
+    label: 'Court & Percutant',
+    icon: '⚡',
+    desc: 'Rapide, direct 3-4 lignes avec liens & emojis',
+  },
+  {
+    id: 'relational',
+    label: 'Suite d\'Appel',
+    icon: '🤝',
+    desc: 'Remerciement chaleureux suite à échange téléphonique',
+  },
+  {
+    id: 'darija_pro',
+    label: 'Darija Pro',
+    icon: '🇩🇿',
+    desc: 'Message en darija algérienne professionnelle',
+  },
+];
+
+export async function generateWhatsAppAiMessage(
+  prospect: any,
+  tone: string = 'ultra_persuasive',
+  customInstructions?: string
+): Promise<string> {
+  try {
+    const res = await fetch('/api/ai/whatsapp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prospect,
+        tone,
+        customInstructions,
+      }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.message) {
+        return data.message;
+      }
+    }
+  } catch (err) {
+    console.warn('[WhatsApp AI Client] API request failed, using local generation fallback', err);
+  }
+
+  // Local fallback if API is unavailable
+  const contact = prospect?.name ? ` ${prospect.name}` : '';
+  const comp = prospect?.company || 'votre établissement';
+  const city = prospect?.city ? ` à ${prospect.city}` : '';
+
+  if (tone === 'short_punchy') {
+    return `Salam alaykoum${contact},
+
+Ravi de notre échange pour ${comp}${city} !
+
+Voici le prototype ultra-rapide conçu spécialement pour les agences de voyage :
+👉 https://parfait-voyage.vercel.app/
+
+100 % accessible même avec une faible connexion 3G/4G. Vos clients réservent sans bug.
+
+Consultez nos 3 formules ici :
+👉 https://flyer-parfait-voyage.vercel.app/
+
+Dites-moi quand vous avez 2 minutes pour en discuter ✈️🌍`;
+  }
+
+  if (tone === 'relational') {
+    return `Salam alaykoum${contact},
+
+Un grand merci pour la qualité de notre échange téléphonique concernant ${comp} !
+
+Comme promis, voici l'accès direct au prototype spécialement pensé pour votre agence :
+👉 https://parfait-voyage.vercel.app/
+
+En 48h, toute la plateforme passe à vos couleurs (logo, offres Omra, séjours été, contacts).
+
+Détail des 3 formules :
+👉 https://flyer-parfait-voyage.vercel.app/
+
+Je reste disponible si vous avez la moindre question 🤝✨`;
+  }
+
+  if (tone === 'darija_pro') {
+    return `Salam alaykoum${contact},
+
+يعطيكم الصحة على المكالمة بخصوص وكالة ${comp}${city} !
+
+هاوليك لو سيت بروتوتيب لي خدمناه سبيسيالمون لوكالات السياحة والأسفار :
+👉 https://parfait-voyage.vercel.app/
+
+خفيف بزاف ويفتح بسرعة حتى بالكونيكسيون الضعيفة في الجنوب ولا في أي ولاية.
+
+وهنا تلقاو تفاصيل العروض والأسعار (One-Page، Agence Pro، Sur-mesure) :
+👉 https://flyer-parfait-voyage.vercel.app/
+
+شوفوه وقولولي واش رايكم ✈️🇩🇿`;
+  }
+
+  return TRAVEL_AGENCY_PROTOTYPE_MESSAGE;
+}
