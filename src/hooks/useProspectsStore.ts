@@ -12,6 +12,7 @@ interface ProspectsState {
 
   fetchProspects: (force?: boolean) => Promise<void>;
   updateStage: (id: string, stage: PipelineStage) => Promise<void>;
+  batchUpdateStage: (ids: string[], stage: PipelineStage) => Promise<void>;
   updateNotes: (id: string, notes: string) => Promise<void>;
   deleteProspect: (id: string) => Promise<void>;
   restoreProspect: (id: string) => Promise<void>;
@@ -95,6 +96,39 @@ export const useProspectsStore = create<ProspectsState>((set, get) => ({
       });
     } catch (err) {
       console.warn('[useProspectsStore] Sync error:', err);
+    }
+  },
+
+  batchUpdateStage: async (ids: string[], stage: PipelineStage) => {
+    if (!ids || ids.length === 0) return;
+    const isContacted = stage !== 'nouveau';
+    const now = new Date();
+    const lastContact = isContacted ? "Aujourd'hui" : 'Non contacté';
+
+    // Optimistic update
+    set((state) => ({
+      prospects: state.prospects.map((p) =>
+        ids.includes(p.id) ? { ...p, stage, lastContact } : p
+      ),
+    }));
+
+    // Server persistence
+    try {
+      await Promise.allSettled(
+        ids.map((id) =>
+          fetch(`/api/prospects/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              stage,
+              ContactedAt: isContacted ? now.toISOString() : null,
+              lastContact,
+            }),
+          })
+        )
+      );
+    } catch (err) {
+      console.warn('[useProspectsStore] Batch sync error:', err);
     }
   },
 

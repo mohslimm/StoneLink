@@ -20,6 +20,7 @@ import { useProspectsStore } from '@/hooks/useProspectsStore';
 import { mockProspects, mockObjections } from '@/data/prospects';
 import { generatePitches } from '@/services/pitch/PitchGenerator';
 import { STAGE_LABELS, type PipelineStage } from '@/types';
+import { TRAVEL_AGENCY_PROTOTYPE_MESSAGE, openWhatsAppDirect, formatPhoneForWhatsApp } from '@/lib/whatsapp';
 
 /* Helper: Check if prospect actually has a website */
 function hasValidWebsite(url?: string): boolean {
@@ -298,6 +299,7 @@ function PreCallState({ onStartCall }: { onStartCall: (p: typeof mockProspects[0
   } = useCallStore();
 
   const { callingMethod, formatPhoneNumber } = useSettingsStore();
+  const { addToast } = useUIStore();
   const phoneFormatted = formatPhoneNumber(selectedProspect.phone);
 
   const hasSite = hasValidWebsite(selectedProspect.url);
@@ -518,6 +520,30 @@ function PreCallState({ onStartCall }: { onStartCall: (p: typeof mockProspects[0
                   </>
                 )}
               </div>
+            </div>
+
+            {/* Quick WhatsApp Prototype Trigger */}
+            <div className="mt-3.5 pt-3 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between gap-3 flex-wrap">
+              <span className="text-[11.5px] font-body text-[rgba(232,228,220,0.6)]">
+                Prototype Recommandé : <strong className="text-[#c5a059]">Parfait Voyage (Algérie)</strong>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  const formatted = formatPhoneForWhatsApp(selectedProspect.phone);
+                  if (formatted) {
+                    openWhatsAppDirect(formatted, TRAVEL_AGENCY_PROTOTYPE_MESSAGE);
+                    useProspectsStore.getState().updateStage(selectedProspect.id, 'prototype');
+                    addToast({ type: 'success', message: `WhatsApp ouvert & prospect passé en « Prototypes envoyés » !` });
+                  } else {
+                    addToast({ type: 'error', message: 'Numéro de téléphone absent ou invalide' });
+                  }
+                }}
+                className="h-8 px-3 rounded-[8px] bg-[rgba(34,197,94,0.14)] hover:bg-[rgba(34,197,94,0.25)] border border-[rgba(34,197,94,0.35)] text-[#4ade80] text-[11.5px] font-body font-semibold flex items-center gap-1.5 transition-all cursor-pointer hover:scale-[1.02]"
+              >
+                <Send size={12} />
+                <span>Envoyer Prototype WhatsApp</span>
+              </button>
             </div>
           </GlassPanel>
         </motion.div>
@@ -1515,6 +1541,14 @@ function OutcomeModal({ onClose }: { onClose: () => void }) {
         await updateNotes(prospect.id, fullNotes);
       }
 
+      if (selectedOutcome === 'prototype') {
+        const formatted = formatPhoneForWhatsApp(prospect.phone);
+        if (formatted) {
+          openWhatsAppDirect(formatted, TRAVEL_AGENCY_PROTOTYPE_MESSAGE);
+          addToast({ type: 'success', message: `WhatsApp ouvert avec le Prototype Parfait Voyage !` });
+        }
+      }
+
       addToast({ type: 'success', message: `Appel archivé : statut ${STAGE_LABELS[newStage]}.` });
       onClose();
       setTimeout(() => router.push('/crm'), 600);
@@ -1570,6 +1604,23 @@ function OutcomeModal({ onClose }: { onClose: () => void }) {
             );
           })}
         </div>
+
+        {/* WhatsApp Prototype Feedback Banner */}
+        {selectedOutcome === 'prototype' && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-3.5 p-3 rounded-[10px] bg-[rgba(168,85,247,0.12)] border border-[rgba(168,85,247,0.35)] text-[12px] font-body text-[#e8e4dc]"
+          >
+            <div className="flex items-center gap-1.5 text-[#c084fc] font-semibold mb-1">
+              <Send size={13} />
+              <span>Redirection WhatsApp Automatique Active</span>
+            </div>
+            <p className="text-[rgba(232,228,220,0.7)] text-[11.5px] leading-relaxed">
+              Dès enregistrement, WhatsApp s&apos;ouvre avec le message complet de démonstration de <strong>Parfait Voyage</strong> et le flyer des 3 formules.
+            </p>
+          </motion.div>
+        )}
 
         {/* Notes */}
         <textarea

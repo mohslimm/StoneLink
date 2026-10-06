@@ -6,11 +6,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutGrid, List, Search, Plus, MoreHorizontal, X, Phone, Trash2, Globe, Mail, 
   ShieldAlert, Upload, ChevronDown, ArrowUpDown, Star, Filter, CheckCircle2, RotateCcw,
-  FileText, Save, Check
+  FileText, Save, Check, Send, Sparkles, CheckSquare, Square
 } from 'lucide-react';
 import { GlassPanel } from '@/components/ui/custom/GlassPanel';
 import { AnimatedButton } from '@/components/ui/custom/AnimatedButton';
 import { LuxurySelect } from '@/components/ui/custom/LuxurySelect';
+import { WhatsAppBulkModal } from '@/components/ui/custom/WhatsAppBulkModal';
 import { useUIStore } from '@/hooks/useUIStore';
 import { useProspectsStore } from '@/hooks/useProspectsStore';
 import { mockProspects } from '@/data/prospects';
@@ -19,6 +20,7 @@ import type { PipelineStage, Prospect, CallRecord } from '@/types';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
+import { TRAVEL_AGENCY_PROTOTYPE_MESSAGE, openWhatsAppDirect, formatPhoneForWhatsApp } from '@/lib/whatsapp';
 
 const stages: PipelineStage[] = ['nouveau', 'contacte', 'recontacter', 'prototype', 'ferme', 'perdu'];
 
@@ -74,7 +76,7 @@ function getDisplayNote(notes?: string): string | null {
   return clean.length > 2 ? clean : null;
 }
 
-export function getLeadBatchInfo(p: any): { label: string; dateStr: string; key: string; isToday: boolean; isYesterday: boolean } {
+function getLeadBatchInfo(p: any): { label: string; dateStr: string; key: string; isToday: boolean; isYesterday: boolean } {
   const raw = p.runDate || p.createdAt || p.RunDate;
   if (!raw) {
     return { label: 'Initial', dateStr: 'Initial', key: 'initial', isToday: false, isYesterday: false };
@@ -139,12 +141,14 @@ function DetailDrawer({
   onUpdateStage,
   onUpdateNotes,
   onDelete,
+  onSendWhatsApp,
 }: {
   prospect: Prospect;
   onClose: () => void;
   onUpdateStage: (id: string, stage: PipelineStage) => void;
   onUpdateNotes: (id: string, notes: string) => void;
   onDelete: (id: string) => void;
+  onSendWhatsApp: (p: Prospect) => void;
 }) {
   const router = useRouter();
   const [activeStage, setActiveStage] = useState<PipelineStage>(prospect.stage);
@@ -158,6 +162,9 @@ function DetailDrawer({
   const handleStageSelect = (s: PipelineStage) => {
     setActiveStage(s);
     onUpdateStage(prospect.id, s);
+    if (s === 'prototype') {
+      onSendWhatsApp(prospect);
+    }
   };
 
   const handleNotesBlur = () => {
@@ -319,6 +326,30 @@ function DetailDrawer({
             </div>
           )}
 
+          {/* Prototype WhatsApp Fast-Dispatch Block */}
+          <div className="p-6 border-b border-[rgba(255,255,255,0.06)] bg-[rgba(197,160,89,0.03)]">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-[11px] font-body font-semibold uppercase tracking-[0.08em] text-[#c5a059] flex items-center gap-1.5">
+                <Sparkles size={12} />
+                <span>Prototype Plateforme Démo</span>
+              </h3>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[rgba(197,160,89,0.1)] text-[#c5a059] border border-[rgba(197,160,89,0.2)]">
+                Parfait Voyage (Algérie)
+              </span>
+            </div>
+            <p className="text-[12px] font-body text-[rgba(232,228,220,0.65)] leading-relaxed mb-3">
+              Envoie instantanément le pitch complet via WhatsApp avec liens du prototype et flyer des 3 formules.
+            </p>
+            <button
+              type="button"
+              onClick={() => onSendWhatsApp(prospect)}
+              className="w-full py-2.5 px-3 rounded-[9px] bg-gradient-to-r from-[#B8924A] via-[#c5a059] to-[#D4B57A] hover:opacity-95 text-[#1A1200] font-body font-semibold text-[12.5px] flex items-center justify-center gap-2 transition-all cursor-pointer shadow-[0_2px_14px_rgba(197,160,89,0.25)] hover:scale-[1.01]"
+            >
+              <Send size={13} />
+              <span>Envoyer Prototype sur WhatsApp</span>
+            </button>
+          </div>
+
           {/* Notes Area */}
           <div className="p-6">
             <div className="flex items-center justify-between mb-2">
@@ -348,18 +379,25 @@ function DetailDrawer({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 bg-[rgba(20,20,34,0.98)] border-t border-[rgba(255,255,255,0.08)] flex gap-3">
+        <div className="p-4 bg-[rgba(20,20,34,0.98)] border-t border-[rgba(255,255,255,0.08)] flex gap-2.5 flex-col sm:flex-row">
           <AnimatedButton
             variant="primary"
-            icon={<Phone size={16} />}
+            icon={<Phone size={15} />}
             className="flex-1"
             onClick={() => router.push(`/call?prospectId=${prospect.id}`)}
           >
-            Lancer l'Appel Studio
+            Appel Studio
           </AnimatedButton>
+          <button
+            onClick={() => onSendWhatsApp(prospect)}
+            className="flex-1 h-10 px-3 rounded-[8px] bg-[rgba(34,197,94,0.12)] hover:bg-[rgba(34,197,94,0.22)] border border-[rgba(34,197,94,0.35)] text-[#4ade80] font-body font-medium text-[12.5px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Send size={14} />
+            <span>WhatsApp</span>
+          </button>
           <AnimatedButton
             variant="danger"
-            icon={<Trash2 size={16} />}
+            icon={<Trash2 size={15} />}
             onClick={() => onDelete(prospect.id)}
           >
             Supprimer
@@ -375,10 +413,12 @@ function PipelineCard({
   prospect,
   onClick,
   onUpdateStage,
+  onSendWhatsApp,
 }: {
   prospect: Prospect;
   onClick: () => void;
   onUpdateStage: (id: string, stage: PipelineStage) => void;
+  onSendWhatsApp: (p: Prospect) => void;
 }) {
   return (
     <div
@@ -432,14 +472,20 @@ function PipelineCard({
         </div>
       )}
 
-      {/* Quick Stage Progression */}
+      {/* Quick Stage Progression & Direct WhatsApp Action */}
       <div
         className="flex items-center justify-between mt-3 pt-2.5 border-t border-[rgba(255,255,255,0.05)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <span className="text-[10px] font-body uppercase tracking-[0.06em] text-[rgba(232,228,220,0.35)]">
-          Étape
-        </span>
+        <button
+          onClick={() => onSendWhatsApp(prospect)}
+          className="h-6 px-2 rounded-[6px] bg-[rgba(34,197,94,0.12)] hover:bg-[rgba(34,197,94,0.22)] border border-[rgba(34,197,94,0.3)] text-[#4ade80] text-[10px] font-body font-medium flex items-center gap-1 transition-colors cursor-pointer"
+          title="Envoyer Prototype Voyage (WhatsApp)"
+        >
+          <Send size={10} />
+          <span>WhatsApp</span>
+        </button>
+
         <div className="flex items-center gap-1.5">
           {stages.map((s) => (
             <button
@@ -468,12 +514,14 @@ function KanbanColumn({
   onSelect,
   onUpdateStage,
   onAddClick,
+  onSendWhatsApp,
 }: {
   stage: PipelineStage;
   prospects: Prospect[];
   onSelect: (p: Prospect) => void;
   onUpdateStage: (id: string, stage: PipelineStage) => void;
   onAddClick: () => void;
+  onSendWhatsApp: (p: Prospect) => void;
 }) {
   const [limit, setLimit] = useState(25);
   const stageProspects = useMemo(() => prospects.filter((p) => p.stage === stage), [prospects, stage]);
@@ -510,6 +558,7 @@ function KanbanColumn({
             prospect={prospect}
             onClick={() => onSelect(prospect)}
             onUpdateStage={onUpdateStage}
+            onSendWhatsApp={onSendWhatsApp}
           />
         ))}
 
@@ -538,11 +587,13 @@ function KanbanBoard({
   onSelect,
   onUpdateStage,
   onAddClick,
+  onSendWhatsApp,
 }: {
   prospects: Prospect[];
   onSelect: (p: Prospect) => void;
   onUpdateStage: (id: string, stage: PipelineStage) => void;
   onAddClick: () => void;
+  onSendWhatsApp: (p: Prospect) => void;
 }) {
   return (
     <div className="flex gap-4 overflow-x-auto pb-6 px-6">
@@ -554,6 +605,7 @@ function KanbanBoard({
           onSelect={onSelect}
           onUpdateStage={onUpdateStage}
           onAddClick={onAddClick}
+          onSendWhatsApp={onSendWhatsApp}
         />
       ))}
     </div>
@@ -565,15 +617,25 @@ function ListView({
   prospects,
   onSelect,
   onUpdateStage,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectPage,
+  onSendWhatsApp,
 }: {
   prospects: Prospect[];
   onSelect: (p: Prospect) => void;
   onUpdateStage: (id: string, stage: PipelineStage) => void;
+  selectedIds: string[];
+  onToggleSelect: (id: string) => void;
+  onToggleSelectPage: (pageProspects: Prospect[]) => void;
+  onSendWhatsApp: (p: Prospect) => void;
 }) {
   const [page, setPage] = useState(1);
-  const perPage = 10;
+  const perPage = 15;
   const totalPages = Math.ceil(prospects.length / perPage) || 1;
   const paginated = prospects.slice((page - 1) * perPage, page * perPage);
+
+  const isAllPageSelected = paginated.length > 0 && paginated.every((p) => selectedIds.includes(p.id));
 
   return (
     <div className="px-6">
@@ -581,7 +643,16 @@ function ListView({
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-[rgba(255,255,255,0.08)] bg-[#11111a]">
-              {['Contact & Entreprise', 'Lighthouse', 'Secteur', 'Statut Pipeline', 'Dernier Contact', 'Actions'].map((h) => (
+              <th className="w-10 px-4 py-3.5 text-center">
+                <input
+                  type="checkbox"
+                  aria-label="Sélectionner tous les prospects affichés"
+                  checked={isAllPageSelected}
+                  onChange={() => onToggleSelectPage(paginated)}
+                  className="w-4 h-4 rounded border-[rgba(255,255,255,0.2)] bg-[#11111a] text-[#c5a059] focus:ring-[#c5a059] cursor-pointer accent-[#c5a059]"
+                />
+              </th>
+              {['Contact & Entreprise', 'Lighthouse', 'Secteur', 'Statut Pipeline', 'Dernier Contact', 'Actions Directes'].map((h) => (
                 <th key={h} className="px-5 py-3.5 text-[11px] font-body font-medium uppercase tracking-[0.06em] text-[rgba(232,228,220,0.55)]">
                   {h}
                 </th>
@@ -589,63 +660,90 @@ function ListView({
             </tr>
           </thead>
           <tbody>
-            {paginated.map((prospect) => (
-              <tr
-                key={prospect.id}
-                className="border-b border-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.02)] transition-colors cursor-pointer"
-                onClick={() => onSelect(prospect)}
-              >
-                <td className="px-5 py-3.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-[14px] font-body font-semibold text-[#e8e4dc]">{prospect.name}</p>
-                    {(() => {
-                      const b = getLeadBatchInfo(prospect);
-                      if (b.dateStr === 'Initial') return null;
-                      return (
-                        <span className={cn(
-                          "text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border tracking-wide whitespace-nowrap",
-                          b.isToday
-                            ? "bg-[rgba(74,222,128,0.12)] border-[rgba(74,222,128,0.35)] text-[#4ade80]"
-                            : b.isYesterday
-                            ? "bg-[rgba(245,158,11,0.12)] border-[rgba(245,158,11,0.35)] text-[#fbbf24]"
-                            : "bg-[rgba(197,160,89,0.10)] border-[rgba(197,160,89,0.25)] text-[#c5a059]"
-                        )}>
-                          Lot {b.dateStr}
-                        </span>
-                      );
-                    })()}
-                  </div>
-                  <p className="text-[12px] font-body text-[#c5a059]">{prospect.company}</p>
-                  {getDisplayNote(prospect.notes) && (
-                    <p className="text-[11px] font-body text-[rgba(232,228,220,0.6)] italic mt-1 line-clamp-1 flex items-center gap-1">
-                      <FileText size={11} className="text-[#c5a059] shrink-0" />
-                      <span>{getDisplayNote(prospect.notes)}</span>
-                    </p>
+            {paginated.map((prospect) => {
+              const isSelected = selectedIds.includes(prospect.id);
+              return (
+                <tr
+                  key={prospect.id}
+                  className={cn(
+                    "border-b border-[rgba(255,255,255,0.04)] transition-colors cursor-pointer",
+                    isSelected 
+                      ? "bg-[rgba(197,160,89,0.08)] hover:bg-[rgba(197,160,89,0.12)]" 
+                      : "hover:bg-[rgba(255,255,255,0.02)]"
                   )}
-                </td>
-                <td className="px-5 py-3.5">
-                  <ScoreBadge score={prospect.score} hasWeb={hasValidWebsite(prospect.url)} />
-                </td>
-                <td className="px-5 py-3.5 text-[13px] font-body text-[rgba(232,228,220,0.65)]">
-                  {prospect.sector}
-                </td>
-                <td className="px-5 py-3.5">
-                  <StatusBadge stage={prospect.stage} />
-                </td>
-                <td className="px-5 py-3.5 text-[12px] font-body text-[rgba(232,228,220,0.4)]">
-                  {prospect.lastContact}
-                </td>
-                <td className="px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
-                  <LuxurySelect
-                    value={prospect.stage}
-                    onChange={(val) => onUpdateStage(prospect.id, val as PipelineStage)}
-                    options={stageOptions.filter((s) => s.value !== 'all')}
-                    className="w-[130px]"
-                    align="right"
-                  />
-                </td>
-              </tr>
-            ))}
+                  onClick={() => onSelect(prospect)}
+                >
+                  <td className="w-10 px-4 py-3.5 text-center" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      aria-label={`Sélectionner ${prospect.company}`}
+                      checked={isSelected}
+                      onChange={() => onToggleSelect(prospect.id)}
+                      className="w-4 h-4 rounded border-[rgba(255,255,255,0.2)] bg-[#11111a] text-[#c5a059] focus:ring-[#c5a059] cursor-pointer accent-[#c5a059]"
+                    />
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-[14px] font-body font-semibold text-[#e8e4dc]">{prospect.name}</p>
+                      {(() => {
+                        const b = getLeadBatchInfo(prospect);
+                        if (b.dateStr === 'Initial') return null;
+                        return (
+                          <span className={cn(
+                            "text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border tracking-wide whitespace-nowrap",
+                            b.isToday
+                              ? "bg-[rgba(74,222,128,0.12)] border-[rgba(74,222,128,0.35)] text-[#4ade80]"
+                              : b.isYesterday
+                              ? "bg-[rgba(245,158,11,0.12)] border-[rgba(245,158,11,0.35)] text-[#fbbf24]"
+                              : "bg-[rgba(197,160,89,0.10)] border-[rgba(197,160,89,0.25)] text-[#c5a059]"
+                          )}>
+                            Lot {b.dateStr}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                    <p className="text-[12px] font-body text-[#c5a059]">{prospect.company}</p>
+                    {getDisplayNote(prospect.notes) && (
+                      <p className="text-[11px] font-body text-[rgba(232,228,220,0.6)] italic mt-1 line-clamp-1 flex items-center gap-1">
+                        <FileText size={11} className="text-[#c5a059] shrink-0" />
+                        <span>{getDisplayNote(prospect.notes)}</span>
+                      </p>
+                    )}
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <ScoreBadge score={prospect.score} hasWeb={hasValidWebsite(prospect.url)} />
+                  </td>
+                  <td className="px-5 py-3.5 text-[13px] font-body text-[rgba(232,228,220,0.65)]">
+                    {prospect.sector}
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <StatusBadge stage={prospect.stage} />
+                  </td>
+                  <td className="px-5 py-3.5 text-[12px] font-body text-[rgba(232,228,220,0.4)]">
+                    {prospect.lastContact}
+                  </td>
+                  <td className="px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => onSendWhatsApp(prospect)}
+                        className="h-8 px-2.5 rounded-[7px] bg-[rgba(34,197,94,0.12)] hover:bg-[rgba(34,197,94,0.25)] border border-[rgba(34,197,94,0.3)] text-[#4ade80] flex items-center gap-1.5 transition-colors cursor-pointer text-[11.5px]"
+                        title="Envoyer Prototype Voyage (WhatsApp)"
+                      >
+                        <Send size={12} />
+                        <span className="hidden sm:inline">WhatsApp</span>
+                      </button>
+                      <LuxurySelect
+                        value={prospect.stage}
+                        onChange={(val) => onUpdateStage(prospect.id, val as PipelineStage)}
+                        options={stageOptions.filter((s) => s.value !== 'all')}
+                        className="w-[130px]"
+                        align="right"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -720,6 +818,7 @@ export default function CRM() {
     trashCount,
     fetchProspects,
     updateStage,
+    batchUpdateStage,
     updateNotes,
     deleteProspect,
     addProspect,
@@ -737,6 +836,11 @@ export default function CRM() {
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // Multi-Selection and Bulk WhatsApp Automation State
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkWhatsAppOpen, setIsBulkWhatsAppOpen] = useState(false);
+  const [bulkModalProspects, setBulkModalProspects] = useState<Prospect[]>([]);
+
   // Real-time multi-user SSE synchronization
   const { isConnected: isRealtimeConnected } = useRealtimeSync();
 
@@ -744,12 +848,114 @@ export default function CRM() {
     fetchProspects();
   }, [fetchProspects]);
 
+  const handleOpenWhatsApp = (prospect: Prospect) => {
+    const formatted = formatPhoneForWhatsApp(prospect.phone);
+    if (!formatted) {
+      addToast({
+        type: 'error',
+        message: `Numéro de téléphone absent ou invalide pour « ${prospect.company} »`,
+      });
+      return;
+    }
+    openWhatsAppDirect(formatted, TRAVEL_AGENCY_PROTOTYPE_MESSAGE);
+    updateStage(prospect.id, 'prototype');
+    if (selectedProspect && selectedProspect.id === prospect.id) {
+      setSelectedProspect((prev) => (prev ? { ...prev, stage: 'prototype' } : null));
+    }
+    addToast({
+      type: 'success',
+      message: `WhatsApp ouvert & deal passé en « Prototypes envoyés » pour ${prospect.company} !`,
+    });
+  };
+
   const handleUpdateStage = async (id: string, stage: PipelineStage) => {
     await updateStage(id, stage);
     if (selectedProspect && selectedProspect.id === id) {
       setSelectedProspect((prev) => (prev ? { ...prev, stage } : null));
     }
+
+    if (stage === 'prototype') {
+      const p = prospects.find((item) => item.id === id);
+      if (p) {
+        const formatted = formatPhoneForWhatsApp(p.phone);
+        if (formatted) {
+          openWhatsAppDirect(formatted, TRAVEL_AGENCY_PROTOTYPE_MESSAGE);
+          addToast({
+            type: 'success',
+            message: `Deal passé en « Prototypes envoyés » → WhatsApp lancé pour ${p.company} !`,
+          });
+          return;
+        }
+      }
+    }
+
     addToast({ type: 'success', message: `Statut mis à jour : ${STAGE_LABELS[stage]}` });
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleToggleSelectPage = (pageProspects: Prospect[]) => {
+    const pageIds = pageProspects.map((p) => p.id);
+    const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
+    if (allPageSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !pageIds.includes(id)));
+    } else {
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...pageIds])));
+    }
+  };
+
+  const handleSelectAllFiltered = () => {
+    setSelectedIds(filteredProspects.map((p) => p.id));
+    addToast({ type: 'info', message: `${filteredProspects.length} prospects sélectionnés` });
+  };
+
+  const handleSelectTravelAgencies = () => {
+    const travelLeads = prospects.filter(
+      (p) =>
+        (p.sector && p.sector.toLowerCase().includes('voyage')) ||
+        (p.company && p.company.toLowerCase().includes('voyage')) ||
+        (p.company && p.company.toLowerCase().includes('travel')) ||
+        (p.company && p.company.toLowerCase().includes('tour'))
+    );
+    setSelectedIds(travelLeads.map((p) => p.id));
+    setNicheFilter('Agence de voyage');
+    addToast({
+      type: 'success',
+      message: `${travelLeads.length} agences de voyage sélectionnées pour l'outreach WhatsApp !`,
+    });
+  };
+
+  const handleBatchMarkAsPrototype = async () => {
+    if (selectedIds.length === 0) return;
+    await batchUpdateStage(selectedIds, 'prototype');
+    addToast({
+      type: 'success',
+      message: `${selectedIds.length} prospects marqués comme « Prototypes envoyés »`,
+    });
+    setSelectedIds([]);
+  };
+
+  const handleOpenBulkModalForSelected = () => {
+    const targetProspects = prospects.filter((p) => selectedIds.includes(p.id));
+    if (targetProspects.length === 0) {
+      addToast({ type: 'error', message: 'Veuillez sélectionner au moins un prospect' });
+      return;
+    }
+    setBulkModalProspects(targetProspects);
+    setIsBulkWhatsAppOpen(true);
+  };
+
+  const handleOpenBulkModalForAllFiltered = () => {
+    if (filteredProspects.length === 0) {
+      addToast({ type: 'error', message: 'Aucun prospect dans le filtre actuel' });
+      return;
+    }
+    setBulkModalProspects(filteredProspects);
+    setIsBulkWhatsAppOpen(true);
   };
 
   const handleUpdateNotes = async (id: string, notes: string) => {
@@ -1050,6 +1256,31 @@ export default function CRM() {
             </button>
           </div>
 
+          {/* Cibler Agences de Voyage */}
+          <button
+            onClick={handleSelectTravelAgencies}
+            className="h-9 px-3 rounded-[8px] bg-[rgba(197,160,89,0.12)] hover:bg-[rgba(197,160,89,0.22)] border border-[rgba(197,160,89,0.35)] text-[#c5a059] transition-all flex items-center gap-1.5 text-[12px] font-body font-medium cursor-pointer"
+            title="Sélectionner toutes les Agences de voyage pour l'outreach WhatsApp"
+          >
+            <span>✈️</span>
+            <span className="hidden xl:inline">Cibler Agences Voyage</span>
+          </button>
+
+          {/* Outreach WhatsApp */}
+          <button
+            onClick={selectedIds.length > 0 ? handleOpenBulkModalForSelected : handleOpenBulkModalForAllFiltered}
+            className="h-9 px-3 rounded-[8px] bg-[rgba(34,197,94,0.14)] hover:bg-[rgba(34,197,94,0.24)] border border-[rgba(34,197,94,0.35)] text-[#4ade80] transition-all flex items-center gap-1.5 text-[12px] font-body font-medium cursor-pointer shadow-[0_2px_12px_rgba(34,197,94,0.15)]"
+            title="Ouvrir la file d'automatisation WhatsApp pour les prospects"
+          >
+            <Send size={13} />
+            <span className="hidden sm:inline">Outreach WhatsApp</span>
+            {selectedIds.length > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-[#4ade80] text-[#060610]">
+                {selectedIds.length}
+              </span>
+            )}
+          </button>
+
           {/* Corbeille */}
           <Link
             href="/crm/trash"
@@ -1242,12 +1473,17 @@ export default function CRM() {
             onSelect={setSelectedProspect}
             onUpdateStage={handleUpdateStage}
             onAddClick={() => setShowAddModal(true)}
+            onSendWhatsApp={handleOpenWhatsApp}
           />
         ) : (
           <ListView
             prospects={filteredProspects}
             onSelect={setSelectedProspect}
             onUpdateStage={handleUpdateStage}
+            selectedIds={selectedIds}
+            onToggleSelect={handleToggleSelect}
+            onToggleSelectPage={handleToggleSelectPage}
+            onSendWhatsApp={handleOpenWhatsApp}
           />
         )}
       </div>
@@ -1261,9 +1497,65 @@ export default function CRM() {
             onUpdateStage={handleUpdateStage}
             onUpdateNotes={handleUpdateNotes}
             onDelete={handleDeleteProspect}
+            onSendWhatsApp={handleOpenWhatsApp}
           />
         )}
       </AnimatePresence>
+
+      {/* Floating Bottom Action Bar for Multi-Selection */}
+      <AnimatePresence>
+        {selectedIds.length > 0 && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 px-5 py-3 rounded-full bg-[rgba(15,15,30,0.96)] border border-[rgba(197,160,89,0.4)] shadow-[0_12px_40px_rgba(0,0,0,0.8)] backdrop-blur-[24px] flex items-center gap-3 max-w-[95vw] overflow-x-auto"
+          >
+            <div className="flex items-center gap-2 pr-2 border-r border-[rgba(255,255,255,0.1)] shrink-0">
+              <span className="w-2 h-2 rounded-full bg-[#c5a059] animate-pulse" />
+              <span className="text-[12.5px] font-body text-[#e8e4dc]">
+                <strong className="text-[#c5a059] font-semibold">{selectedIds.length}</strong> prospect{selectedIds.length > 1 ? 's' : ''} sélectionné{selectedIds.length > 1 ? 's' : ''}
+              </span>
+            </div>
+
+            <button
+              onClick={handleOpenBulkModalForSelected}
+              className="px-4 py-2 rounded-full bg-gradient-to-r from-[#B8924A] via-[#c5a059] to-[#D4B57A] text-[#1A1200] font-body font-semibold text-[12px] flex items-center gap-1.5 transition-transform hover:scale-105 active:scale-95 shadow-[0_2px_14px_rgba(197,160,89,0.3)] cursor-pointer shrink-0"
+            >
+              <Send size={13} />
+              <span>Envoyer Prototype WhatsApp ({selectedIds.length})</span>
+            </button>
+
+            <button
+              onClick={handleBatchMarkAsPrototype}
+              className="px-3.5 py-2 rounded-full bg-[rgba(168,85,247,0.15)] hover:bg-[rgba(168,85,247,0.25)] text-[#c084fc] border border-[rgba(168,85,247,0.35)] font-body text-[12px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+              title="Passer tous les sélectionnés au statut 'Prototypes envoyés'"
+            >
+              <CheckCircle2 size={13} />
+              <span className="hidden sm:inline">Marquer Prototypes envoyés</span>
+            </button>
+
+            <button
+              onClick={() => setSelectedIds([])}
+              className="w-7 h-7 rounded-full bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.15)] text-[rgba(232,228,220,0.6)] hover:text-[#e8e4dc] flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-1"
+              title="Désélectionner tout"
+            >
+              <X size={14} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* WhatsApp Bulk Outreach Automation Modal */}
+      <WhatsAppBulkModal
+        isOpen={isBulkWhatsAppOpen}
+        onClose={() => setIsBulkWhatsAppOpen(false)}
+        prospects={bulkModalProspects}
+        onComplete={() => {
+          setSelectedIds([]);
+        }}
+      />
 
       {/* Add Prospect Modal */}
       <AnimatePresence>
