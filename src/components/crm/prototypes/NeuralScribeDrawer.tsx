@@ -6,7 +6,7 @@ import {
   X, Phone, Globe, Mail, Send, Save, CheckCircle2, 
   Sparkles, AlertCircle, Clock, Check, ChevronRight,
   MessageSquare, User, Building, MapPin, Zap, ArrowRight,
-  RotateCcw, ThumbsUp, ThumbsDown
+  RotateCcw, ThumbsUp, ThumbsDown, Wand2, Loader2
 } from 'lucide-react';
 import type { Prospect, PipelineStage } from '@/types';
 import { 
@@ -15,13 +15,14 @@ import {
   REACTION_CONFIG, 
   STEP_NAMES, 
   FOLLOW_UP_SCRIPTS,
+  getSmartFollowUpScript,
   parseLeadFollowUp, 
   serializeLeadNotes,
   extractCleanNoteText,
   LeadFollowUpData,
   FollowUpRecord
 } from '@/lib/followup';
-import { buildWhatsAppUrl, openWhatsAppDirect, formatPhoneForWhatsApp } from '@/lib/whatsapp';
+import { buildWhatsAppUrl, openWhatsAppDirect, formatPhoneForWhatsApp, generateWhatsAppAiMessage } from '@/lib/whatsapp';
 import { cn } from '@/lib/utils';
 
 interface NeuralScribeDrawerProps {
@@ -44,6 +45,8 @@ export function NeuralScribeDrawer({
   const [scriptLanguage, setScriptLanguage] = useState<'fr' | 'darija'>('fr');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [editableScript, setEditableScript] = useState<string>('');
+  const [isGeneratingAi, setIsGeneratingAi] = useState<boolean>(false);
 
   // Sync state whenever prospect prop changes
   useEffect(() => {
@@ -53,19 +56,60 @@ export function NeuralScribeDrawer({
       setSelectedReaction(parsed.primaryObjection || null);
       const lastHistory = parsed.history[parsed.history.length - 1];
       setVerbatimText(lastHistory?.verbatim || '');
+
+      const initialScript = getSmartFollowUpScript(
+        parsed.currentStep,
+        prospect,
+        scriptLanguage,
+        parsed.primaryObjection || undefined
+      );
+      setEditableScript(initialScript);
     }
   }, [prospect]);
+
+  // Recalculate script when step, language or reaction changes (if not actively customized)
+  useEffect(() => {
+    if (prospect) {
+      const script = getSmartFollowUpScript(
+        followUpData.currentStep,
+        prospect,
+        scriptLanguage,
+        selectedReaction || undefined
+      );
+      setEditableScript(script);
+    }
+  }, [followUpData.currentStep, scriptLanguage, selectedReaction]);
 
   const currentMeta = STEP_NAMES[followUpData.currentStep];
   const reactionMeta = selectedReaction ? REACTION_CONFIG[selectedReaction] : null;
 
-  // Compute WhatsApp Script for current step
-  const activeScript = followUpData.currentStep === 0
-    ? `Salam alaykoum,\n\nRavi de notre échange ! Voici le prototype conçu pour votre agence :\n👉 https://parfait-voyage.vercel.app/\n\nFlyer & 3 formules :\n👉 https://flyer-parfait-voyage.vercel.app/\n\nDites-moi ce que vous en pensez 🌍`
-    : FOLLOW_UP_SCRIPTS[followUpData.currentStep as 1 | 2 | 3][scriptLanguage];
-
   const handleSendWhatsApp = () => {
-    openWhatsAppDirect(prospect.phone, activeScript);
+    openWhatsAppDirect(prospect.phone, editableScript);
+  };
+
+  const handleGenerateWithAi = async () => {
+    setIsGeneratingAi(true);
+    try {
+      const generated = await generateWhatsAppAiMessage(
+        prospect,
+        'ultra_persuasive',
+        undefined,
+        undefined,
+        {
+          step: followUpData.currentStep,
+          reaction: selectedReaction || undefined,
+          verbatim: verbatimText.trim() || undefined,
+          language: scriptLanguage,
+        }
+      );
+      if (generated) {
+        setEditableScript(generated);
+      }
+    } catch (err) {
+      console.warn('[NeuralScribeDrawer] AI generation error:', err);
+    } finally {
+      setIsGeneratingAi(false);
+    }
   };
 
   const handleStepChange = (newStep: FollowUpStep) => {
@@ -237,7 +281,7 @@ export function NeuralScribeDrawer({
 
             {/* ─── 2. WhatsApp Outreach Dispatcher ─── */}
             <div className="p-4 rounded-[12px] bg-[#121220] border border-[rgba(255,255,255,0.06)] space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-full bg-[rgba(34,197,94,0.15)] flex items-center justify-center text-[#4ade80]">
                     <Send size={13} />
@@ -247,13 +291,33 @@ export function NeuralScribeDrawer({
                       Message WhatsApp — {currentMeta.title}
                     </h4>
                     <p className="text-[11px] font-body text-[rgba(232,228,220,0.5)]">
-                      Script optimisé pour cette étape
+                      Script ultra-personnalisé pour {prospect.company}
                     </p>
                   </div>
                 </div>
 
-                {/* Language Switch */}
-                {followUpData.currentStep > 0 && (
+                <div className="flex items-center gap-2">
+                  {/* AI Regenerate Button */}
+                  <button
+                    type="button"
+                    onClick={handleGenerateWithAi}
+                    disabled={isGeneratingAi}
+                    className="px-2.5 py-1 rounded-[6px] bg-gradient-to-r from-[rgba(197,160,89,0.25)] to-[rgba(197,160,89,0.12)] hover:from-[rgba(197,160,89,0.35)] hover:to-[rgba(197,160,89,0.2)] border border-[rgba(197,160,89,0.35)] text-[#e8e4dc] text-[11px] font-body font-medium flex items-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                  >
+                    {isGeneratingAi ? (
+                      <>
+                        <Loader2 size={12} className="animate-spin text-[#c5a059]" />
+                        <span>Génération IA...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 size={12} className="text-[#c5a059]" />
+                        <span>🪄 Générer avec l'IA</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Language Switch */}
                   <div className="flex rounded-[6px] bg-[#0c0c16] p-0.5 border border-[rgba(255,255,255,0.08)]">
                     <button
                       type="button"
@@ -276,12 +340,22 @@ export function NeuralScribeDrawer({
                       🇩🇿 Darija
                     </button>
                   </div>
-                )}
+                </div>
               </div>
 
-              {/* Message Preview */}
-              <div className="p-3 rounded-[8px] bg-[#0a0a12] border border-[rgba(255,255,255,0.05)] text-[12px] font-body text-[rgba(232,228,220,0.85)] leading-relaxed whitespace-pre-wrap max-h-[140px] overflow-y-auto custom-scrollbar">
-                {activeScript}
+              {/* Editable Message Textarea */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[10.5px] font-body text-[rgba(232,228,220,0.45)] px-0.5">
+                  <span>Message prêt avec emojis (modifiable à volonté) :</span>
+                  <span>{editableScript.length} caractères</span>
+                </div>
+                <textarea
+                  value={editableScript}
+                  onChange={(e) => setEditableScript(e.target.value)}
+                  rows={6}
+                  placeholder="Génération du message WhatsApp..."
+                  className="w-full p-3 rounded-[8px] bg-[#0a0a12] border border-[rgba(255,255,255,0.08)] focus:border-[#c5a059] text-[12px] font-body text-[#e8e4dc] leading-relaxed resize-y focus:outline-none transition-colors custom-scrollbar"
+                />
               </div>
 
               {/* WhatsApp Launch Button */}

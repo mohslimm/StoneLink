@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
   const searchParams = request.nextUrl.searchParams;
-  const requestedModel = searchParams.get('model') || 'gemini-3.8-flash';
+  const requestedModel = searchParams.get('model') || 'gemini-flash-latest';
   const strict = searchParams.get('strict') === 'true';
 
   try {

@@ -1,7 +1,7 @@
-﻿// -----------------------------------------------------------------
+// -----------------------------------------------------------------
 // STONELINK - POST /api/ai/whatsapp
 // Generateur de Messages WhatsApp Commerciaux Ultra-Personnalises
-// STRUCTURE OBLIGATOIRE v2 - Pilotee par Google Gemini Flash
+// Pilote par Google Gemini Flash avec Copywriting B2B Algerien & Emojis
 // -----------------------------------------------------------------
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -35,24 +35,29 @@ const WhatsAppAiSchema = z.object({
   formule2: z.string().optional(),
   formule3: z.string().optional(),
   nicheEmoji: z.string().optional(),
+  // Nouveaux champs pour le suivi / relances
+  step: z.number().optional(), // 0 = envoi, 1 = relance 1, 2 = relance 2, 3 = closing
+  reaction: z.string().optional(), // 'price', 'partner', 'no_reply', 'no_time', 'custom_request', 'interested', 'refusal', 'other'
+  verbatim: z.string().optional(), // Ce que le prospect a dit
+  language: z.enum(['fr', 'darija']).optional(),
 });
 
-// EMOJI PALETTES PAR NICHE
+// EMOJI PALETTES PAR NICHE (Vrais emojis Unicode)
 
 const NICHE_EMOJI_MAP: Record<string, { main: string; support: string[] }> = {
-  voyage:     { main: 'ok_travel',  support: ['ok_world', 'ok_map', 'ok_beach', 'ok_mosque', 'ok_dz'] },
-  omra:       { main: 'ok_mosque',  support: ['ok_travel', 'ok_moon', 'ok_hands', 'ok_sa', 'ok_dz'] },
-  voiture:    { main: 'ok_car',     support: ['ok_key', 'ok_wheel', 'ok_pin', 'ok_bolt', 'ok_dz'] },
-  location:   { main: 'ok_car',     support: ['ok_key', 'ok_wheel', 'ok_pin', 'ok_bolt', 'ok_dz'] },
-  dentaire:   { main: 'ok_tooth',   support: ['ok_smile', 'ok_sparkle', 'ok_steth', 'ok_pill', 'ok_dz'] },
-  clinique:   { main: 'ok_hosp',    support: ['ok_steth', 'ok_pill', 'ok_sparkle', 'ok_heart', 'ok_dz'] },
-  sante:      { main: 'ok_hosp',    support: ['ok_steth', 'ok_pill', 'ok_sparkle', 'ok_heart', 'ok_dz'] },
-  immobilier: { main: 'ok_build',   support: ['ok_pin', 'ok_house', 'ok_key2', 'ok_money', 'ok_dz'] },
-  restaurant: { main: 'ok_plate',   support: ['ok_chef', 'ok_dish', 'ok_star', 'ok_sparkle', 'ok_dz'] },
-  cafe:       { main: 'ok_coffee',  support: ['ok_cake', 'ok_sparkle', 'ok_star', 'ok_music', 'ok_dz'] },
-  ecommerce:  { main: 'ok_cart',    support: ['ok_box', 'ok_bolt', 'ok_card', 'ok_rocket', 'ok_dz'] },
-  boutique:   { main: 'ok_bag',     support: ['ok_sparkle', 'ok_gem', 'ok_star', 'ok_gift', 'ok_dz'] },
-  default:    { main: 'ok_rocket',  support: ['ok_check', 'ok_star', 'ok_bulb', 'ok_hand', 'ok_dz'] },
+  voyage:     { main: '✈️',  support: ['🌍', '🇩🇿', '📍', '🤝', '✨', '🕌', '🏖️', '⚡'] },
+  omra:       { main: '🕌',  support: ['🕋', '✈️', '🤲', '🇩🇿', '✨', '📍', '🤝', '⭐'] },
+  voiture:    { main: '🚗',  support: ['🔑', '⚙️', '🇩🇿', '📍', '⚡', '📲', '🤝', '✨'] },
+  location:   { main: '🚗',  support: ['🔑', '⚙️', '🇩🇿', '📍', '⚡', '📲', '🤝', '✨'] },
+  dentaire:   { main: '🦷',  support: ['😁', '✨', '🩺', '🇩🇿', '📍', '🤝', '👨‍⚕️', '💊'] },
+  clinique:   { main: '🏥',  support: ['🩺', '✨', '❤️', '🇩🇿', '📍', '🤝', '👨‍⚕️', '🏥'] },
+  sante:      { main: '🏥',  support: ['🩺', '✨', '❤️', '🇩🇿', '📍', '🤝', '👨‍⚕️', '💊'] },
+  immobilier: { main: '🏢',  support: ['📍', '🏠', '🔑', '💰', '🇩🇿', '✨', '🤝', '🗝️'] },
+  restaurant: { main: '🍽️',  support: ['👨‍🍳', '🍲', '⭐', '✨', '🇩🇿', '📍', '🔥', '🍕'] },
+  cafe:       { main: '☕',  support: ['🍰', '✨', '⭐', '🇩🇿', '📍', '🤝', '🥐'] },
+  ecommerce:  { main: '🛒',  support: ['📦', '⚡', '💳', '🚀', '🇩🇿', '📲', '🤝', '🛍️'] },
+  boutique:   { main: '🛍️',  support: ['✨', '💎', '⭐', '🎁', '🇩🇿', '📍', '🤝', '👗'] },
+  default:    { main: '🚀',  support: ['✅', '⭐', '💡', '🤝', '🇩🇿', '📍', '✨', '⚡'] },
 };
 
 function detectNicheKey(sector?: string, company?: string): string {
@@ -67,138 +72,119 @@ function getDefaultFormules(sector: string, emoji: string): [string, string, str
   const s = sector.toLowerCase();
   if (s.includes('voyage') || s.includes('omra') || s.includes('travel')) {
     return [
-      `${emoji} One-Page Omra & Voyages : vitrine legere, ideale pour demarrer`,
-      `${emoji} Agence Pro : site complet + tableau de bord de gestion smartphone`,
-      `${emoji} Sur-mesure : plateforme complete avec systeme de reservation en ligne`,
+      `${emoji} One-Page Omra & Voyages : vitrine ultra-rapide pour convertir vos départs`,
+      `${emoji} Agence Pro : site complet catalogue + gestion smartphone directe`,
+      `${emoji} Sur-mesure : plateforme haut de gamme avec réservation & filtres avancés`,
     ];
   }
   if (s.includes('voiture') || s.includes('auto') || s.includes('locat')) {
     return [
-      `${emoji} Starter : catalogue flotte + formulaire WhatsApp`,
-      `${emoji} Pro : reservation en ligne + gestion de disponibilite`,
-      `${emoji} Premium : systeme complet + paiement & suivi client integre`,
+      `${emoji} Starter Flotte : catalogue véhicules + réservation WhatsApp en 2 clics`,
+      `${emoji} Pro Agence : gestion de disponibilité en temps réel + contrat digital`,
+      `${emoji} Premium : plateforme complète avec paiement & suivi client intégré`,
     ];
   }
   if (s.includes('dent') || s.includes('clinic') || s.includes('sant') || s.includes('medic')) {
     return [
-      `${emoji} Vitrine Medicale : presentation du cabinet + prise de RDV`,
-      `${emoji} Clinique Pro : specialites + equipe + temoignages patients`,
-      `${emoji} Premium Sante : portail patient complet avec rappels automatiques`,
+      `${emoji} Vitrine Médicale : présentation du cabinet + prise de RDV directe`,
+      `${emoji} Clinique Pro : spécialités + équipe praticiens + avis patients certifiés`,
+      `${emoji} Portail Santé : espace patient complet avec rappels automatiques`,
     ];
   }
   if (s.includes('immo') || s.includes('foncier')) {
     return [
-      `${emoji} Portail Vitrine : catalogue biens + formulaire de visite`,
-      `${emoji} Agence Pro : recherche avancee + geolocalisation par wilaya`,
-      `${emoji} Promoteur Premium : catalogue projets neufs + simulation financement`,
+      `${emoji} Portail Vitrine : catalogue biens + géolocalisation & demande de visite`,
+      `${emoji} Agence Pro : recherche par wilaya + fiches détaillées & estimation`,
+      `${emoji} Promoteur : projets neufs + visite virtuelle & simulation financement`,
     ];
   }
   if (s.includes('resto') || s.includes('restaurant') || s.includes('cafe')) {
     return [
-      `${emoji} Menu Digital : carte interactive + reservation de table`,
-      `${emoji} Restaurant Pro : galerie chef + avis clients + commande en ligne`,
-      `${emoji} Experience Premium : site bilingue + evenements + livraison integree`,
+      `${emoji} Menu Digital : carte interactive QR Code + réservation de table`,
+      `${emoji} Restaurant Pro : galerie chef + avis clients + commande en direct`,
+      `${emoji} Expérience Premium : site bilingue + événements & click & collect`,
     ];
   }
   if (s.includes('commerce') || s.includes('boutique') || s.includes('shop')) {
     return [
-      `${emoji} Boutique Starter : catalogue produits + commande WhatsApp`,
-      `${emoji} E-Shop Pro : paiement COD + gestion par wilaya`,
-      `${emoji} Marketplace Premium : stock automatise + suivi livraison`,
+      `${emoji} Boutique Starter : catalogue produits + commande rapide WhatsApp`,
+      `${emoji} E-Shop Pro : paiement à la livraison (COD) par wilaya + gestion stock`,
+      `${emoji} Marketplace : plateforme automatisée avec suivi livraison`,
     ];
   }
   return [
-    `${emoji} Starter : vitrine professionnelle personnalisee`,
-    `${emoji} Pro : site complet + fonctionnalites avancees`,
-    `${emoji} Premium : solution sur-mesure integrale`,
+    `${emoji} Starter : vitrine professionnelle personnalisée haute performance`,
+    `${emoji} Pro : site complet interactif avec outils de conversion`,
+    `${emoji} Premium : solution digitale intégrale sur-mesure`,
   ];
 }
 
 // AVANTAGE CONCRET PAR NICHE
 
-function getNicheAdvantage(sector: string): string {
+function getNicheAdvantage(sector: string, city?: string): string {
+  const loc = city ? ` à ${city} ou partout en Algérie` : ` partout en Algérie`;
   const s = sector.toLowerCase();
-  if (s.includes('voyage') || s.includes('omra')) {
-    return `Un client qui abandonne parce que votre site rame, c'est une reservation perdue. Notre plateforme, concue pour rester rapide meme avec une connexion lente, elimine ce probleme : ou qu'il soit en Algerie, votre client peut reserver.`;
+  if (s.includes('voyage') || s.includes('omra') || s.includes('travel')) {
+    return `Un client qui abandonne parce que votre page rame, c'est une réservation Omra ou séjour perdue. Notre plateforme est conçue pour s'ouvrir en moins de 2 secondes même avec une connexion 3G/4G lente : vos clients${loc} réservent instantanément sans bug.`;
   }
   if (s.includes('voiture') || s.includes('auto') || s.includes('locat')) {
-    return `Un client qui ne trouve pas le vehicule disponible en 2 clics part chez le concurrent. Avec notre systeme, il reserve instantanement et vous recevez la notification directement sur WhatsApp.`;
+    return `Un client qui cherche une voiture et ne trouve pas votre catalogue part chez un concurrent. Avec notre système, il choisit son véhicule en 2 clics et vous recevez sa demande directement sur WhatsApp.`;
   }
   if (s.includes('dent') || s.includes('clinic') || s.includes('sant')) {
-    return `Un patient qui ne trouve pas vos specialites ou horaires en ligne consulte ailleurs. Notre vitrine medicale rassure des le premier regard et permet la prise de RDV en un clic.`;
+    return `Un patient rassuré dès la première seconde prend immédiatement rendez-vous. Notre vitrine valorise vos équipements et vos soins avec une clarté irréprochable.`;
   }
-  if (s.includes('immo') || s.includes('foncier')) {
-    return `Un acquereur qui ne trouve pas votre bien en quelques secondes scrolle plus loin. Notre portail presente chaque propriete avec photos HD, localisation et formulaire de visite instantane.`;
-  }
-  if (s.includes('resto') || s.includes('restaurant')) {
-    return `Un client affame qui ne voit pas votre menu en 3 secondes commande ailleurs. Notre menu digital s'affiche instantanement avec vos photos appetissantes et la reservation en 2 clics.`;
-  }
-  if (s.includes('commerce') || s.includes('boutique') || s.includes('shop')) {
-    return `Un client qui attend trop longtemps le chargement de votre boutique abandonne sa commande. Notre plateforme s'affiche en moins de 2 secondes meme sur mobile 3G, et la commande se valide via WhatsApp.`;
-  }
-  return `Un client potentiel qui ne trouve pas votre vitrine professionnelle en ligne part directement chez un concurrent. Notre plateforme, concue pour rester rapide meme avec une connexion limitee, transforme chaque visite en contact qualifie.`;
+  return `Vos prospects${loc} découvrent vos services instantanément sur smartphone avec une vitesse maximale et un design qui inspire une confiance totale dès la première seconde.`;
 }
 
-// FALLBACK LOCAL INTELLIGENT
+// FALLBACK LOCAL INTELLIGENT AVEC EMOJIS ET PERSONNALISATION
 
-function generateLocalSmartFallback(
-  prospect: { company: string; name?: string; sector?: string; city?: string },
-  tone: string,
-  protoUrl: string,
-  flyerUrl: string,
-  formule1: string,
-  formule2: string,
-  formule3: string,
-  nicheMainEmoji: string
-): string {
-  const sector = prospect.sector || 'professionnels';
-  const advantage = getNicheAdvantage(sector);
+function generateLocalSmartFallback(params: {
+  prospect: { company: string; name?: string; sector?: string; city?: string };
+  tone: string;
+  step?: number;
+  reaction?: string;
+  protoUrl: string;
+  flyerUrl: string;
+  formule1: string;
+  formule2: string;
+  formule3: string;
+  mainEmoji: string;
+}): string {
+  const { prospect, tone, step, reaction, protoUrl, flyerUrl, formule1, formule2, formule3, mainEmoji } = params;
+  const sector = prospect.sector || 'Professionnels';
+  const cityStr = prospect.city ? ` à ${prospect.city}` : '';
+  const contactName = prospect.name ? ` ${prospect.name}` : '';
 
-  if (tone === 'darija_pro') {
-    return [
-      `Salam alaykoum${prospect.name ? ' ' + prospect.name : ''},`,
-      ``,
-      `Ravi de notre echange telephonique concernant ${prospect.company} !`,
-      ``,
-      `Haoulik el prototype li khedmnahou khesissi l${sector} :`,
-      `\uD83D\uDC49 ${protoUrl}`,
-      ``,
-      `El haja el mliha fihe : yeftah b soraa hatta bel connexion edh-dhaifa. Zbounak yqder ychof ourodkoum w yahjouz mhma kanet el wilaya.`,
-      ``,
-      `F 48h ndiru kol chi b souretkoum w logo w numero.`,
-      ``,
-      `Hadhi 3 formules hasb ihtiyajatkoum :`,
-      formule1,
-      formule2,
-      formule3,
-      ``,
-      `Lqaou kol et-tafasil w el athman ha :`,
-      `\uD83D\uDC49 ${flyerUrl}`,
-      ``,
-      `Choufouha w qoulouli wach raykoum ${nicheMainEmoji}`,
-    ].join('\n');
+  // Step 1: Relance #1
+  if (step === 1) {
+    if (tone === 'darija_pro') {
+      return `Salam alaykoum${contactName} ! 🇩🇿✈️\n\nان شاء الله راك مليح خويا. راني نتواصل معاك بخصوص لو سيت بروتوتيب لي وجدناه لوكالة ${prospect.company}${cityStr} :\n👉 ${protoUrl}\n\nاسكو شفتو ولا مازال ما قعدتش ؟ واش رايك فيه مقارنة مع واش يحتاجو زبائنك ؟ 🤝\n\nرانا هنا باش نساعدوكم ونحطوه باسمكم في 48 ساعة ان شاء الله ✨`;
+    }
+    return `Salam alaykoum${contactName} ! 🇩🇿${mainEmoji}\n\nJ'espère que vous allez très bien. Je reviens vers vous suite à l'envoi de la démo de la plateforme conçue pour ${prospect.company}${cityStr} :\n👉 ${protoUrl}\n\nAvez-vous eu l'occasion d'y jeter un œil sur smartphone ? Qu'en avez-vous pensé pour vos clients ? 🤝✨`;
   }
 
-  return [
-    `Salam alaykoum,`,
-    ``,
-    `Ravi de notre echange telephonique ! Comme promis, voici le prototype de plateforme concu specialement pour les ${sector} en Algerie :`,
-    `\uD83D\uDC49 ${protoUrl}`,
-    ``,
-    advantage,
-    ``,
-    `Et en seulement 48 h, toute la plateforme passe a vos couleurs : votre logo, vos offres, le numero officiel de votre etablissement.`,
-    ``,
-    `Nos 3 formules selon votre profil :`,
-    formule1,
-    formule2,
-    formule3,
-    ``,
-    `Tout est detaille ici, avec les tarifs de lancement reserves a nos premiers partenaires :`,
-    `\uD83D\uDC49 ${flyerUrl}`,
-    ``,
-    `Jetez-y un oeil et dites-moi ce que vous en pensez ${nicheMainEmoji}`,
-  ].join('\n');
+  // Step 2: Relance #2 avec objection
+  if (step === 2) {
+    if (reaction === 'price') {
+      return `Salam alaykoum${contactName} ! 🇩🇿💼\n\nConcernant votre réflexion pour ${prospect.company}, sachez qu'une seule réservation supplémentaire grâce à la plateforme rembourse déjà la totalité du site pour l'année.\n\nNous avons également la formule One-Page très accessible (ou un règlement échelonné) :\n👉 ${flyerUrl}\n\nSeriez-vous partant pour un court échange de 3 minutes demain afin de trouver la solution adaptée à votre budget ? 🤝✨`;
+    }
+    if (reaction === 'partner') {
+      return `Salam alaykoum${contactName} ! 🇩🇿🤝\n\nPour faciliter la décision avec votre associé pour ${prospect.company}, voici le flyer récapitulatif avec nos 3 formules claires à lui transmettre directement :\n👉 ${flyerUrl}\n\nLien de la démo en direct :\n👉 ${protoUrl}\n\nN'hésitez pas si vous souhaitez qu'on fasse un mini-point à trois de 5 minutes pour répondre à toutes ses questions ! ✨`;
+    }
+    return `Salam alaykoum${contactName} ! 🇩🇿${mainEmoji}\n\nJe fais un court suivi concernant la mise en ligne de la plateforme pour ${prospect.company}${cityStr}.\n\nComme la saison approche à grands pas, nous finalisons les intégrations partenaires avec nos tarifs de lancement :\n👉 ${flyerUrl}\n\nSeriez-vous disponible pour un appel express de 5 minutes demain afin de valider vos priorités ? 🤝📞`;
+  }
+
+  // Step 3: Closing
+  if (step === 3) {
+    return `Salam alaykoum${contactName} ! 🇩🇿${mainEmoji}\n\nDernier petit message de ma part pour ne pas vous encombrer. Si vous souhaitez qu'on déploie votre site sous 48h avec votre logo et vos offres pour ${prospect.company}, faites-moi signe d'ici demain soir.\n\nSinon, aucun souci, je garde précieusement votre contact pour vos futures campagnes ! Excellente réussite à vous 🌍✨`;
+  }
+
+  // Step 0: Envoi initial
+  if (tone === 'darija_pro') {
+    return `Salam alaykoum${contactName} ! 🇩🇿✈️\n\nيعطيكم الصحة على المكالمة بخصوص وكالة ${prospect.company}${cityStr} !\n\nهاوليك لو سيت بروتوتيب لي وجدناه سبيسيالمون ليكم :\n👉 ${protoUrl}\n\n⚡ خفيف بزاف ويفتح بسرعة حتى بالكونيكسيون الضعيفة في الجنوب ولا في أي ولاية. زبائنك يقدرو يشوفو العروض ويحجزو فورا وبدون أي بلوكاج.\n\nوفي 48 ساعة برك نحطو لوغو تاعكم والعروض ورقم الهاتف الرسمي.\n\nوهنا تلقاو تفاصيل العروض والأسعار الترويجية :\n📑 👉 ${flyerUrl}\n\nشوفوه وقولولي واش رايكم، ربي يوفقكم ان شاء الله ! 🤝✨`;
+  }
+
+  return `Salam alaykoum${contactName} ! 🇩🇿${mainEmoji}\n\nRavi de notre échange téléphonique concernant ${prospect.company}${cityStr} !\n\nComme promis, voici l'accès direct au prototype spécialement pensé pour votre activité :\n👉 ${protoUrl}\n\n⚡ ${getNicheAdvantage(sector, prospect.city)}\n\nEn seulement 48h, nous intégrons vos éléments officiels (logo, offres de saison, coordonnées WhatsApp).\n\nDécouvrez nos 3 formules de lancement ici :\n${formule1}\n${formule2}\n${formule3}\n\n📑 Tarifs détaillés et flyer :\n👉 ${flyerUrl}\n\nJetez-y un œil dès maintenant et dites-moi ce que vous en pensez ! 🤝✨`;
 }
 
 // HANDLER PRINCIPAL
@@ -228,104 +214,96 @@ export async function POST(req: NextRequest) {
       formule2,
       formule3,
       nicheEmoji,
+      step = 0,
+      reaction,
+      verbatim,
+      language,
     } = parsed.data;
 
-    const sector = targetSector || prospect.sector || 'Professionnel';
+    const sector = targetSector || prospect.sector || 'Professionnels';
     const mainProtoUrl = prototypeUrl || 'https://parfait-voyage.vercel.app/';
     const mainFlyerUrl = flyerUrl || 'https://flyer-parfait-voyage.vercel.app/';
 
-    // Emoji niche - on utilise l'emoji fourni directement ou on detecte par secteur
-    const EMOJI_BY_NICHE: Record<string, string> = {
-      voyage: '\u2708\uFE0F', omra: '\uD83D\uDD4C', voiture: '\uD83D\uDE97',
-      location: '\uD83D\uDE97', dentaire: '\uD83E\uDDB7', clinique: '\uD83C\uDFE5',
-      sante: '\uD83C\uDFE5', immobilier: '\uD83C\uDFE2', restaurant: '\uD83C\uDF7D\uFE0F',
-      cafe: '\u2615', ecommerce: '\uD83D\uDED2', boutique: '\uD83D\uDECD\uFE0F',
-      default: '\uD83D\uDE80',
-    };
-    const SUPPORT_BY_NICHE: Record<string, string[]> = {
-      voyage: ['\uD83C\uDF0D', '\uD83D\uDDFA\uFE0F', '\uD83C\uDFD6\uFE0F', '\uD83D\uDD4C', '\uD83C\uDDE9\uD83C\uDDFF'],
-      omra: ['\u2708\uFE0F', '\uD83C\uDF19', '\uD83E\uDD32', '\uD83C\uDDF8\uD83C\uDDE6', '\uD83C\uDDE9\uD83C\uDDFF'],
-      voiture: ['\uD83D\uDD11', '\uD83D\uDEDE', '\uD83D\uDCCD', '\u26A1', '\uD83C\uDDE9\uD83C\uDDFF'],
-      location: ['\uD83D\uDD11', '\uD83D\uDEDE', '\uD83D\uDCCD', '\u26A1', '\uD83C\uDDE9\uD83C\uDDFF'],
-      dentaire: ['\uD83D\uDE01', '\u2728', '\uD83E\uDE7A', '\uD83D\uDC8A', '\uD83C\uDDE9\uD83C\uDDFF'],
-      clinique: ['\uD83E\uDE7A', '\uD83D\uDC8A', '\u2728', '\u2764\uFE0F', '\uD83C\uDDE9\uD83C\uDDFF'],
-      sante: ['\uD83E\uDE7A', '\uD83D\uDC8A', '\u2728', '\u2764\uFE0F', '\uD83C\uDDE9\uD83C\uDDFF'],
-      immobilier: ['\uD83D\uDCCD', '\uD83C\uDFE0', '\uD83D\uDDDD\uFE0F', '\uD83D\uDCB0', '\uD83C\uDDE9\uD83C\uDDFF'],
-      restaurant: ['\uD83D\uDC68\u200D\uD83C\uDF73', '\uD83E\uDD58', '\u2B50', '\u2728', '\uD83C\uDDE9\uD83C\uDDFF'],
-      cafe: ['\uD83C\uDF70', '\u2728', '\u2B50', '\uD83C\uDFB6', '\uD83C\uDDE9\uD83C\uDDFF'],
-      ecommerce: ['\uD83D\uDCE6', '\u26A1', '\uD83D\uDCB3', '\uD83D\uDE80', '\uD83C\uDDE9\uD83C\uDDFF'],
-      boutique: ['\u2728', '\uD83D\uDC8E', '\u2B50', '\uD83C\uDF81', '\uD83C\uDDE9\uD83C\uDDFF'],
-      default: ['\u2705', '\u2B50', '\uD83D\uDCA1', '\uD83E\uDD1D', '\uD83C\uDDE9\uD83C\uDDFF'],
-    };
-
     const nicheKey = detectNicheKey(sector, prospect.company);
-    const mainEmoji = nicheEmoji || EMOJI_BY_NICHE[nicheKey] || EMOJI_BY_NICHE['default'];
-    const supportEmojis = SUPPORT_BY_NICHE[nicheKey] || SUPPORT_BY_NICHE['default'];
+    const emojiInfo = NICHE_EMOJI_MAP[nicheKey] || NICHE_EMOJI_MAP['default'];
+    const mainEmoji = nicheEmoji || emojiInfo.main;
+    const supportEmojis = emojiInfo.support;
 
     const [f1Default, f2Default, f3Default] = getDefaultFormules(sector, mainEmoji);
     const f1 = formule1 || f1Default;
     const f2 = formule2 || f2Default;
     const f3 = formule3 || f3Default;
-    const nicheAdvantage = getNicheAdvantage(sector);
+    const nicheAdvantage = getNicheAdvantage(sector, prospect.city);
 
-    const toneInstructions: Record<string, string> = {
-      ultra_persuasive: 'Ton argumente, structure, percutant. Chaque phrase doit convaincre. ROI concret. Tournures directes et valorisantes.',
-      short_punchy: 'Ultra court : 80-100 mots max. Pas de superflu. Punch des la premiere ligne.',
-      relational: 'Ton chaleureux, sincere, humain. Valorise la relation avant le business.',
-      darija_pro: 'Redige INTEGRALEMENT en darija algerienne professionnelle (alphabet latin). AUCUN mot en arabe classique. Naturel, comme entre collegues qui se respectent.',
-      custom: customInstructions || 'Ton professionnel et persuasif.',
+    const isDarija = tone === 'darija_pro' || language === 'darija';
+
+    // Description du stade de relance
+    const stepContextMap: Record<number, string> = {
+      0: "STADE : Envoi Initial du Prototype (J+0 à J+1). Objectif : Valider la prise de contact, susciter l'effet 'Wahou' avec le prototype et le flyer de lancement.",
+      1: "STADE : Relance #1 (J+1 à J+2). Objectif : Demander chaleureusement s'il a pu ouvrir la démo sur smartphone, recueillir son avis sans pression.",
+      2: "STADE : Relance #2 (J+3 à J+5) - Traitement d'Objection & Accélération. Objectif : Répondre chirurgicalement à son objection ou son silence, proposer un mini-appel de 3-5 min pour caler son projet.",
+      3: "STADE : Relance Finale / Closing (J+6+). Objectif : Proposer de finaliser sous 48h avant de clore les créneaux partenaires de sa ville, tout en restant très élégant et respectueux.",
     };
-    const activeToneInstruction = toneInstructions[tone || 'ultra_persuasive'];
 
-    const prompt = `Tu es le Copywriter d'elite de Stepping Stones Agency. Tu rediges des messages de prospection WhatsApp/SMS en FRANCAIS pour Mohamed Slimani, qui propose des plateformes web a des professionnels algeriens apres un echange telephonique.
+    const currentStepContext = stepContextMap[step] || stepContextMap[0];
 
-NICHE : ${sector}
-LIEN PROTOTYPE : ${mainProtoUrl}
-LIEN FLYER / TARIFS : ${mainFlyerUrl}
+    // Contexte de l'objection
+    let objectionDirectives = "";
+    if (reaction) {
+      const objectionMap: Record<string, string> = {
+        price: "OBJECTION PRINCIPALE : PRIX / 'TROP CHER'. Consigne : Valorise le ROI immédiat (1 seule réservation/vente rembourse tout le site à l'année), propose la formule accessible One-Page ou un échelonnement en 2 fois.",
+        partner: "OBJECTION PRINCIPALE : DOIT VOIR AVEC L'ASSOCIÉ / DIRECTION. Consigne : Donne-lui les bons mots et le flyer pour convaincre son associé facilement, propose un mini-appel à 3 de 5 minutes.",
+        no_reply: "OBJECTION PRINCIPALE : VU SANS RÉPONSE (SILENCE / GHOST). Consigne : Fais un message court, léger et déculpabilisant. Pose une question fermée simple ('Avez-vous réussi à ouvrir le lien du prototype sur votre téléphone ?').",
+        no_time: "OBJECTION PRINCIPALE : PAS LE TEMPS / TROP OCCUPÉ. Consigne : Respecte son temps, propose un appel cadré de 3 minutes chrono à un horaire précis.",
+        custom_request: "OBJECTION PRINCIPALE : DEMANDE D'OPTIONS SPÉCIFIQUES. Consigne : Confirme avec enthousiasme que c'est tout à fait faisable dans notre architecture sur-mesure sous 48h.",
+        interested: "PROSPECT TRÈS INTÉRESSÉ / EN RÉFLEXION. Consigne : Propose de lui montrer ses offres et son logo intégrés en direct lors d'un appel rapide de 5 minutes.",
+        refusal: "REFUS / PAS POUR LE MOMENT. Consigne : Remercie chaleureusement, valorise son établissement et laisse la porte grand ouverte.",
+      };
+      objectionDirectives = objectionMap[reaction] || `RETOUR DU CLIENT : ${reaction}. Adapte ta réponse avec tact.`;
+    }
+
+    const verbatimContext = verbatim ? `NOTE EXACTE SUR LE PROSPECT : "${verbatim}"` : (prospect.notes ? `NOTES CRM : "${prospect.notes}"` : "");
+
+    const prompt = `Tu es l'Expert Copywriter Commercial & Directeur des Ventes chez Stepping Stones Agency (agence fondée par Mohamed Slimani & Abdelhadi Hammaz).
+Tu rédiges un message WhatsApp commercial sur-mesure pour un prospect professionnel en Algérie.
+
+DONNÉES DU PROSPECT :
+- Entreprise : "${prospect.company}"
+- Contact : "${prospect.name || 'Responsable'}"
+- Ville / Wilaya : "${prospect.city || 'Algérie'}"
+- Secteur / Niche : "${sector}"
+- Prototype Web : ${mainProtoUrl}
+- Flyer & Tarifs : ${mainFlyerUrl}
+${verbatimContext}
+
+${currentStepContext}
+${objectionDirectives}
+
 LES 3 FORMULES :
-${f1}
-${f2}
-${f3}
+- ${f1}
+- ${f2}
+- ${f3}
 
-CONTEXTE PROSPECT :
-- Entreprise : ${prospect.company}
-- Contact : ${prospect.name || 'Responsable'}
-- Ville : ${prospect.city || 'Algerie'}
-- Prototype : ${prototypeName || sector} — ${prototypeDescription || 'Vitrine digitale haute performance'}
-- Notes : ${prospect.notes || 'Aucune'}
+LANGUE & TONALITÉ :
+${isDarija 
+  ? "RÉDIGE EN DARIJA ALGÉRIENNE PROFESSIONNELLE (en alphabet latin / arabe algérien retranscrit ou arabe fluide). Chaleureux, respectueux, direct entre professionnels algériens." 
+  : "RÉDIGE EN FRANÇAIS B2B ALGÉRIEN. Professionnel, élégant, courtois, engageant, axé sur les résultats concrets."}
 
-TONALITE : ${activeToneInstruction}
-
-STRUCTURE OBLIGATOIRE (dans cet ordre STRICT) :
-1. "Salam alaykoum," + "Ravi de notre echange telephonique !"
-2. Lien prototype precede de ${'\uD83D\uDC49'}, sur sa propre ligne
-3. Avantage concret (inspire-toi de : "${nicheAdvantage}") — 2-3 phrases max
-4. Promesse 48 h : logo, offres, numero officiel
-5. Les 3 formules exactement telles que donnees ci-dessus, une par ligne
-6. Lien flyer precede de ${'\uD83D\uDC49'} + "tarifs de lancement reserves a nos premiers partenaires"
-7. CTA court : 1 phrase + 1 emoji final ${mainEmoji}
-
-REGLES D'EMOJIS STRICTES :
-- Utilise UNIQUEMENT : ${mainEmoji} ${supportEmojis.join(' ')} ${'\uD83D\uDC49'}
-- Maximum 6 emojis au total dans TOUT le message
-- JAMAIS d'emoji au milieu d'une phrase
-- ${'\uD83D\uDC49'} est RESERVE aux deux liens uniquement
-- Les formules utilisent UNIQUEMENT ${mainEmoji} comme puce
-
-REGLES DE REDACTION :
-- 120 a 160 mots maximum (sauf darija)
-- PAS de promesses absolues : dis "concu pour rester rapide", "meme avec une connexion lente"
-- Sauts de ligne clairs entre chaque bloc
-- AUCUN markdown, AUCUNE balise — texte brut WhatsApp UNIQUEMENT
-- Ne mentionne jamais "Stepping Stones Agency" ni "Mohamed Slimani"`;
+RÈGLES D'OR DU MESSAGE WHATSAPP :
+1. Personnalise OBLIGATOIREMENT avec le nom de l'entreprise "${prospect.company}" et sa ville "${prospect.city || 'votre région'}".
+2. UTILISE DES EMOJIS NATURELS ET PROFESSIONNELS (${mainEmoji}, ${supportEmojis.join(' ')}, 🇩🇿, 👉, 📲, 📑, 🤝, ✨, ⚡) pour structurer le texte, valoriser les liens et rendre le message agréable et chaleureux à lire sur mobile.
+3. Le lien du prototype doit être mis en valeur avec 👉 sur sa propre ligne.
+4. Reste concis (100 à 150 mots maximum). Sauts de ligne clairs et aérés.
+5. JAMAIS de balises markdown techniques (pas de **gras** excessif, pas de balises html). Texte WhatsApp fluide uniquement.
+6. Ne mentionne pas de noms d'agences tierces, sois naturel comme si Slimani envoyait le message directement de son téléphone.`;
 
     try {
       const geminiRes = await callGeminiResilient({
         prompt,
-        preferredModel: 'gemini-3.8-flash',
+        preferredModel: 'gemini-flash-lite-latest',
         purpose: 'general',
         generationConfig: {
-          temperature: 0.42,
+          temperature: 0.45,
           maxOutputTokens: 600,
         },
       });
@@ -344,14 +322,18 @@ REGLES DE REDACTION :
       });
     } catch (aiError) {
       console.warn('[WhatsApp AI Engine] AI Model fallback triggered:', aiError);
-      const fallbackMessage = generateLocalSmartFallback(
+      const fallbackMessage = generateLocalSmartFallback({
         prospect,
-        tone || 'ultra_persuasive',
-        mainProtoUrl,
-        mainFlyerUrl,
-        f1, f2, f3,
-        mainEmoji
-      );
+        tone: tone || 'ultra_persuasive',
+        step,
+        reaction,
+        protoUrl: mainProtoUrl,
+        flyerUrl: mainFlyerUrl,
+        formule1: f1,
+        formule2: f2,
+        formule3: f3,
+        mainEmoji,
+      });
       return NextResponse.json({
         success: true,
         message: fallbackMessage,

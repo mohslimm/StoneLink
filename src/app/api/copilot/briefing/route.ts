@@ -169,7 +169,7 @@ RÉPONDS UNIQUEMENT SOUS FORME D'UN OBJET JSON STRICT AU FORMAT SUIVANT :
     try {
       const geminiRes = await callGeminiResilient({
         prompt,
-        preferredModel: 'gemini-3.8-flash',
+        preferredModel: 'gemini-flash-latest',
         purpose: 'general',
         generationConfig: {
           responseMimeType: 'application/json',

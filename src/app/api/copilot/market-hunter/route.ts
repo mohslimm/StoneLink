@@ -35,7 +35,7 @@ RÉPONDS STRICTEMENT EN JSON AU FORMAT SUIVANT :
 
     const geminiRes = await callGeminiResilient({
       prompt,
-      preferredModel: 'gemini-3.8-flash',
+      preferredModel: 'gemini-flash-latest',
       purpose: 'general',
       generationConfig: {
         responseMimeType: 'application/json',

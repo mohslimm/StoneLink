@@ -161,55 +161,64 @@ export const STEP_NAMES: Record<FollowUpStep, { title: string; subtitle: string;
 
 // WhatsApp Strategy Message Templates per Step
 export const FOLLOW_UP_SCRIPTS: Record<
-  Exclude<FollowUpStep, 0>,
+  FollowUpStep,
   { fr: string; darija: string }
 > = {
+  0: {
+    fr: `Salam alaykoum {name} ! 🇩🇿✈️\n\nRavi de notre échange téléphonique pour {company}{city} !\n\nComme promis, voici l'accès direct au prototype spécialement pensé pour votre activité :\n👉 https://parfait-voyage.vercel.app/\n\n⚡ Conçu pour s'ouvrir en moins de 2 secondes même avec une connexion lente : vos clients réservent sans aucun bug.\n\nEn seulement 48h, nous intégrons vos éléments officiels (logo, offres, WhatsApp).\n\n📑 Flyer de présentation & 3 formules :\n👉 https://flyer-parfait-voyage.vercel.app/\n\nJetez-y un œil et dites-moi ce que vous en pensez ! 🤝✨`,
+    darija: `Salam alaykoum {name} ! 🇩🇿✈️\n\nيعطيكم الصحة على المكالمة بخصوص {company}{city} !\n\nهاوليك لو سيت بروتوتيب لي وجدناه سبيسيالمون ليكم :\n👉 https://parfait-voyage.vercel.app/\n\n⚡ خفيف بزاف ويفتح بسرعة حتى بالكونيكسيون الضعيفة في الجنوب ولا في أي ولاية. زبائنك يقدرو يشوفو العروض ويحجزو فورا وبدون أي بلوكاج.\n\nوفي 48 ساعة برك نحطو لوغو تاعكم والعروض ورقم الهاتف الرسمي.\n\nوهنا تلقاو تفاصيل العروض والأسعار الترويجية :\n📑 👉 https://flyer-parfait-voyage.vercel.app/\n\nشوفوه وقولولي واش رايكم 🤝✨`,
+  },
   1: {
-    fr: `Salam alaykoum,
-
-J'espère que vous allez bien ! Je reviens vers vous suite à l'envoi de la démo de la plateforme pour votre agence :
-👉 https://parfait-voyage.vercel.app/
-
-Avez-vous eu l'occasion d'y jeter un œil rapide ?
-Qu'en avez-vous pensé par rapport aux besoins de vos clients ? 🌍`,
-    darija: `Salam alaykoum,
-
-ان شاء الله راك مليح خويا ! راني نعيطلك/نراسلك بخصوص لو سيت بروتوتيب لي بعثتهولك للوكالة تاعك :
-👉 https://parfait-voyage.vercel.app/
-
-اسكو شفتو ولا مازال ما قعدتش ؟ واش رايك فيه ؟ ✈️🇩🇿`,
+    fr: `Salam alaykoum {name} ! 🇩🇿✈️\n\nJ'espère que vous allez très bien ! Je reviens vers vous suite à l'envoi de la démo de la plateforme pour {company}{city} :\n👉 https://parfait-voyage.vercel.app/\n\nAvez-vous eu l'occasion d'y jeter un coup d'œil rapide sur votre téléphone ? Qu'en avez-vous pensé pour vos clients ? 🤝✨`,
+    darija: `Salam alaykoum {name} ! 🇩🇿✈️\n\nان شاء الله راك مليح خويا ! راني نتواصل معاك بخصوص لو سيت بروتوتيب لي بعثتهولك للوكالة {company}{city} :\n👉 https://parfait-voyage.vercel.app/\n\nاسكو شفتو ولا مازال ما قعدتش ؟ واش رايك فيه مقارنة باحتياجات زبائنك ؟ 🤝🇩🇿`,
   },
   2: {
-    fr: `Salam alaykoum,
-
-Je fais un court suivi concernant la personnalisation de la plateforme pour votre agence.
-
-Comme la saison des réservations approche, nous finalisons actuellement les 3 agences partenaires de votre zone avec l'offre de lancement (One-Page, Pro ou Sur-mesure) :
-👉 https://flyer-parfait-voyage.vercel.app/
-
-Seriez-vous disponible pour un appel express de 5 minutes demain afin de valider si cela correspond à vos objectifs ? 🤝`,
-    darija: `Salam alaykoum,
-
-راني نعاود نراسلكم برك باش نعرف اذا نقفلو الحجز تاع العرض الترويجي للوكالة تاعكم قبل ما نغلقو التسجيلات للدفعة هادي :
-👉 https://flyer-parfait-voyage.vercel.app/
-
-قولي برك واش هي النقاط لي مازال ما وضحتش ولا اسكو نقدرو نديرو مكالمة خفيفة تاع 5 دقائق نوضحلك كلش ؟ 🤝🇩🇿`,
+    fr: `Salam alaykoum {name} ! 🇩🇿💼\n\nJe fais un court suivi concernant la personnalisation de la plateforme pour {company}{city}.\n\nComme la saison approche, nous finalisons actuellement les agences partenaires de votre zone avec nos offres de lancement (One-Page, Pro, Sur-mesure) :\n📑 👉 https://flyer-parfait-voyage.vercel.app/\n\nSeriez-vous disponible pour un appel express de 5 minutes demain afin de valider vos objectifs ? 🤝📞`,
+    darija: `Salam alaykoum {name} ! 🇩🇿💼\n\nراني نعاود نراسلكم برك باش نعرف اذا نقفلو الحجز تاع العرض الترويجي للوكالة {company}{city} قبل ما نغلقو التسجيلات للدفعة هادي :\n📑 👉 https://flyer-parfait-voyage.vercel.app/\n\nقولي برك واش هي النقاط لي مازال ما وضحتش ولا اسكو نقدرو نديرو مكالمة خفيفة تاع 5 دقائق نوضحلك كلش ؟ 🤝🇩🇿`,
   },
   3: {
-    fr: `Salam alaykoum,
-
-Dernier message de ma part pour ne pas vous encombrer. 
-
-Si vous souhaitez qu'on déploie votre site sous 48h avec vos offres et vos coordonnées avant le rush, dites-le-moi simplement d'ici demain soir.
-
-Sinon, aucun problème du tout, je garde précieusement votre contact pour vos projets futurs ! Excellente réussite à vous 🌍✨`,
-    darija: `Salam alaykoum,
-
-اخر رسالة برك خويا باش ما نثقلش عليك. اذا راك حاب نطلقو لو سيت تاعك في 48 ساعة قبل بداية الموسم، قولي برك قبل غدوة فالعشية باش نحطوك فالبرنامج.
-
-واذا ماشي الوقت المناسب، ماكاش مشكل خلاص، ربي يوفقكم ويبقى الاتصال بيناتنا ! 🌍🇩🇿`,
+    fr: `Salam alaykoum {name} ! 🇩🇿✨\n\nDernier message de ma part pour ne pas vous encombrer.\n\nSi vous souhaitez qu'on déploie votre site sous 48h avec vos offres et coordonnées pour {company} avant le rush, dites-le-moi simplement d'ici demain soir.\n\nSinon, aucun problème du tout, je garde précieusement votre contact pour vos projets futurs ! Excellente réussite à vous 🌍🤝`,
+    darija: `Salam alaykoum {name} ! 🇩🇿✨\n\nاخر رسالة برك خويا باش ما نثقلش عليك. اذا راك حاب نطلقو لو سيت تاع {company} في 48 ساعة قبل بداية الموسم، قولي برك قبل غدوة فالعشية باش نحطوك فالبرنامج.\n\nواذا ماشي الوقت المناسب، ماكاش مشكل خلاص، ربي يوفقكم ويبقى الاتصال بيناتنا ! 🌍🇩🇿`,
   },
 };
+
+/**
+ * Returns an enriched, personalized follow-up script with prospect details and objection handling.
+ */
+export function getSmartFollowUpScript(
+  step: FollowUpStep,
+  prospect: Prospect,
+  lang: 'fr' | 'darija' = 'fr',
+  reaction?: ReactionType
+): string {
+  const comp = prospect.company || 'votre agence';
+  const city = prospect.city ? ` (${prospect.city})` : '';
+  const name = prospect.name && !prospect.name.toLowerCase().includes('responsable') ? prospect.name : comp;
+
+  if (step === 2 && reaction) {
+    if (reaction === 'price') {
+      return lang === 'darija'
+        ? `Salam alaykoum ${name} ! 🇩🇿💼\n\nبخصوص السعر لوكالة ${comp}، على بالك بلي حجز واحد برك إضافي عبر الموقع يرجعلك كامل حق لو سيت للعام كامل.\n\nوعندنا ثاني عرض One-Page بسعر رمزي جدا نقدر نبعثهولك :\n👉 https://flyer-parfait-voyage.vercel.app/\n\nاسكو نقدر نعيطلك 3 دقائق غدوة نقترحو حل يساعد الميزانية تاعكم ؟ 🤝✨`
+        : `Salam alaykoum ${name} ! 🇩🇿💼\n\nConcernant votre réflexion budgétaire pour ${comp}, sachez qu'une seule réservation supplémentaire grâce à la plateforme rembourse déjà la totalité du site pour l'année.\n\nNous proposons également la formule One-Page très accessible (ou un règlement échelonné en 2 fois) :\n👉 https://flyer-parfait-voyage.vercel.app/\n\nSeriez-vous partant pour un court échange de 3 minutes demain afin de trouver la solution adaptée à votre budget ? 🤝✨`;
+    }
+    if (reaction === 'partner') {
+      return lang === 'darija'
+        ? `Salam alaykoum ${name} ! 🇩🇿🤝\n\nباش تسهل عليك النقاش مع الشريك تاعك في ${comp}، هاوليك لو فلاير فيه العروض بوضوح تقدر تبعثهولو مباشرة :\n👉 https://flyer-parfait-voyage.vercel.app/\n\nوهاوليك رابط الديمو الحية :\n👉 https://parfait-voyage.vercel.app/\n\nقولي اذا تحب نديرو مكالمة خفيفة تاع 5 دقائق نجاوبو على كامل استفساراتكم ! ✨`
+        : `Salam alaykoum ${name} ! 🇩🇿🤝\n\nPour faciliter la décision avec votre associé pour ${comp}, voici le flyer récapitulatif avec nos 3 formules claires à lui transférer directement :\n👉 https://flyer-parfait-voyage.vercel.app/\n\nEt le lien du prototype en direct :\n👉 https://parfait-voyage.vercel.app/\n\nN'hésitez pas si vous souhaitez qu'on fasse un mini-point à trois de 5 minutes pour répondre à ses questions ! ✨`;
+    }
+    if (reaction === 'no_reply') {
+      return lang === 'darija'
+        ? `Salam alaykoum ${name} ! 🇩🇿✈️\n\nرسالة خفيفة برك خويا باش نتطمن. اسكو فتحت الرابط تاع لو سيت بروتوتيب لي بعثتهولك للوكالة ${comp} ؟\n👉 https://parfait-voyage.vercel.app/\n\nاذا لقيت أي مشكل فالرابط ولا ما قعدتش، قولي برك 🤝🇩🇿`
+        : `Salam alaykoum ${name} ! 🇩🇿✈️\n\nCourt message pour prendre de vos nouvelles concernant ${comp}. Avez-vous réussi à ouvrir le lien du prototype sur votre téléphone ?\n👉 https://parfait-voyage.vercel.app/\n\nSi vous n'avez pas eu le temps, aucun souci, dites-moi simplement quand vous êtes plus disponible 🤝✨`;
+    }
+  }
+
+  const baseTemplate = FOLLOW_UP_SCRIPTS[step]?.[lang] || FOLLOW_UP_SCRIPTS[0][lang];
+  return baseTemplate
+    .replace(/{company}/g, comp)
+    .replace(/{city}/g, city)
+    .replace(/{name}/g, name);
+}
 
 /**
  * Parses structured follow-up data from prospect notes, or initializes defaults.

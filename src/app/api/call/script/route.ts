@@ -266,7 +266,7 @@ Retourne UNIQUEMENT un objet JSON valide avec cette structure exacte :
 
   const geminiRes = await callGeminiResilient({
     prompt,
-    preferredModel: 'gemini-3.8-flash',
+    preferredModel: 'gemini-flash-latest',
     purpose: 'calls',
     generationConfig: {
       responseMimeType: 'application/json',

@@ -10,37 +10,37 @@ export interface GeminiModelOption {
 
 export const SUPPORTED_GEMINI_MODELS: GeminiModelOption[] = [
   {
-    id: 'gemini-3.8-flash',
-    name: 'Google Gemini 3.8 Flash',
-    badge: 'Recommandé (Dernier cri)',
-    description: 'Intelligence de pointe pour argumentaires de vente complexes et clauses juridiques sur-mesure.',
+    id: 'gemini-flash-lite-latest',
+    name: 'Google Gemini Flash (Production)',
+    badge: 'Recommandé (1 500 req/jour)',
+    description: 'Modèle officiel stable haute performance, idéal pour le CRM, les relances et le Copilot sans limite restrictive ni saturation.',
     isDefault: true,
   },
   {
-    id: 'gemini-3.7-flash',
-    name: 'Google Gemini 3.7 Flash',
+    id: 'gemini-flash-latest',
+    name: 'Google Gemini Flash Standard',
+    badge: 'Standard (1 500 req/j)',
+    description: 'Modèle standard Google en production.',
+  },
+  {
+    id: 'gemini-2.5-flash',
+    name: 'Google Gemini 2.5 Flash',
     badge: 'Haute Disponibilité',
-    description: 'Stabilité éprouvée et latence ultra-faible même lors des pics d\'affluence mondiaux.',
+    description: 'Exécution robuste pour les analyses approfondies.',
   },
   {
-    id: 'gemini-3.6-flash',
-    name: 'Google Gemini 3.6 Flash',
-    badge: 'Secours Rapide',
-    description: 'Exécution véloce pour les cold calls directs et pitchs instantanés.',
-  },
-  {
-    id: 'gemini-3.5-flash',
-    name: 'Google Gemini 3.5 Flash',
-    badge: 'Repli Universel',
-    description: 'Disponibilité continue en cas de saturation prolongée des nouveaux modèles.',
+    id: 'gemini-3.8-flash',
+    name: 'Google Gemini 3.8 Flash (Preview)',
+    badge: 'Expérimental (20 req/j)',
+    description: 'Dernière génération en test chez Google, sous réserve de disponibilité des serveurs.',
   },
 ];
 
 export const FALLBACK_CASCADE = [
+  'gemini-flash-lite-latest',
+  'gemini-flash-latest',
+  'gemini-2.5-flash',
   'gemini-3.8-flash',
-  'gemini-3.7-flash',
-  'gemini-3.6-flash',
-  'gemini-3.5-flash',
 ];
 
 interface CallGeminiOptions {
@@ -80,14 +80,14 @@ function getApiKeysForPurpose(purpose?: 'calls' | 'contracts' | 'general'): stri
   let ordered: (string | undefined)[] = [];
 
   if (purpose === 'calls') {
-    // 1. Abdelhadi's call key -> 2. Agency master -> 3. Default fallback -> 4. Contracts key
-    ordered = [callsKey, agencyKey, defaultKey, contractsKey];
+    // 1. Abdelhadi's call key -> 2. Mohamed's contract key -> 3. Agency master -> 4. Default
+    ordered = [callsKey, contractsKey, agencyKey, defaultKey];
   } else if (purpose === 'contracts') {
-    // 1. Mohamed's contract key -> 2. Agency master -> 3. Default fallback -> 4. Calls key
-    ordered = [contractsKey, agencyKey, defaultKey, callsKey];
+    // 1. Mohamed's contract key -> 2. Abdelhadi's call key -> 3. Agency master -> 4. Default
+    ordered = [contractsKey, callsKey, agencyKey, defaultKey];
   } else {
-    // General: Agency master -> Default -> Calls -> Contracts
-    ordered = [agencyKey, defaultKey, callsKey, contractsKey];
+    // General: Contracts -> Calls -> Agency -> Default
+    ordered = [contractsKey, callsKey, agencyKey, defaultKey];
   }
 
   // Filter out falsy/empty keys and deduplicate
@@ -105,7 +105,7 @@ export async function callGeminiResilient(options: CallGeminiOptions): Promise<C
     throw new Error('Aucune clé GEMINI_API_KEY configurée dans l\'environnement.');
   }
 
-  const preferred = options.preferredModel || 'gemini-3.8-flash';
+  const preferred = options.preferredModel || 'gemini-flash-lite-latest';
   const modelQueue = [
     preferred,
     ...FALLBACK_CASCADE.filter((m) => m !== preferred),

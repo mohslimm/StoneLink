@@ -345,7 +345,7 @@ function AIEnginePanel() {
   const selectedModelInfo = SUPPORTED_GEMINI_MODELS.find(m => m.id === geminiModel) || SUPPORTED_GEMINI_MODELS[0];
 
   const handleTestGemini = async (modelToTest?: string) => {
-    const target = modelToTest || geminiModel || 'gemini-3.8-flash';
+    const target = modelToTest || geminiModel || 'gemini-flash-latest';
     setTestingAi(true);
     setTestResult(null);
     try {
@@ -479,7 +479,7 @@ function AIEnginePanel() {
         </label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {SUPPORTED_GEMINI_MODELS.map((model) => {
-            const isCur = (geminiModel || 'gemini-3.8-flash') === model.id;
+            const isCur = (geminiModel || 'gemini-flash-latest') === model.id;
             return (
               <button
                 key={model.id}
@@ -525,15 +525,15 @@ function AIEnginePanel() {
         </p>
         <div className="flex items-center gap-2 text-[11px] font-mono flex-wrap pt-1">
           <span className="px-2.5 py-1 rounded-[6px] bg-[rgba(197,160,89,0.15)] text-[#c5a059] border border-[rgba(197,160,89,0.3)]">
-            1. {geminiModel || 'Gemini 3.8 Flash'}
+            1. {geminiModel || 'Gemini Flash (Production)'}
           </span>
           <ArrowRight size={12} className="text-[rgba(232,228,220,0.4)]" />
           <span className="px-2.5 py-1 rounded-[6px] bg-[rgba(96,165,250,0.12)] text-[#60a5fa] border border-[rgba(96,165,250,0.25)]">
-            2. Gemini 3.7 Flash (Repli)
+            2. Gemini Flash Lite (Secours)
           </span>
           <ArrowRight size={12} className="text-[rgba(232,228,220,0.4)]" />
           <span className="px-2.5 py-1 rounded-[6px] bg-[rgba(168,85,247,0.12)] text-[#c084fc] border border-[rgba(168,85,247,0.25)]">
-            3. Gemini 3.6 Flash
+            3. Gemini 2.5 Flash
           </span>
           <ArrowRight size={12} className="text-[rgba(232,228,220,0.4)]" />
           <span className="px-2.5 py-1 rounded-[6px] bg-[rgba(255,255,255,0.06)] text-[rgba(232,228,220,0.7)] border border-[rgba(255,255,255,0.1)]">

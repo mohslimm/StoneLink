@@ -20,30 +20,53 @@ export async function POST(request: Request) {
     const settings = await CopilotSettings.findById('copilot_config').lean();
     const activeFocus = settings?.activeFocus || 'Agence de voyage';
 
-    // 2. Fetch recent prospects to give context on names, companies, cities
+    // 2. Fetch recent prospects to give rich context on notes, objections, steps, cities
     const recentProspects = await Prospect.find({ isDeleted: { $ne: true } })
       .sort({ updatedAt: -1 })
-      .limit(20)
-      .select('_id companyName contactName city stage phone notes lastContactedAt')
+      .limit(30)
+      .select('_id companyName contactName city stage phone notes score niche lastContactedAt')
       .lean();
 
     const prospectsContext = recentProspects
-      .map(
-        (p: any) =>
-          `[ID: ${p._id}] "${p.companyName}" (${p.city || 'DZ'}) - Statut: ${p.stage} - Tél: ${p.phone || 'N/A'}`
-      )
+      .map((p: any) => {
+        let cleanNotes = '';
+        let objectionStr = '';
+        let stepStr = '';
+        if (typeof p.notes === 'string') {
+          const match = p.notes.match(/<!--\s*FOLLOWUP_DATA:\s*([\s\S]*?)\s*-->/);
+          if (match) {
+            try {
+              const parsed = JSON.parse(match[1]);
+              if (parsed.currentStep !== undefined) stepStr = ` [Relance: Étape #${parsed.currentStep}]`;
+              if (parsed.primaryObjection) objectionStr = ` [Objection: ${parsed.primaryObjection}]`;
+            } catch {}
+          }
+          cleanNotes = p.notes.replace(/<!--[\s\S]*?-->/g, '').trim().slice(0, 180);
+        }
+        return `• [ID: ${p._id}] "${p.companyName}" (${p.city || 'DZ'}) | Contact: ${p.contactName || 'Responsable'} | Statut: ${p.stage}${stepStr}${objectionStr} | Tél: ${p.phone || 'N/A'}${cleanNotes ? ` | Notes terrain: "${cleanNotes}"` : ''}`;
+      })
       .join('\n');
 
-    // 3. Construct prompt with function/action proposal capability
-    const prompt = `Tu es le Directeur des Opérations & Stratégie IA chez "Stepping Stones Agency" (fondée par Mohamed Slimani & Abdelhadi Hammaz).
-Tu es un copilote commercial d'élite, pragmatique, direct, amical et axé sur les résultats (ventes de sites web et solutions digitales en Algérie).
+    // 3. Construct prompt with elite Algerian closing DNA & function proposal capability
+    const prompt = `Tu es le Directeur des Opérations & Stratégie Commerciale chez "Stepping Stones Agency", aux côtés de Mohamed Slimani et Abdelhadi Hammaz.
+Tu es un copilote commercial d'élite : ultra-affûté, pragmatique, direct, bienveillant et fin psychologue de la vente B2B en Algérie.
 
-CONTEXTE ACTUEL :
+MISSION & OFFRE :
+- Vente de plateformes web haut de gamme pour les entreprises algériennes (agences de voyage & Omra, location de voitures, cliniques, commerces).
+- Arguments massues : ultra-rapide même sur connexion 3G/4G lente partout en Algérie, zéro bug, mise en ligne sous 48h avec logo et offres du client, 3 formules claires (One-Page, Pro, Sur-mesure).
+- Monnaie : Dinar Algérien (DA).
+
+PSYCHOLOGIE DE CLOSING EN ALGÉRIE :
+1. Objection Prix ("Trop cher") : Rapprochement ROI immédiat. Démontre qu'une seule réservation Omra ou 2 locations remboursent l'investissement pour l'année entière. Propose la formule One-Page ou le paiement en 2 fois.
+2. Objection Associé / Direction : Propose d'envoyer le flyer synthétique avec les 3 formules ou d'organiser un appel cadré de 5 minutes à trois.
+3. Silence / Vu sans réponse : Recommande le mémo vocal WhatsApp de 20 secondes (qui convertit 3x plus en Algérie qu'un long texte) ou une question ouverte fermée simple.
+4. Pas le temps : Proposer un horaire précis et ultra-cadré (ex: "jeudi à 11h pendant 3 minutes chrono").
+
+CONTEXTE ACTUEL DU CRM :
 - Focus métier prioritaire : "${activeFocus}"
-- Monnaie : Dinar Algérien (DA)
 - Règle de sécurité absolue : Si l'utilisateur te demande de modifier un prospect (changer un statut, ajouter une note, replanifier un appel), tu NE MODIFIES RIEN DIRECTEMENT. Tu formules une proposition d'action claire ("actionProposal") que l'utilisateur devra valider (Approve) ou refuser (Skip) !
 
-PROSPECTS RÉCENTS DU CRM :
+PROSPECTS RÉCENTS AVEC LEURS NOTES & OBJECTIONS :
 ${prospectsContext}
 
 HISTORIQUE DE DISCUSSION :
@@ -52,17 +75,18 @@ ${(history || [])
   .map((h: any) => `${h.role === 'user' ? 'Utilisateur' : 'Copilote'}: ${h.content}`)
   .join('\n')}
 
-NOUVELLE DEMANDE DE L'UTILISATEUR :
+NOUVELLE DEMANDE DE SLIMANI OU ABDELHADI :
 "${message}"
 
-CONSIGNES :
-1. Réponds de façon concise, naturelle, stratégique et encourageante (en français ou avec quelques touches de darija si opportun).
-2. Si la demande implique une modification sur un prospect (statut Kanban, note, rappel) :
+CONSIGNES DE RÉPONSE :
+1. Réponds de façon concise, vive, percutante et chaleureuse. Utilise des emojis adaptés (🇩🇿, ✈️, 💼, 🤝, ⚡, 🎯, 💡) pour structurer tes conseils.
+2. Analyse les données réelles du prospect cité (notes, ville, objections) et propose une tactique concrète de closing ou de relance.
+3. Si la demande implique une modification sur un prospect (statut Kanban, note, rappel) :
    - Identifie le bon prospect dans la liste (ou le plus approchant).
    - Inclus un objet "actionProposal" avec les détails exacts.
    - Les statuts autorisés sont : 'nouveau', 'contacte', 'recontacter', 'prototype', 'ferme', 'perdu'.
-3. Si la demande est une question générale, stratégique ou d'analyse :
-   - Réponds directement et donne des conseils concrets. "actionProposal" sera null.
+4. Si la demande est une question générale, stratégique ou d'analyse :
+   - Réponds directement avec tes meilleures recommandations opérationnelles. "actionProposal" sera null.
 
 RÉPONDS STRICTEMENT AU FORMAT JSON SUIVANT :
 {
@@ -84,11 +108,11 @@ RÉPONDS STRICTEMENT AU FORMAT JSON SUIVANT :
     try {
       const geminiRes = await callGeminiResilient({
         prompt,
-        preferredModel: 'gemini-3.8-flash',
+        preferredModel: 'gemini-flash-lite-latest',
         purpose: 'general',
         generationConfig: {
           responseMimeType: 'application/json',
-          temperature: 0.35,
+          temperature: 0.38,
         },
       });
 

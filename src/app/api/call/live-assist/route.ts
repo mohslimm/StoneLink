@@ -101,7 +101,7 @@ Réponds UNIQUEMENT sous forme d'un objet JSON strict :
 
     const geminiRes = await callGeminiResilient({
       prompt,
-      preferredModel: 'gemini-3.8-flash',
+      preferredModel: 'gemini-flash-latest',
       purpose: 'calls',
       generationConfig: {
         responseMimeType: 'application/json',

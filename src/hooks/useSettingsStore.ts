@@ -37,7 +37,7 @@ export const useSettingsStore = create<SettingsState>()(
       telegramWebhook: '',
       notifyOnScan: true,
       notifyOnPriorityLead: true,
-      geminiModel: 'gemini-3.8-flash',
+      geminiModel: 'gemini-flash-latest',
       squareUsdRate: 250,
       squareEurRate: 270,
       customSalesPrompt: '',

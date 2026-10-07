@@ -223,11 +223,19 @@ export const AI_TONE_OPTIONS: AiToneOption[] = [
   },
 ];
 
+export interface FollowUpAiContext {
+  step?: number;
+  reaction?: string;
+  verbatim?: string;
+  language?: 'fr' | 'darija';
+}
+
 export async function generateWhatsAppAiMessage(
   prospect: any,
   tone: string = 'ultra_persuasive',
   customInstructions?: string,
-  prototype?: { name?: string; prototypeUrl?: string; flyerUrl?: string; description?: string; sector?: string }
+  prototype?: { name?: string; prototypeUrl?: string; flyerUrl?: string; description?: string; sector?: string },
+  followUpContext?: FollowUpAiContext
 ): Promise<string> {
   try {
     const res = await fetch('/api/ai/whatsapp', {
@@ -235,13 +243,17 @@ export async function generateWhatsAppAiMessage(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         prospect,
-        tone,
+        tone: followUpContext?.language === 'darija' ? 'darija_pro' : tone,
         customInstructions,
         targetSector: prototype?.sector,
         prototypeName: prototype?.name,
         prototypeUrl: prototype?.prototypeUrl,
         flyerUrl: prototype?.flyerUrl,
         prototypeDescription: prototype?.description,
+        step: followUpContext?.step,
+        reaction: followUpContext?.reaction,
+        verbatim: followUpContext?.verbatim,
+        language: followUpContext?.language,
       }),
     });
 
@@ -262,52 +274,34 @@ export async function generateWhatsAppAiMessage(
   const activeProtoUrl = prototype?.prototypeUrl || 'https://parfait-voyage.vercel.app/';
   const activeFlyerUrl = prototype?.flyerUrl || 'https://flyer-parfait-voyage.vercel.app/';
 
+  if (followUpContext?.step === 1) {
+    if (followUpContext?.language === 'darija') {
+      return `Salam alaykoum${contact} ! 🇩🇿✈️\n\nان شاء الله راك مليح خويا. راني نتواصل معاك بخصوص لو سيت بروتوتيب لي وجدناه لوكالة ${comp}${city} :\n👉 ${activeProtoUrl}\n\nاسكو شفتو ولا مازال ما قعدتش ؟ واش رايك فيه ؟ 🤝\n\nرانا هنا باش نساعدوكم ونحطوه باسمكم في 48 ساعة ان شاء الله ✨`;
+    }
+    return `Salam alaykoum${contact} ! 🇩🇿✈️\n\nJ'espère que vous allez très bien. Je reviens vers vous suite à l'envoi de la démo de la plateforme pour ${comp}${city} :\n👉 ${activeProtoUrl}\n\nAvez-vous eu l'occasion d'y jeter un coup d'œil sur smartphone ? Qu'en avez-vous pensé pour vos clients ? 🤝✨`;
+  }
+
+  if (followUpContext?.step === 2) {
+    if (followUpContext?.reaction === 'price') {
+      return `Salam alaykoum${contact} ! 🇩🇿💼\n\nConcernant votre réflexion pour ${comp}, sachez qu'une seule réservation supplémentaire grâce à la plateforme rembourse déjà la totalité du site pour l'année.\n\nNous avons également la formule One-Page très accessible (ou un règlement échelonné) :\n👉 ${activeFlyerUrl}\n\nSeriez-vous partant pour un court échange de 3 minutes demain afin de trouver la solution adaptée à votre budget ? 🤝✨`;
+    }
+    return `Salam alaykoum${contact} ! 🇩🇿🤝\n\nJe fais un court suivi concernant la personnalisation de la plateforme pour ${comp}${city}.\n\nComme la saison approche, nous finalisons actuellement les agences partenaires de votre zone avec l'offre de lancement :\n👉 ${activeFlyerUrl}\n\nSeriez-vous disponible pour un appel express de 5 minutes demain afin de valider si cela correspond à vos objectifs ? 🤝📞`;
+  }
+
+  if (followUpContext?.step === 3) {
+    return `Salam alaykoum${contact} ! 🇩🇿✨\n\nDernier message de ma part pour ne pas vous encombrer. Si vous souhaitez qu'on déploie votre site sous 48h avec vos offres et vos coordonnées pour ${comp}, dites-le-moi simplement d'ici demain soir.\n\nSinon, aucun problème du tout, je garde précieusement votre contact pour vos projets futurs ! Excellente réussite à vous 🌍🤝`;
+  }
+
   if (tone === 'short_punchy') {
-    return `Salam alaykoum${contact},
-
-Ravi de notre échange pour ${comp}${city} !
-
-Voici le prototype ultra-rapide conçu spécialement pour votre activité :
-👉 ${activeProtoUrl}
-
-100 % accessible même avec une faible connexion 3G/4G. Vos clients réservent sans bug.
-
-Consultez nos 3 formules ici :
-👉 ${activeFlyerUrl}
-
-Dites-moi quand vous avez 2 minutes pour en discuter ✈️🌍`;
+    return `Salam alaykoum${contact} ! 🇩🇿⚡\n\nRavi de notre échange pour ${comp}${city} !\n\nVoici le prototype ultra-rapide conçu spécialement pour votre activité :\n👉 ${activeProtoUrl}\n\n100 % accessible même avec une faible connexion 3G/4G. Vos clients réservent sans bug.\n\nConsultez nos 3 formules ici :\n👉 ${activeFlyerUrl}\n\nDites-moi quand vous avez 2 minutes pour en discuter ✈️🌍`;
   }
 
   if (tone === 'relational') {
-    return `Salam alaykoum${contact},
-
-Un grand merci pour la qualité de notre échange téléphonique concernant ${comp} !
-
-Comme promis, voici l'accès direct au prototype spécialement pensé pour votre agence :
-👉 https://parfait-voyage.vercel.app/
-
-En 48h, toute la plateforme passe à vos couleurs (logo, offres Omra, séjours été, contacts).
-
-Détail des 3 formules :
-👉 https://flyer-parfait-voyage.vercel.app/
-
-Je reste disponible si vous avez la moindre question 🤝✨`;
+    return `Salam alaykoum${contact} ! 🇩🇿🤝\n\nUn grand merci pour la qualité de notre échange téléphonique concernant ${comp} !\n\nComme promis, voici l'accès direct au prototype spécialement pensé pour votre agence :\n👉 ${activeProtoUrl}\n\nEn 48h, toute la plateforme passe à vos couleurs (logo, offres Omra, séjours été, contacts).\n\nDétail des 3 formules :\n👉 ${activeFlyerUrl}\n\nJe reste disponible si vous avez la moindre question 🤝✨`;
   }
 
   if (tone === 'darija_pro') {
-    return `Salam alaykoum${contact},
-
-يعطيكم الصحة على المكالمة بخصوص وكالة ${comp}${city} !
-
-هاوليك لو سيت بروتوتيب لي خدمناه سبيسيالمون لوكالات السياحة والأسفار :
-👉 https://parfait-voyage.vercel.app/
-
-خفيف بزاف ويفتح بسرعة حتى بالكونيكسيون الضعيفة في الجنوب ولا في أي ولاية.
-
-وهنا تلقاو تفاصيل العروض والأسعار (One-Page، Agence Pro، Sur-mesure) :
-👉 https://flyer-parfait-voyage.vercel.app/
-
-شوفوه وقولولي واش رايكم ✈️🇩🇿`;
+    return `Salam alaykoum${contact} ! 🇩🇿✈️\n\nيعطيكم الصحة على المكالمة بخصوص وكالة ${comp}${city} !\n\nهاوليك لو سيت بروتوتيب لي خدمناه سبيسيالمون لوكالات السياحة والأسفار :\n👉 ${activeProtoUrl}\n\nخفيف بزاف ويفتح بسرعة حتى بالكونيكسيون الضعيفة في الجنوب ولا في أي ولاية.\n\nوهنا تلقاو تفاصيل العروض والأسعار (One-Page، Agence Pro، Sur-mesure) :\n👉 ${activeFlyerUrl}\n\nشوفوه وقولولي واش رايكم ✈️🇩🇿`;
   }
 
   return TRAVEL_AGENCY_PROTOTYPE_MESSAGE;
