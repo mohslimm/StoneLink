@@ -21,14 +21,13 @@ import {
   FOLLOW_UP_SCRIPTS
 } from '@/lib/followup';
 import { openWhatsAppDirect } from '@/lib/whatsapp';
-import { NeuralSynapseCanvas } from '@/components/crm/prototypes/NeuralSynapseCanvas';
 import { NeuralConstellationCanvas } from '@/components/crm/prototypes/NeuralConstellationCanvas';
 import { NeuralScribeDrawer } from '@/components/crm/prototypes/NeuralScribeDrawer';
 import { StrategyDiagnosticPanel } from '@/components/crm/prototypes/StrategyDiagnosticPanel';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 
-type TabView = 'constellation' | 'synapse' | 'diagnostic';
+type TabView = 'constellation' | 'diagnostic';
 
 export default function PrototypesLabPage() {
   const { prospects, loading, fetchProspects, updateNotes, updateStage } = useProspectsStore();
@@ -138,25 +137,10 @@ export default function PrototypesLabPage() {
                     ? "bg-[#c5a059] text-[#0a0a12] font-semibold shadow-sm"
                     : "text-[rgba(232,228,220,0.6)] hover:text-[#e8e4dc]"
                 )}
-                title="Option B : Vue Constellation Neurale Spatiale"
+                title="Constellation Neurale des Prototypes"
               >
                 <Sparkles size={14} />
-                <span>Constellation (Option B)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('synapse')}
-                className={cn(
-                  "px-3 py-1.5 rounded-[7px] text-[12px] font-body font-medium flex items-center gap-1.5 transition-all cursor-pointer",
-                  activeTab === 'synapse'
-                    ? "bg-[#c5a059] text-[#0a0a12] font-semibold shadow-sm"
-                    : "text-[rgba(232,228,220,0.6)] hover:text-[#e8e4dc]"
-                )}
-                title="Option A : Vue Flot Synaptique Horizontal"
-              >
-                <Brain size={14} />
-                <span>Flot Synaptique (Option A)</span>
+                <span>Constellation Neurale</span>
               </button>
 
               <button
@@ -208,7 +192,7 @@ export default function PrototypesLabPage() {
           </div>
         ) : (
           <div>
-            {/* View 1 : Neural Constellation Canvas (Option B) */}
+            {/* View 1 : Neural Constellation Canvas */}
             {activeTab === 'constellation' && (
               <NeuralConstellationCanvas
                 prospects={prototypeLeads}
@@ -218,17 +202,7 @@ export default function PrototypesLabPage() {
               />
             )}
 
-            {/* View 2 : Neural Synapse Canvas (Option A) */}
-            {activeTab === 'synapse' && (
-              <NeuralSynapseCanvas
-                prospects={prototypeLeads}
-                selectedProspect={selectedProspect}
-                onSelectProspect={(p) => setSelectedProspect(p)}
-                onQuickWhatsApp={handleQuickWhatsApp}
-              />
-            )}
-
-            {/* View 3 : Strategy Diagnosis */}
+            {/* View 2 : Strategy Diagnosis */}
             {activeTab === 'diagnostic' && (
               <StrategyDiagnosticPanel prospects={prototypeLeads} />
             )}
