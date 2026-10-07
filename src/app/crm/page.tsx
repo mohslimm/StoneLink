@@ -535,12 +535,29 @@ function KanbanColumn({
         className="flex items-center justify-between pb-3 mb-3"
         style={{ borderBottom: `2px solid ${STAGE_COLORS[stage]}` }}
       >
-        <div className="flex items-center gap-2">
-          <h3 className="text-[16px] font-body font-semibold text-[#e8e4dc]">{STAGE_LABELS[stage]}</h3>
-          <span className="text-[11px] font-body font-medium px-2 py-0.5 rounded-full bg-[#11111a] text-[rgba(232,228,220,0.55)]">
-            {stageProspects.length}
-          </span>
-        </div>
+        {stage === 'prototype' ? (
+          <Link
+            href="/crm/prototypes"
+            className="flex items-center gap-2 group transition-all"
+            title="Ouvrir le Laboratoire de Suivi & Réseau Neuronal des Prototypes"
+          >
+            <h3 className="text-[16px] font-body font-semibold text-[#c5a059] group-hover:text-[#e8e4dc] transition-colors flex items-center gap-1.5">
+              <span>{STAGE_LABELS[stage]}</span>
+              <span className="text-[12px]">🧠</span>
+            </h3>
+            <span className="text-[11px] font-body font-medium px-2 py-0.5 rounded-full bg-[rgba(168,85,247,0.18)] text-[#c084fc] border border-[rgba(168,85,247,0.35)] shadow-[0_0_12px_rgba(168,85,247,0.25)] flex items-center gap-1 group-hover:border-[#c5a059]/60 transition-all">
+              <span>{stageProspects.length}</span>
+              <span className="text-[9px] font-mono uppercase text-[#c5a059]">Lab ➔</span>
+            </span>
+          </Link>
+        ) : (
+          <div className="flex items-center gap-2">
+            <h3 className="text-[16px] font-body font-semibold text-[#e8e4dc]">{STAGE_LABELS[stage]}</h3>
+            <span className="text-[11px] font-body font-medium px-2 py-0.5 rounded-full bg-[#11111a] text-[rgba(232,228,220,0.55)]">
+              {stageProspects.length}
+            </span>
+          </div>
+        )}
         <button
           onClick={onAddClick}
           title="Ajouter un prospect"
@@ -795,15 +812,33 @@ function PipelineStats({ prospects }: { prospects: Prospect[] }) {
 
   return (
     <div className="flex gap-3 px-6 pb-5 overflow-x-auto">
-      {stats.map((s) => (
-        <GlassPanel key={s.stage} className="px-4 py-2.5 flex items-center gap-2.5 flex-shrink-0">
-          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
-          <span className="text-[11px] font-body font-medium uppercase tracking-[0.06em] text-[rgba(232,228,220,0.55)]">
-            {STAGE_LABELS[s.stage]}
-          </span>
-          <span className="text-[15px] font-body font-semibold text-[#e8e4dc]">{s.count}</span>
-        </GlassPanel>
-      ))}
+      {stats.map((s) => {
+        const isProto = s.stage === 'prototype';
+        const panel = (
+          <GlassPanel
+            className={cn(
+              "px-4 py-2.5 flex items-center gap-2.5 flex-shrink-0 transition-all",
+              isProto && "hover:border-[#c5a059]/60 hover:bg-[#1a1628]/90 cursor-pointer shadow-[0_0_16px_rgba(168,85,247,0.15)] group"
+            )}
+          >
+            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
+            <span className="text-[11px] font-body font-medium uppercase tracking-[0.06em] text-[rgba(232,228,220,0.55)] flex items-center gap-1 group-hover:text-[#c5a059] transition-colors">
+              <span>{STAGE_LABELS[s.stage]}</span>
+              {isProto && <span className="text-[10px]">🧠</span>}
+            </span>
+            <span className="text-[15px] font-body font-semibold text-[#e8e4dc]">{s.count}</span>
+          </GlassPanel>
+        );
+
+        if (isProto) {
+          return (
+            <Link key={s.stage} href="/crm/prototypes" title="Ouvrir le Laboratoire de Suivi & Réseau Neuronal des Prototypes">
+              {panel}
+            </Link>
+          );
+        }
+        return <React.Fragment key={s.stage}>{panel}</React.Fragment>;
+      })}
     </div>
   );
 }
