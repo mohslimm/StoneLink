@@ -6,7 +6,7 @@ import {
   X, Phone, Globe, Mail, Send, Save, CheckCircle2, 
   Sparkles, AlertCircle, Clock, Check, ChevronRight,
   MessageSquare, User, Building, MapPin, Zap, ArrowRight,
-  RotateCcw, ThumbsUp, ThumbsDown, Wand2, Loader2
+  RotateCcw, ThumbsUp, ThumbsDown, Wand2, Loader2, Copy
 } from 'lucide-react';
 import type { Prospect, PipelineStage } from '@/types';
 import { 
@@ -47,6 +47,7 @@ export function NeuralScribeDrawer({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [editableScript, setEditableScript] = useState<string>('');
   const [isGeneratingAi, setIsGeneratingAi] = useState<boolean>(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   // Sync state whenever prospect prop changes
   useEffect(() => {
@@ -93,8 +94,27 @@ export function NeuralScribeDrawer({
   const currentMeta = STEP_NAMES[followUpData.currentStep];
   const reactionMeta = selectedReaction ? REACTION_CONFIG[selectedReaction] : null;
 
+  const handleCopyMessage = async () => {
+    try {
+      await navigator.clipboard.writeText(editableScript);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.warn('Failed to copy message:', err);
+    }
+  };
+
   const handleSendWhatsApp = () => {
+    setSelectedChannel('whatsapp');
     openWhatsAppDirect(prospect.phone, editableScript);
+  };
+
+  const handleSendEmail = () => {
+    setSelectedChannel('email');
+    const recipient = prospect.email ? prospect.email.trim() : '';
+    const subject = encodeURIComponent(`Proposition & Prototype Plateforme Web — ${prospect.company}`);
+    const body = encodeURIComponent(editableScript);
+    window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
   };
 
   const handleGenerateWithAi = async () => {
@@ -127,11 +147,31 @@ export function NeuralScribeDrawer({
     }
   };
 
-  const handleStepChange = (newStep: FollowUpStep) => {
-    setFollowUpData((prev) => ({
-      ...prev,
+  const handleStepChange = async (newStep: FollowUpStep) => {
+    if (newStep === followUpData.currentStep || isSaving) return;
+
+    const previousData = { ...followUpData };
+    const updatedData: LeadFollowUpData = {
+      ...followUpData,
       currentStep: newStep,
-    }));
+      lastActionAt: new Date().toISOString(),
+    };
+    setFollowUpData(updatedData);
+
+    const baseText = extractCleanNoteText(prospect.notes);
+    const serialized = serializeLeadNotes(baseText, updatedData);
+
+    setIsSaving(true);
+    try {
+      await onSaveFollowUp(prospect.id, serialized);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2500);
+    } catch (err) {
+      console.error('Échec de la mise à jour de l\'étape:', err);
+      setFollowUpData(previousData);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSaveAndAdvance = async (advance: boolean = false) => {
@@ -174,6 +214,8 @@ export function NeuralScribeDrawer({
       setFollowUpData(updatedData);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2500);
+    } catch (err) {
+      console.error('Échec de l\'enregistrement des notes:', err);
     } finally {
       setIsSaving(false);
     }
@@ -276,9 +318,11 @@ export function NeuralScribeDrawer({
                     <button
                       key={step}
                       type="button"
+                      disabled={isSaving}
                       onClick={() => handleStepChange(step)}
                       className={cn(
                         "p-2 rounded-[8px] text-left transition-all border cursor-pointer relative",
+                        isSaving && "opacity-60 cursor-not-allowed",
                         isActive
                           ? "bg-[rgba(197,160,89,0.18)] border-[#c5a059] text-[#e8e4dc] shadow-[0_0_12px_rgba(197,160,89,0.2)]"
                           : isDone
@@ -407,29 +451,60 @@ export function NeuralScribeDrawer({
               </div>
 
               {/* Editable Message Textarea */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-[10.5px] font-body text-[rgba(232,228,220,0.45)] px-0.5">
-                  <span>Message prêt avec emojis (modifiable à volonté) :</span>
-                  <span>{editableScript.length} caractères</span>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] font-body text-[rgba(232,228,220,0.55)] px-0.5">
+                  <span>Message prêt (modifiable à volonté) :</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] text-[rgba(232,228,220,0.4)]">
+                      {editableScript.length} car.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCopyMessage}
+                      className={cn(
+                        "px-2.5 py-0.5 rounded-[5px] text-[10.5px] font-body font-medium flex items-center gap-1.5 transition-all cursor-pointer border shadow-sm",
+                        isCopied
+                          ? "bg-[rgba(74,222,128,0.2)] border-[#4ade80] text-[#4ade80]"
+                          : "bg-[#181828] border-[rgba(255,255,255,0.1)] text-[rgba(232,228,220,0.7)] hover:text-[#e8e4dc] hover:border-[#c5a059]"
+                      )}
+                      title="Copier le message complet dans le presse-papier"
+                    >
+                      {isCopied ? <Check size={11} className="text-[#4ade80]" /> : <Copy size={11} />}
+                      <span>{isCopied ? 'Copié !' : 'Copier'}</span>
+                    </button>
+                  </div>
                 </div>
                 <textarea
                   value={editableScript}
                   onChange={(e) => setEditableScript(e.target.value)}
                   rows={6}
-                  placeholder="Génération du message WhatsApp..."
+                  placeholder="Génération du message..."
                   className="w-full p-3 rounded-[8px] bg-[#0a0a12] border border-[rgba(255,255,255,0.08)] focus:border-[#c5a059] text-[12px] font-body text-[#e8e4dc] leading-relaxed resize-y focus:outline-none transition-colors custom-scrollbar"
                 />
               </div>
 
-              {/* WhatsApp Launch Button */}
-              <button
-                type="button"
-                onClick={handleSendWhatsApp}
-                className="w-full h-10 rounded-[10px] bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white font-body font-semibold text-[13px] flex items-center justify-center gap-2 shadow-[0_2px_14px_rgba(34,197,94,0.3)] transition-all cursor-pointer"
-              >
-                <Send size={15} />
-                <span>Ouvrir WhatsApp Web / Mobile avec ce message</span>
-              </button>
+              {/* Outreach Dispatch Buttons: WhatsApp & Email */}
+              <div className="grid grid-cols-2 gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={handleSendWhatsApp}
+                  className="h-10 px-3 rounded-[10px] bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white font-body font-semibold text-[12px] flex items-center justify-center gap-1.5 shadow-[0_2px_14px_rgba(34,197,94,0.3)] transition-all cursor-pointer truncate"
+                  title="Ouvrir WhatsApp Web ou Mobile avec le numéro et le message"
+                >
+                  <Send size={14} className="shrink-0" />
+                  <span className="truncate">Ouvrir WhatsApp</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSendEmail}
+                  className="h-10 px-3 rounded-[10px] bg-gradient-to-r from-[#2563eb] to-[#1d4ed8] hover:from-[#1d4ed8] hover:to-[#1e40af] text-white font-body font-semibold text-[12px] flex items-center justify-center gap-1.5 shadow-[0_2px_14px_rgba(37,99,235,0.3)] transition-all cursor-pointer truncate"
+                  title={prospect.email ? `Envoyer par email à ${prospect.email}` : "Ouvrir votre messagerie avec le message et le prototype"}
+                >
+                  <Mail size={14} className="shrink-0" />
+                  <span className="truncate">Envoyer par Email</span>
+                </button>
+              </div>
             </div>
 
             {/* ─── 3. Data Entry : Saisie de la réaction du client ─── */}

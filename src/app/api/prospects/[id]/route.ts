@@ -53,6 +53,12 @@ function updateLocalLead(id: string, body: any) {
         if (body.notes !== undefined) {
           leads[idx].Notes = body.notes;
         }
+        if (body.additionalPhones !== undefined) {
+          leads[idx].additionalPhones = body.additionalPhones;
+        }
+        if (body.additionalEmails !== undefined) {
+          leads[idx].additionalEmails = body.additionalEmails;
+        }
         fs.writeFileSync(allLeadsPath, JSON.stringify(leads, null, 2), 'utf8');
       }
     }
@@ -99,14 +105,12 @@ export async function PATCH(
       { returnDocument: 'after' }
     );
 
-    if (!prospect) {
-      return NextResponse.json({ error: 'Prospect introuvable dans la base' }, { status: 404 });
-    }
-
+    updateLocalLead(id, body);
     console.log(`\x1b[32m[PATCH /api/prospects/${id}] ✅ Mis à jour dans MongoDB Atlas (Cloud) : stage=${body.stage || 'inchangé'}\x1b[0m`);
     emitRealtimeEvent('prospect:updated', { id, ...body });
     return NextResponse.json(prospect);
   } catch (error: any) {
+    updateLocalLead(id, body);
     console.error(`\x1b[31m[PATCH /api/prospects/${id}] ❌ Erreur MongoDB :\x1b[0m`, error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

@@ -52,20 +52,36 @@ export default function PrototypesLabPage() {
 
   // Handle saving follow-up notes & reactions
   const handleSaveFollowUp = async (prospectId: string, updatedNotes: string) => {
-    await updateNotes(prospectId, updatedNotes);
-    addToast({
-      type: 'success',
-      message: 'Données de relance synchronisées avec succès !',
-    });
+    try {
+      await updateNotes(prospectId, updatedNotes);
+      addToast({
+        type: 'success',
+        message: 'Données de relance synchronisées avec succès !',
+      });
+    } catch (err: any) {
+      addToast({
+        type: 'error',
+        message: `Erreur cloud : ${err?.message || 'Échec de synchronisation'}`,
+      });
+      throw err;
+    }
   };
 
   // Handle updating stage (e.g. Won -> ferme, Lost -> perdu)
   const handleUpdateStage = async (prospectId: string, stage: PipelineStage) => {
-    await updateStage(prospectId, stage);
-    addToast({
-      type: 'success',
-      message: stage === 'ferme' ? 'Félicitations ! Prospect marqué comme Gagné 🎉' : 'Prospect archivé',
-    });
+    try {
+      await updateStage(prospectId, stage);
+      addToast({
+        type: 'success',
+        message: stage === 'ferme' ? 'Félicitations ! Prospect marqué comme Gagné 🎉' : 'Prospect archivé',
+      });
+    } catch (err: any) {
+      addToast({
+        type: 'error',
+        message: `Erreur statut : ${err?.message || 'Échec de synchronisation'}`,
+      });
+      throw err;
+    }
   };
 
   // Quick WhatsApp trigger from canvas

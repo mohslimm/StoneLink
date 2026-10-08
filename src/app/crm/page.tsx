@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutGrid, List, Search, Plus, MoreHorizontal, X, Phone, Trash2, Globe, Mail, 
   ShieldAlert, Upload, ChevronDown, ArrowUpDown, Star, Filter, CheckCircle2, RotateCcw,
-  FileText, Save, Check, Send, Sparkles, CheckSquare, Square
+  FileText, Save, Check, Send, Sparkles, CheckSquare, Square, FlaskConical, Copy
 } from 'lucide-react';
 import { GlassPanel } from '@/components/ui/custom/GlassPanel';
 import { AnimatedButton } from '@/components/ui/custom/AnimatedButton';
@@ -16,7 +16,7 @@ import { useUIStore } from '@/hooks/useUIStore';
 import { useProspectsStore } from '@/hooks/useProspectsStore';
 import { mockProspects } from '@/data/prospects';
 import { STAGE_COLORS, STAGE_LABELS, mapBackendProspect } from '@/types';
-import type { PipelineStage, Prospect, CallRecord } from '@/types';
+import type { PipelineStage, Prospect, CallRecord, AdditionalPhone, AdditionalEmail } from '@/types';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
@@ -140,6 +140,8 @@ function DetailDrawer({
   onClose,
   onUpdateStage,
   onUpdateNotes,
+  onUpdateAdditionalPhones,
+  onUpdateAdditionalEmails,
   onDelete,
   onSendWhatsApp,
 }: {
@@ -147,6 +149,8 @@ function DetailDrawer({
   onClose: () => void;
   onUpdateStage: (id: string, stage: PipelineStage) => void;
   onUpdateNotes: (id: string, notes: string) => void;
+  onUpdateAdditionalPhones?: (id: string, additionalPhones: AdditionalPhone[]) => void;
+  onUpdateAdditionalEmails?: (id: string, additionalEmails: AdditionalEmail[]) => void;
   onDelete: (id: string) => void;
   onSendWhatsApp: (p: Prospect) => void;
 }) {
@@ -154,10 +158,88 @@ function DetailDrawer({
   const [activeStage, setActiveStage] = useState<PipelineStage>(prospect.stage);
   const [notes, setNotes] = useState<string>(prospect.notes || '');
 
+  // Téléphones
+  const [additionalPhones, setAdditionalPhones] = useState<AdditionalPhone[]>(prospect.additionalPhones || []);
+  const [isAddingPhone, setIsAddingPhone] = useState(false);
+  const [newPhoneLabel, setNewPhoneLabel] = useState('👑 Propriétaire / Owner');
+  const [newPhoneNumber, setNewPhoneNumber] = useState('');
+
+  // Emails
+  const [additionalEmails, setAdditionalEmails] = useState<AdditionalEmail[]>(prospect.additionalEmails || []);
+  const [isAddingEmail, setIsAddingEmail] = useState(false);
+  const [newEmailLabel, setNewEmailLabel] = useState('👑 Propriétaire / Owner');
+  const [newEmailAddress, setNewEmailAddress] = useState('');
+
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
   useEffect(() => {
     setActiveStage(prospect.stage);
     setNotes(prospect.notes || '');
+    setAdditionalPhones(prospect.additionalPhones || []);
+    setIsAddingPhone(false);
+    setAdditionalEmails(prospect.additionalEmails || []);
+    setIsAddingEmail(false);
   }, [prospect]);
+
+  const handleCopyNumber = (text: string, id: string) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
+  };
+
+  const handleAddAdditionalPhone = () => {
+    if (!newPhoneNumber.trim()) return;
+    const updated: AdditionalPhone[] = [
+      ...additionalPhones,
+      {
+        id: 'phone_' + Date.now(),
+        label: newPhoneLabel.trim() || 'Responsable',
+        phone: newPhoneNumber.trim(),
+      },
+    ];
+    setAdditionalPhones(updated);
+    setNewPhoneNumber('');
+    setIsAddingPhone(false);
+    if (onUpdateAdditionalPhones) {
+      onUpdateAdditionalPhones(prospect.id, updated);
+    }
+  };
+
+  const handleDeleteAdditionalPhone = (index: number) => {
+    const updated = additionalPhones.filter((_, i) => i !== index);
+    setAdditionalPhones(updated);
+    if (onUpdateAdditionalPhones) {
+      onUpdateAdditionalPhones(prospect.id, updated);
+    }
+  };
+
+  const handleAddAdditionalEmail = () => {
+    if (!newEmailAddress.trim()) return;
+    const updated: AdditionalEmail[] = [
+      ...additionalEmails,
+      {
+        id: 'email_' + Date.now(),
+        label: newEmailLabel.trim() || 'Direction',
+        email: newEmailAddress.trim(),
+      },
+    ];
+    setAdditionalEmails(updated);
+    setNewEmailAddress('');
+    setIsAddingEmail(false);
+    if (onUpdateAdditionalEmails) {
+      onUpdateAdditionalEmails(prospect.id, updated);
+    }
+  };
+
+  const handleDeleteAdditionalEmail = (index: number) => {
+    const updated = additionalEmails.filter((_, i) => i !== index);
+    setAdditionalEmails(updated);
+    if (onUpdateAdditionalEmails) {
+      onUpdateAdditionalEmails(prospect.id, updated);
+    }
+  };
 
   const handleStageSelect = (s: PipelineStage) => {
     setActiveStage(s);
@@ -223,20 +305,372 @@ function DetailDrawer({
 
           {/* Contact Info */}
           <div className="p-6 border-b border-[rgba(255,255,255,0.06)]">
-            <h3 className="text-[11px] font-body font-medium uppercase tracking-[0.06em] text-[rgba(232,228,220,0.5)] mb-3">Contact Direct</h3>
+            <h3 className="text-[11px] font-body font-medium uppercase tracking-[0.06em] text-[rgba(232,228,220,0.5)] mb-3">
+              Contact Direct
+            </h3>
+
+            {/* ── Section Téléphones ── */}
             <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10.5px] font-body font-semibold uppercase tracking-[0.06em] text-[rgba(232,228,220,0.55)] flex items-center gap-1.5">
+                  <Phone size={11} className="text-[#c5a059]" />
+                  <span>Téléphones</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsAddingPhone(!isAddingPhone)}
+                  className="px-2 py-0.5 rounded-[6px] text-[10.5px] font-body font-medium bg-[rgba(197,160,89,0.12)] hover:bg-[rgba(197,160,89,0.22)] border border-[rgba(197,160,89,0.3)] text-[#c5a059] flex items-center gap-1 transition-all cursor-pointer"
+                  title="Ajouter un autre numéro (ex: Propriétaire, Gérant, Responsable)"
+                >
+                  <Plus size={11} />
+                  <span>Ajouter un numéro</span>
+                </button>
+              </div>
+
+              {/* Numéro principal (Standard / Agence) */}
               {prospect.phone && (
-                <div className="flex items-center gap-2 text-[13px] font-body text-[#e8e4dc]">
-                  <Phone size={14} className="text-[#c5a059]" />
-                  <span>{prospect.phone}</span>
+                <div className="flex items-center justify-between p-2.5 rounded-[8px] bg-[#11111a] border border-[rgba(255,255,255,0.06)]">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-6 h-6 rounded-full bg-[rgba(197,160,89,0.12)] flex items-center justify-center text-[#c5a059] flex-shrink-0">
+                      <Phone size={12} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[9.5px] font-mono uppercase px-1.5 py-0.2 rounded bg-[rgba(255,255,255,0.06)] text-[rgba(232,228,220,0.6)]">
+                          Standard / Agence
+                        </span>
+                      </div>
+                      <p className="text-[13px] font-body text-[#e8e4dc] font-medium mt-0.5 select-all">
+                        {prospect.phone}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleCopyNumber(prospect.phone, 'main-phone')}
+                      className="w-7 h-7 rounded-[6px] bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.1)] text-[rgba(232,228,220,0.6)] hover:text-[#e8e4dc] flex items-center justify-center transition-colors cursor-pointer"
+                      title="Copier le numéro"
+                    >
+                      {copiedId === 'main-phone' ? <Check size={12} className="text-[#4ade80]" /> : <Copy size={12} />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openWhatsAppDirect(prospect.phone)}
+                      className="w-7 h-7 rounded-[6px] bg-[rgba(34,197,94,0.12)] hover:bg-[rgba(34,197,94,0.22)] text-[#4ade80] flex items-center justify-center transition-colors cursor-pointer"
+                      title="Ouvrir WhatsApp direct"
+                    >
+                      <Send size={12} />
+                    </button>
+                  </div>
                 </div>
               )}
+
+              {/* Numéros additionnels (Propriétaire, Responsable, etc.) */}
+              {additionalPhones.map((ap, idx) => (
+                <div
+                  key={ap.id || idx}
+                  className="flex items-center justify-between p-2.5 rounded-[8px] bg-[rgba(168,85,247,0.07)] border border-[rgba(168,85,247,0.28)] hover:border-[rgba(168,85,247,0.45)] transition-all"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-6 h-6 rounded-full bg-[rgba(168,85,247,0.18)] flex items-center justify-center text-[#c084fc] flex-shrink-0">
+                      <Phone size={12} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-body font-semibold px-2 py-0.2 rounded-full bg-[rgba(168,85,247,0.22)] text-[#f3e8ff] border border-[rgba(168,85,247,0.38)]">
+                          {ap.label || 'Responsable'}
+                        </span>
+                      </div>
+                      <p className="text-[13px] font-body text-[#e8e4dc] font-semibold mt-0.5 select-all">
+                        {ap.phone}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleCopyNumber(ap.phone, `extra-phone-${idx}`)}
+                      className="w-7 h-7 rounded-[6px] bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.1)] text-[rgba(232,228,220,0.6)] hover:text-[#e8e4dc] flex items-center justify-center transition-colors cursor-pointer"
+                      title="Copier le numéro"
+                    >
+                      {copiedId === `extra-phone-${idx}` ? <Check size={12} className="text-[#4ade80]" /> : <Copy size={12} />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openWhatsAppDirect(ap.phone)}
+                      className="w-7 h-7 rounded-[6px] bg-[rgba(34,197,94,0.15)] hover:bg-[rgba(34,197,94,0.25)] text-[#4ade80] flex items-center justify-center transition-colors cursor-pointer"
+                      title={`WhatsApp vers ${ap.label || 'ce numéro'}`}
+                    >
+                      <Send size={12} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteAdditionalPhone(idx)}
+                      className="w-7 h-7 rounded-[6px] bg-[rgba(239,68,68,0.08)] hover:bg-[rgba(239,68,68,0.2)] text-[#f87171] flex items-center justify-center transition-colors cursor-pointer"
+                      title="Supprimer ce numéro"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {/* Formulaire Inline d'Ajout d'un nouveau numéro */}
+              {isAddingPhone && (
+                <div className="p-3 rounded-[8px] bg-[#141422] border border-[rgba(197,160,89,0.35)] space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-body font-semibold text-[#c5a059]">
+                      Nouveau Numéro
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingPhone(false)}
+                      className="text-[rgba(232,228,220,0.5)] hover:text-[#e8e4dc] text-[11px] cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1">
+                    {['👑 Propriétaire / Owner', '👔 Responsable', '🏢 Gérant', '📞 Autre'].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setNewPhoneLabel(preset)}
+                        className={cn(
+                          "px-2 py-0.5 rounded text-[10px] font-body transition-colors cursor-pointer",
+                          newPhoneLabel === preset
+                            ? "bg-[rgba(197,160,89,0.25)] text-[#e8e4dc] border border-[rgba(197,160,89,0.5)]"
+                            : "bg-[rgba(255,255,255,0.04)] text-[rgba(232,228,220,0.6)] hover:bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.06)]"
+                        )}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+
+                  <input
+                    type="text"
+                    value={newPhoneLabel}
+                    onChange={(e) => setNewPhoneLabel(e.target.value)}
+                    placeholder="Titre / Rôle (ex: Owner, Gérant...)"
+                    className="w-full h-8 px-2.5 rounded-[6px] bg-[#0c0c14] border border-[rgba(255,255,255,0.1)] text-[12px] font-body text-[#e8e4dc] placeholder:text-[rgba(232,228,220,0.3)] focus:outline-none focus:border-[#c5a059]"
+                  />
+
+                  <input
+                    type="text"
+                    value={newPhoneNumber}
+                    onChange={(e) => setNewPhoneNumber(e.target.value)}
+                    placeholder="Numéro (ex: 06 61 23 45 67 ou +213...)"
+                    className="w-full h-8 px-2.5 rounded-[6px] bg-[#0c0c14] border border-[rgba(255,255,255,0.1)] text-[12px] font-body text-[#e8e4dc] placeholder:text-[rgba(232,228,220,0.3)] focus:outline-none focus:border-[#c5a059]"
+                    autoFocus
+                  />
+
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingPhone(false)}
+                      className="px-2.5 py-1 rounded-[6px] text-[11px] font-body text-[rgba(232,228,220,0.6)] hover:text-[#e8e4dc] cursor-pointer"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddAdditionalPhone}
+                      className="px-3 py-1 rounded-[6px] text-[11px] font-body font-semibold bg-[#c5a059] hover:bg-[#d4b068] text-[#060610] shadow-[0_2px_8px_rgba(197,160,89,0.3)] cursor-pointer"
+                    >
+                      ✓ Enregistrer
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ── Section Emails ── */}
+            <div className="space-y-2.5 mt-5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10.5px] font-body font-semibold uppercase tracking-[0.06em] text-[rgba(232,228,220,0.55)] flex items-center gap-1.5">
+                  <Mail size={11} className="text-[#60a5fa]" />
+                  <span>Emails</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsAddingEmail(!isAddingEmail)}
+                  className="px-2 py-0.5 rounded-[6px] text-[10.5px] font-body font-medium bg-[rgba(59,130,246,0.12)] hover:bg-[rgba(59,130,246,0.22)] border border-[rgba(59,130,246,0.3)] text-[#60a5fa] flex items-center gap-1 transition-all cursor-pointer"
+                  title="Ajouter une autre adresse email (ex: Propriétaire, Direction, Gérant)"
+                >
+                  <Plus size={11} />
+                  <span>Ajouter un email</span>
+                </button>
+              </div>
+
+              {/* Email principal */}
               {prospect.email && (
-                <div className="flex items-center gap-2 text-[13px] font-body text-[#e8e4dc]">
-                  <Mail size={14} className="text-[#c5a059]" />
-                  <a href={`mailto:${prospect.email}`} className="hover:underline">{prospect.email}</a>
+                <div className="flex items-center justify-between p-2.5 rounded-[8px] bg-[#11111a] border border-[rgba(255,255,255,0.06)]">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-6 h-6 rounded-full bg-[rgba(59,130,246,0.12)] flex items-center justify-center text-[#60a5fa] flex-shrink-0">
+                      <Mail size={12} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[9.5px] font-mono uppercase px-1.5 py-0.2 rounded bg-[rgba(255,255,255,0.06)] text-[rgba(232,228,220,0.6)]">
+                          Standard / Principal
+                        </span>
+                      </div>
+                      <a
+                        href={`mailto:${prospect.email}`}
+                        className="text-[13px] font-body text-[#e8e4dc] font-medium mt-0.5 hover:underline block truncate select-all"
+                      >
+                        {prospect.email}
+                      </a>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleCopyNumber(prospect.email, 'main-email')}
+                      className="w-7 h-7 rounded-[6px] bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.1)] text-[rgba(232,228,220,0.6)] hover:text-[#e8e4dc] flex items-center justify-center transition-colors cursor-pointer"
+                      title="Copier l'email"
+                    >
+                      {copiedId === 'main-email' ? <Check size={12} className="text-[#4ade80]" /> : <Copy size={12} />}
+                    </button>
+                    <a
+                      href={`mailto:${prospect.email}`}
+                      className="w-7 h-7 rounded-[6px] bg-[rgba(59,130,246,0.12)] hover:bg-[rgba(59,130,246,0.22)] text-[#60a5fa] flex items-center justify-center transition-colors"
+                      title="Envoyer un email"
+                    >
+                      <Mail size={12} />
+                    </a>
+                  </div>
                 </div>
               )}
+
+              {/* Emails additionnels (Propriétaire, Responsable, etc.) */}
+              {additionalEmails.map((ae, idx) => (
+                <div
+                  key={ae.id || idx}
+                  className="flex items-center justify-between p-2.5 rounded-[8px] bg-[rgba(59,130,246,0.07)] border border-[rgba(59,130,246,0.28)] hover:border-[rgba(59,130,246,0.45)] transition-all"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-6 h-6 rounded-full bg-[rgba(59,130,246,0.18)] flex items-center justify-center text-[#60a5fa] flex-shrink-0">
+                      <Mail size={12} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-body font-semibold px-2 py-0.2 rounded-full bg-[rgba(59,130,246,0.22)] text-[#bfdbfe] border border-[rgba(59,130,246,0.38)]">
+                          {ae.label || 'Direction'}
+                        </span>
+                      </div>
+                      <a
+                        href={`mailto:${ae.email}`}
+                        className="text-[13px] font-body text-[#e8e4dc] font-semibold mt-0.5 hover:underline block truncate select-all"
+                      >
+                        {ae.email}
+                      </a>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleCopyNumber(ae.email, `extra-email-${idx}`)}
+                      className="w-7 h-7 rounded-[6px] bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.1)] text-[rgba(232,228,220,0.6)] hover:text-[#e8e4dc] flex items-center justify-center transition-colors cursor-pointer"
+                      title="Copier l'email"
+                    >
+                      {copiedId === `extra-email-${idx}` ? <Check size={12} className="text-[#4ade80]" /> : <Copy size={12} />}
+                    </button>
+                    <a
+                      href={`mailto:${ae.email}`}
+                      className="w-7 h-7 rounded-[6px] bg-[rgba(59,130,246,0.15)] hover:bg-[rgba(59,130,246,0.25)] text-[#60a5fa] flex items-center justify-center transition-colors"
+                      title={`Envoyer un email à ${ae.label || 'ce contact'}`}
+                    >
+                      <Mail size={12} />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteAdditionalEmail(idx)}
+                      className="w-7 h-7 rounded-[6px] bg-[rgba(239,68,68,0.08)] hover:bg-[rgba(239,68,68,0.2)] text-[#f87171] flex items-center justify-center transition-colors cursor-pointer"
+                      title="Supprimer cet email"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {/* Formulaire Inline d'Ajout d'un nouvel email */}
+              {isAddingEmail && (
+                <div className="p-3 rounded-[8px] bg-[#141422] border border-[rgba(59,130,246,0.35)] space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-body font-semibold text-[#60a5fa]">
+                      Nouvel Email
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingEmail(false)}
+                      className="text-[rgba(232,228,220,0.5)] hover:text-[#e8e4dc] text-[11px] cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1">
+                    {['👑 Propriétaire / Owner', '👔 Responsable', '🏢 Direction', '✉️ Autre'].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setNewEmailLabel(preset)}
+                        className={cn(
+                          "px-2 py-0.5 rounded text-[10px] font-body transition-colors cursor-pointer",
+                          newEmailLabel === preset
+                            ? "bg-[rgba(59,130,246,0.25)] text-[#e8e4dc] border border-[rgba(59,130,246,0.5)]"
+                            : "bg-[rgba(255,255,255,0.04)] text-[rgba(232,228,220,0.6)] hover:bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.06)]"
+                        )}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+
+                  <input
+                    type="text"
+                    value={newEmailLabel}
+                    onChange={(e) => setNewEmailLabel(e.target.value)}
+                    placeholder="Titre / Rôle (ex: Owner, Direction...)"
+                    className="w-full h-8 px-2.5 rounded-[6px] bg-[#0c0c14] border border-[rgba(255,255,255,0.1)] text-[12px] font-body text-[#e8e4dc] placeholder:text-[rgba(232,228,220,0.3)] focus:outline-none focus:border-[#60a5fa]"
+                  />
+
+                  <input
+                    type="email"
+                    value={newEmailAddress}
+                    onChange={(e) => setNewEmailAddress(e.target.value)}
+                    placeholder="Email (ex: direction@agence.com)"
+                    className="w-full h-8 px-2.5 rounded-[6px] bg-[#0c0c14] border border-[rgba(255,255,255,0.1)] text-[12px] font-body text-[#e8e4dc] placeholder:text-[rgba(232,228,220,0.3)] focus:outline-none focus:border-[#60a5fa]"
+                    autoFocus
+                  />
+
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingEmail(false)}
+                      className="px-2.5 py-1 rounded-[6px] text-[11px] font-body text-[rgba(232,228,220,0.6)] hover:text-[#e8e4dc] cursor-pointer"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddAdditionalEmail}
+                      className="px-3 py-1 rounded-[6px] text-[11px] font-body font-semibold bg-[#3b82f6] hover:bg-[#60a5fa] text-[#ffffff] shadow-[0_2px_8px_rgba(59,130,246,0.3)] cursor-pointer"
+                    >
+                      ✓ Enregistrer
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ── Section Site Web ── */}
+            <div className="mt-5 pt-3 border-t border-[rgba(255,255,255,0.06)]">
               {hasValidWebsite(prospect.url) ? (
                 <div className="flex items-center gap-2 text-[13px] font-body text-[rgba(232,228,220,0.7)]">
                   <Globe size={14} className="text-[#c5a059]" />
@@ -535,29 +969,24 @@ function KanbanColumn({
         className="flex items-center justify-between pb-3 mb-3"
         style={{ borderBottom: `2px solid ${STAGE_COLORS[stage]}` }}
       >
-        {stage === 'prototype' ? (
-          <Link
-            href="/crm/prototypes"
-            className="flex items-center gap-2 group transition-all"
-            title="Ouvrir le Laboratoire de Suivi & Réseau Neuronal des Prototypes"
-          >
-            <h3 className="text-[16px] font-body font-semibold text-[#c5a059] group-hover:text-[#e8e4dc] transition-colors flex items-center gap-1.5">
-              <span>{STAGE_LABELS[stage]}</span>
-              <span className="text-[12px]">🧠</span>
-            </h3>
-            <span className="text-[11px] font-body font-medium px-2 py-0.5 rounded-full bg-[rgba(168,85,247,0.18)] text-[#c084fc] border border-[rgba(168,85,247,0.35)] shadow-[0_0_12px_rgba(168,85,247,0.25)] flex items-center gap-1 group-hover:border-[#c5a059]/60 transition-all">
-              <span>{stageProspects.length}</span>
-              <span className="text-[9px] font-mono uppercase text-[#c5a059]">Lab ➔</span>
-            </span>
-          </Link>
-        ) : (
-          <div className="flex items-center gap-2">
-            <h3 className="text-[16px] font-body font-semibold text-[#e8e4dc]">{STAGE_LABELS[stage]}</h3>
-            <span className="text-[11px] font-body font-medium px-2 py-0.5 rounded-full bg-[#11111a] text-[rgba(232,228,220,0.55)]">
-              {stageProspects.length}
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <h3 className={cn(
+            "text-[16px] font-body font-semibold flex items-center gap-1.5",
+            stage === 'prototype' ? "text-[#c5a059]" : "text-[#e8e4dc]"
+          )}>
+            <span>{STAGE_LABELS[stage]}</span>
+            {stage === 'prototype' && <span className="text-[12px]">🧠</span>}
+          </h3>
+          <span className={cn(
+            "text-[11px] font-body font-medium px-2 py-0.5 rounded-full",
+            stage === 'prototype'
+              ? "bg-[rgba(168,85,247,0.18)] text-[#c084fc] border border-[rgba(168,85,247,0.35)] shadow-[0_0_10px_rgba(168,85,247,0.2)]"
+              : "bg-[#11111a] text-[rgba(232,228,220,0.55)]"
+          )}>
+            {stageProspects.length}
+          </span>
+        </div>
+
         <button
           onClick={onAddClick}
           title="Ajouter un prospect"
@@ -855,6 +1284,8 @@ export default function CRM() {
     updateStage,
     batchUpdateStage,
     updateNotes,
+    updateAdditionalPhones,
+    updateAdditionalEmails,
     deleteProspect,
     addProspect,
     importProspects,
@@ -977,6 +1408,22 @@ export default function CRM() {
       setSelectedProspect((prev) => (prev ? { ...prev, notes } : null));
     }
     addToast({ type: 'success', message: 'Notes enregistrées' });
+  };
+
+  const handleUpdateAdditionalPhones = async (id: string, additionalPhones: AdditionalPhone[]) => {
+    await updateAdditionalPhones(id, additionalPhones);
+    if (selectedProspect && selectedProspect.id === id) {
+      setSelectedProspect((prev) => (prev ? { ...prev, additionalPhones } : null));
+    }
+    addToast({ type: 'success', message: 'Numéros de contact enregistrés' });
+  };
+
+  const handleUpdateAdditionalEmails = async (id: string, additionalEmails: AdditionalEmail[]) => {
+    await updateAdditionalEmails(id, additionalEmails);
+    if (selectedProspect && selectedProspect.id === id) {
+      setSelectedProspect((prev) => (prev ? { ...prev, additionalEmails } : null));
+    }
+    addToast({ type: 'success', message: 'Emails de contact enregistrés' });
   };
 
   const handleDeleteProspect = async (id: string) => {
@@ -1166,6 +1613,11 @@ export default function CRM() {
       });
   }, [prospects, search, nicheFilter, areaFilter, batchFilter, stageFilter, noWebsiteOnly, priorityOnly, sortBy]);
 
+  const prototypeCount = useMemo(
+    () => prospects.filter((p) => p.stage === 'prototype').length,
+    [prospects]
+  );
+
   const hasActiveFilters =
     search !== '' ||
     nicheFilter !== 'all' ||
@@ -1205,15 +1657,16 @@ export default function CRM() {
       )}
 
       {/* Header */}
-      <div className="px-6 pt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="px-6 pt-6 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+        {/* Title, Count & Live Status */}
         <div className="flex items-center gap-3">
-          <h1 className="font-display font-light text-[clamp(32px,4vw,44px)] text-[#e8e4dc] tracking-[-0.01em]">
+          <h1 className="font-display font-light text-[clamp(28px,3.5vw,40px)] text-[#e8e4dc] tracking-[-0.01em]">
             CRM & Pipeline
           </h1>
-          <span className="text-[11px] font-body font-medium px-2.5 py-1 rounded-full bg-[#11111a] text-[rgba(232,228,220,0.6)]">
+          <span className="text-[11px] font-body font-medium px-2.5 py-1 rounded-full bg-[#11111a] border border-[rgba(255,255,255,0.06)] text-[rgba(232,228,220,0.6)]">
             {filteredProspects.length === prospects.length
               ? `${prospects.length} prospects`
-              : `${filteredProspects.length} sur ${prospects.length} prospects`}
+              : `${filteredProspects.length} sur ${prospects.length}`}
           </span>
           {isRealtimeConnected && (
             <span
@@ -1226,109 +1679,146 @@ export default function CRM() {
           )}
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* View toggle */}
-          <div className="flex bg-[#11111a] rounded-full p-[3px]">
-            <button
-              onClick={() => setCrmView('kanban')}
-              className={cn(
-                'relative px-4 py-1.5 rounded-full text-[13px] font-body font-medium flex items-center gap-1.5 cursor-pointer transition-colors',
-                crmView === 'kanban' ? 'text-[#e8e4dc]' : 'text-[rgba(232,228,220,0.55)]'
-              )}
+        {/* Top Actions Organized in 3 Clean Clusters */}
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+          {/* Cluster 1: Views & Neural Lab */}
+          <div className="flex items-center gap-2">
+            {/* View toggle (Kanban / Liste) */}
+            <div className="flex bg-[#11111a] border border-[rgba(255,255,255,0.06)] rounded-full p-[3px]">
+              <button
+                onClick={() => setCrmView('kanban')}
+                className={cn(
+                  'relative px-3.5 py-1.5 rounded-full text-[12px] font-body font-medium flex items-center gap-1.5 cursor-pointer transition-colors',
+                  crmView === 'kanban' ? 'text-[#e8e4dc]' : 'text-[rgba(232,228,220,0.55)]'
+                )}
+              >
+                {crmView === 'kanban' && (
+                  <motion.div
+                    layoutId="crmViewToggle"
+                    className="absolute inset-0 bg-[#181824] rounded-full shadow-glass"
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-1.5">
+                  <LayoutGrid size={13} />
+                  <span>Kanban</span>
+                </span>
+              </button>
+              <button
+                onClick={() => setCrmView('list')}
+                className={cn(
+                  'relative px-3.5 py-1.5 rounded-full text-[12px] font-body font-medium flex items-center gap-1.5 cursor-pointer transition-colors',
+                  crmView === 'list' ? 'text-[#e8e4dc]' : 'text-[rgba(232,228,220,0.55)]'
+                )}
+              >
+                {crmView === 'list' && (
+                  <motion.div
+                    layoutId="crmViewToggle"
+                    className="absolute inset-0 bg-[#181824] rounded-full shadow-glass"
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-1.5">
+                  <List size={13} />
+                  <span>Liste</span>
+                </span>
+              </button>
+            </div>
+
+            {/* Flagship: Laboratoire Prototypes Button */}
+            <Link
+              href="/crm/prototypes"
+              className="h-9 px-3.5 rounded-full bg-gradient-to-r from-[rgba(168,85,247,0.22)] via-[rgba(147,51,234,0.18)] to-[rgba(197,160,89,0.2)] hover:from-[rgba(168,85,247,0.32)] hover:to-[rgba(197,160,89,0.3)] border border-[rgba(168,85,247,0.45)] hover:border-[#c5a059] text-[#e8e4dc] hover:text-[#ffffff] transition-all flex items-center gap-2 text-[12px] font-body font-semibold cursor-pointer shadow-[0_0_18px_rgba(168,85,247,0.25)] group"
+              title="Ouvrir le Laboratoire de Suivi & Réseau Neuronal des Prototypes"
             >
-              {crmView === 'kanban' && (
-                <motion.div
-                  layoutId="crmViewToggle"
-                  className="absolute inset-0 bg-[#181824] rounded-full shadow-glass"
-                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                />
-              )}
-              <span className="relative z-10 flex items-center gap-1.5">
-                <LayoutGrid size={14} />
-                <span className="hidden sm:inline">Kanban</span>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#c084fc] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#a855f7]"></span>
               </span>
+              <FlaskConical size={14} className="text-[#c084fc] group-hover:rotate-12 transition-transform" />
+              <span>Laboratoire Prototypes</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-[rgba(168,85,247,0.35)] text-[#f3e8ff] border border-[rgba(168,85,247,0.4)] group-hover:scale-105 transition-transform">
+                {prototypeCount}
+              </span>
+              <span className="text-[#c5a059] group-hover:translate-x-0.5 transition-transform text-[11px]">➔</span>
+            </Link>
+          </div>
+
+          <div className="hidden xl:block h-5 w-px bg-[rgba(255,255,255,0.08)]" />
+
+          {/* Cluster 2: Outreach & Fast Targeting */}
+          <div className="flex items-center gap-2">
+            {/* Cibler Agences de Voyage */}
+            <button
+              onClick={handleSelectTravelAgencies}
+              className="h-9 px-3 rounded-[8px] bg-[rgba(197,160,89,0.12)] hover:bg-[rgba(197,160,89,0.2)] border border-[rgba(197,160,89,0.3)] text-[#c5a059] transition-all flex items-center gap-1.5 text-[12px] font-body font-medium cursor-pointer"
+              title="Sélectionner toutes les Agences de voyage pour l'outreach WhatsApp"
+            >
+              <span>✈️</span>
+              <span className="hidden sm:inline">Cibler Agences</span>
             </button>
+
+            {/* Outreach WhatsApp */}
             <button
-              onClick={() => setCrmView('list')}
-              className={cn(
-                'relative px-4 py-1.5 rounded-full text-[13px] font-body font-medium flex items-center gap-1.5 cursor-pointer transition-colors',
-                crmView === 'list' ? 'text-[#e8e4dc]' : 'text-[rgba(232,228,220,0.55)]'
-              )}
+              onClick={selectedIds.length > 0 ? handleOpenBulkModalForSelected : handleOpenBulkModalForAllFiltered}
+              className="h-9 px-3.5 rounded-[8px] bg-[rgba(34,197,94,0.14)] hover:bg-[rgba(34,197,94,0.22)] border border-[rgba(34,197,94,0.35)] text-[#4ade80] transition-all flex items-center gap-1.5 text-[12px] font-body font-semibold cursor-pointer shadow-[0_2px_12px_rgba(34,197,94,0.12)]"
+              title="Ouvrir la file d'automatisation WhatsApp pour les prospects"
             >
-              {crmView === 'list' && (
-                <motion.div
-                  layoutId="crmViewToggle"
-                  className="absolute inset-0 bg-[#181824] rounded-full shadow-glass"
-                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                />
+              <Send size={13} />
+              <span className="hidden sm:inline">Outreach WhatsApp</span>
+              {selectedIds.length > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-[#4ade80] text-[#060610]">
+                  {selectedIds.length}
+                </span>
               )}
-              <span className="relative z-10 flex items-center gap-1.5">
-                <List size={14} />
-                <span className="hidden sm:inline">Liste</span>
-              </span>
             </button>
           </div>
 
-          {/* Cibler Agences de Voyage */}
-          <button
-            onClick={handleSelectTravelAgencies}
-            className="h-9 px-3 rounded-[8px] bg-[rgba(197,160,89,0.12)] hover:bg-[rgba(197,160,89,0.22)] border border-[rgba(197,160,89,0.35)] text-[#c5a059] transition-all flex items-center gap-1.5 text-[12px] font-body font-medium cursor-pointer"
-            title="Sélectionner toutes les Agences de voyage pour l'outreach WhatsApp"
-          >
-            <span>✈️</span>
-            <span className="hidden xl:inline">Cibler Agences Voyage</span>
-          </button>
+          <div className="hidden sm:block h-5 w-px bg-[rgba(255,255,255,0.08)]" />
 
-          {/* Outreach WhatsApp */}
-          <button
-            onClick={selectedIds.length > 0 ? handleOpenBulkModalForSelected : handleOpenBulkModalForAllFiltered}
-            className="h-9 px-3 rounded-[8px] bg-[rgba(34,197,94,0.14)] hover:bg-[rgba(34,197,94,0.24)] border border-[rgba(34,197,94,0.35)] text-[#4ade80] transition-all flex items-center gap-1.5 text-[12px] font-body font-medium cursor-pointer shadow-[0_2px_12px_rgba(34,197,94,0.15)]"
-            title="Ouvrir la file d'automatisation WhatsApp pour les prospects"
-          >
-            <Send size={13} />
-            <span className="hidden sm:inline">Outreach WhatsApp</span>
-            {selectedIds.length > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-[#4ade80] text-[#060610]">
-                {selectedIds.length}
-              </span>
-            )}
-          </button>
+          {/* Cluster 3: Lead Management & Actions */}
+          <div className="flex items-center gap-2">
+            {/* Importer CSV */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="h-9 px-3 rounded-[8px] bg-[#11111a] hover:bg-[#181824] border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.18)] text-[rgba(232,228,220,0.75)] hover:text-[#e8e4dc] transition-all flex items-center gap-1.5 text-[12px] font-body font-medium cursor-pointer"
+              title="Importer des prospects depuis un fichier CSV"
+            >
+              <Upload size={13} />
+              <span className="hidden md:inline">Importer CSV</span>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={handleCsvUpload}
+            />
 
-          {/* Corbeille */}
-          <Link
-            href="/crm/trash"
-            className="h-9 px-3 rounded-[8px] bg-[#11111a] hover:bg-[rgba(239,68,68,0.1)] border border-[rgba(255,255,255,0.08)] hover:border-[rgba(239,68,68,0.3)] text-[rgba(232,228,220,0.65)] hover:text-[#f87171] transition-all flex items-center gap-2 text-[12px] font-body font-medium cursor-pointer"
-            title="Accéder à la corbeille des prospects supprimés"
-          >
-            <Trash2 size={14} className="text-[#f87171]" />
-            <span className="hidden sm:inline">Corbeille</span>
-            {trashCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-[rgba(239,68,68,0.2)] text-[#f87171] border border-[rgba(239,68,68,0.3)]">
-                {trashCount}
-              </span>
-            )}
-          </Link>
+            {/* Ajouter un prospect manuel */}
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="h-9 px-3.5 rounded-[8px] bg-gradient-to-r from-[#c5a059] to-[#d4b068] hover:from-[#d4b068] hover:to-[#e0be76] text-[#060610] font-body font-semibold transition-all flex items-center gap-1.5 text-[12px] cursor-pointer shadow-[0_2px_12px_rgba(197,160,89,0.2)]"
+              title="Ajouter manuellement un prospect au CRM"
+            >
+              <Plus size={14} />
+              <span>Ajouter</span>
+            </button>
 
-          {/* Importer CSV */}
-          <AnimatedButton
-            variant="secondary"
-            icon={<Upload size={15} />}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <span className="hidden sm:inline">Importer CSV</span>
-          </AnimatedButton>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv"
-            className="hidden"
-            onChange={handleCsvUpload}
-          />
-
-          {/* Ajouter un prospect manuel */}
-          <AnimatedButton variant="primary" icon={<Plus size={16} />} onClick={() => setShowAddModal(true)}>
-            <span className="hidden sm:inline">Ajouter</span>
-          </AnimatedButton>
+            {/* Corbeille */}
+            <Link
+              href="/crm/trash"
+              className="h-9 px-2.5 rounded-[8px] bg-[#11111a] hover:bg-[rgba(239,68,68,0.1)] border border-[rgba(255,255,255,0.08)] hover:border-[rgba(239,68,68,0.3)] text-[rgba(232,228,220,0.65)] hover:text-[#f87171] transition-all flex items-center gap-1.5 text-[12px] font-body font-medium cursor-pointer"
+              title="Accéder à la corbeille des prospects supprimés"
+            >
+              <Trash2 size={13} className="text-[#f87171]" />
+              {trashCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-[rgba(239,68,68,0.2)] text-[#f87171] border border-[rgba(239,68,68,0.3)]">
+                  {trashCount}
+                </span>
+              )}
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -1509,6 +1999,8 @@ export default function CRM() {
             onClose={() => setSelectedProspect(null)}
             onUpdateStage={handleUpdateStage}
             onUpdateNotes={handleUpdateNotes}
+            onUpdateAdditionalPhones={handleUpdateAdditionalPhones}
+            onUpdateAdditionalEmails={handleUpdateAdditionalEmails}
             onDelete={handleDeleteProspect}
             onSendWhatsApp={handleOpenWhatsApp}
           />

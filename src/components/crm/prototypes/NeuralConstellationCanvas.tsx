@@ -47,6 +47,18 @@ export function NeuralConstellationCanvas({
   const [urgencyFilter, setUrgencyFilter] = useState<'all' | 'critical' | 'today' | 'overdue'>('all');
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollToCluster = (step: FollowUpStep) => {
+    if (!canvasContainerRef.current) return;
+    const center = clusterCenters[step];
+    const containerWidth = canvasContainerRef.current.clientWidth;
+    const targetScroll = center.cx * zoomLevel - containerWidth / 2;
+    canvasContainerRef.current.scrollTo({
+      left: Math.max(0, targetScroll),
+      behavior: 'smooth',
+    });
+  };
 
   // Parse all leads
   const enrichedLeads = useMemo(() => {
@@ -86,12 +98,12 @@ export function NeuralConstellationCanvas({
   }, [enrichedLeads, urgencyFilter, search]);
 
   // Spatial Constellation Coordinates Calculation
-  // 4 Main Neural Clusters laid out in organic spatial arcs across the Zuma Pipeline
+  // 4 Main Neural Clusters laid out with generous spacing & clean gaps across the Zuma Pipeline
   const clusterCenters: Record<FollowUpStep, { cx: number; cy: number; radius: number }> = {
-    0: { cx: 270, cy: 370, radius: 240 },  // Step 0: Prototype Envoyé (Zuma Reservoir)
-    1: { cx: 640, cy: 370, radius: 155 },  // Step 1: Relance #1 (Synapse I Zuma Rail)
-    2: { cx: 920, cy: 370, radius: 155 },  // Step 2: Relance #2 (Synapse II Zuma Rail)
-    3: { cx: 1200, cy: 370, radius: 145 }, // Step 3: Closing & Décision (Terminal Zuma Rail)
+    0: { cx: 340, cy: 450, radius: 240 },  // Step 0: Prototype Envoyé (Zuma Reservoir)
+    1: { cx: 960, cy: 450, radius: 240 },  // Step 1: Relance #1 (Synapse I Zuma Rail)
+    2: { cx: 1580, cy: 450, radius: 220 }, // Step 2: Relance #2 (Synapse II Zuma Rail)
+    3: { cx: 2180, cy: 450, radius: 200 }, // Step 3: Closing & Décision (Terminal Zuma Rail)
   };
 
   // Dynamic Zuma Rails Generator for ALL Steps (0, 1, 2, 3)
@@ -446,22 +458,50 @@ export function NeuralConstellationCanvas({
               <RotateCcw size={12} />
             </button>
           </div>
+
+          {/* Quick Step Navigation Pills */}
+          <div className="flex items-center gap-1 rounded-[10px] bg-[#111120] border border-[rgba(255,255,255,0.08)] p-1 ml-1">
+            {([0, 1, 2, 3] as FollowUpStep[]).map((step) => {
+              const meta = STEP_NAMES[step];
+              const count = enrichedLeads.filter((l) => l.data.currentStep === step).length;
+              return (
+                <button
+                  key={`nav_step_${step}`}
+                  onClick={() => scrollToCluster(step)}
+                  className="px-2.5 py-1 rounded-[7px] text-[11px] font-mono font-semibold transition-all hover:bg-[rgba(255,255,255,0.08)] flex items-center gap-1.5 cursor-pointer"
+                  style={{ color: meta.color }}
+                  title={`Naviguer vers ${meta.title}`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: meta.color }} />
+                  <span>#{step}</span>
+                  <span className="text-[10px] text-[rgba(232,228,220,0.55)]">({count})</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* ─── Spatial Bio-Cosmic Canvas Container ─── */}
-      <div className="relative rounded-[28px] bg-[#04040a] border border-[rgba(168,85,247,0.22)] shadow-[inset_0_0_120px_rgba(0,0,0,0.95)] overflow-x-auto custom-scrollbar min-h-[740px]">
+      {/* ─── Spatial Bio-Cosmic Canvas Outer Shell ─── */}
+      <div className="relative rounded-[28px] overflow-hidden border border-[rgba(168,85,247,0.22)] shadow-[inset_0_0_120px_rgba(0,0,0,0.95)] bg-[#04040a]">
         {/* Dynamic Nebular Energy Glows */}
-        <div className="absolute top-1/4 left-1/6 w-96 h-96 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.12),transparent_70%)] pointer-events-none blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(197,160,89,0.10),transparent_70%)] pointer-events-none blur-3xl" />
+        <div className="absolute top-1/4 left-[340px] -translate-x-1/2 w-[540px] h-[540px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.14),transparent_70%)] pointer-events-none blur-3xl" />
+        <div className="absolute top-1/3 left-[960px] -translate-x-1/2 w-[540px] h-[540px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(234,179,8,0.12),transparent_70%)] pointer-events-none blur-3xl" />
+        <div className="absolute bottom-1/4 left-[1580px] -translate-x-1/2 w-[540px] h-[540px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.12),transparent_70%)] pointer-events-none blur-3xl" />
+        <div className="absolute top-1/4 left-[2180px] -translate-x-1/2 w-[540px] h-[540px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.14),transparent_70%)] pointer-events-none blur-3xl" />
 
-        {/* Scaled Spatial Canvas */}
+        {/* Horizontal Scrollable Viewport */}
         <div
-          className="min-w-[1440px] w-full h-[740px] relative transition-transform duration-200 origin-top-left"
-          style={{
-            transform: `scale(${zoomLevel})`,
-          }}
+          ref={canvasContainerRef}
+          className="relative overflow-x-auto custom-scrollbar min-h-[860px] scroll-smooth"
         >
+          {/* Scaled Spatial Canvas with Wide Panorama Layout */}
+          <div
+            className="min-w-[2560px] w-max h-[860px] relative transition-transform duration-200 origin-top-left"
+            style={{
+              transform: `scale(${zoomLevel})`,
+            }}
+          >
           {/* ─── SVG Synaptic Axons & Flowing Particles ─── */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
             <defs>
@@ -652,9 +692,9 @@ export function NeuralConstellationCanvas({
             })}
           </svg>
 
-          {/* ─── Cluster Center Labels & Floating Hubs ─── */}
+          {/* ─── Cluster Center Labels & Floating Hubs (Elevated to Top Stage) ─── */}
           {([0, 1, 2, 3] as FollowUpStep[]).map((step) => {
-            const { cx, cy } = clusterCenters[step];
+            const { cx } = clusterCenters[step];
             const meta = STEP_NAMES[step];
             const clusterNodes = constellationNodes.filter((n) => n.cluster === step);
             const count = clusterNodes.length;
@@ -663,30 +703,33 @@ export function NeuralConstellationCanvas({
             return (
               <div
                 key={`hub_label_${step}`}
-                className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 flex flex-col items-center"
-                style={{ left: cx, top: cy - 145 }}
+                className="absolute -translate-x-1/2 pointer-events-none z-10 flex flex-col items-center"
+                style={{ left: cx, top: 46 }}
               >
                 <div
-                  className="px-3 py-1 rounded-full text-[11px] font-mono font-bold tracking-wider uppercase flex items-center gap-1.5 shadow-[0_0_20px_rgba(0,0,0,0.8)] border"
+                  className="px-3.5 py-1.5 rounded-full text-[11px] font-mono font-bold tracking-wider uppercase flex items-center gap-2 shadow-[0_0_24px_rgba(0,0,0,0.9)] border backdrop-blur-md"
                   style={{
-                    backgroundColor: `${meta.color}15`,
-                    borderColor: `${meta.color}45`,
+                    backgroundColor: `${meta.color}18`,
+                    borderColor: `${meta.color}55`,
                     color: meta.color,
                   }}
                 >
                   <span className="w-2 h-2 rounded-full animate-ping" style={{ backgroundColor: meta.color }} />
                   <span>{meta.badge}</span>
-                  <span className="text-[12px] text-[#e8e4dc]">({count})</span>
+                  <span className="text-[12px] font-bold text-[#e8e4dc]">({count})</span>
+                  <span className="text-[10px] text-[rgba(232,228,220,0.5)] font-mono pl-1 border-l border-[rgba(255,255,255,0.1)]">
+                    {meta.daysTarget}
+                  </span>
                 </div>
-                <h4 className="font-display text-[15px] font-semibold text-[#e8e4dc] mt-1 shadow-sm">
+                <h4 className="font-display text-[16px] font-bold text-[#e8e4dc] mt-1.5 tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                   {meta.title}
                 </h4>
                 <span
                   className={cn(
-                    "text-[10px] font-mono font-bold mt-1 px-2.5 py-0.5 rounded-full border shadow-sm flex items-center gap-1",
+                    "text-[10.5px] font-mono font-medium mt-1 px-3 py-0.5 rounded-full border shadow-md flex items-center gap-1.5 backdrop-blur-sm",
                     count > 0
                       ? "text-[#c5a059] bg-[rgba(197,160,89,0.12)] border-[rgba(197,160,89,0.35)]"
-                      : "text-[rgba(232,228,220,0.4)] bg-[#101020] border-[rgba(255,255,255,0.06)]"
+                      : "text-[rgba(232,228,220,0.45)] bg-[#101020]/80 border-[rgba(255,255,255,0.06)]"
                   )}
                 >
                   <span>⚡</span>
@@ -821,9 +864,10 @@ export function NeuralConstellationCanvas({
             );
           })}
         </div>
+      </div>
 
-        {/* ─── Hovered Holographic Inspection Card (Floating HUD) ─── */}
-        <AnimatePresence>
+      {/* ─── Hovered Holographic Inspection Card (Floating HUD) ─── */}
+      <AnimatePresence>
           {activeHoveredNode && (
             <motion.div
               initial={{ opacity: 0, y: -10, scale: 0.95 }}

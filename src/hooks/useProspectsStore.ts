@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Prospect, PipelineStage } from '@/types';
+import type { Prospect, PipelineStage, AdditionalPhone, AdditionalEmail } from '@/types';
 import { mapBackendProspect } from '@/types';
 import { mockProspects } from '@/data/prospects';
 
@@ -14,6 +14,8 @@ interface ProspectsState {
   updateStage: (id: string, stage: PipelineStage) => Promise<void>;
   batchUpdateStage: (ids: string[], stage: PipelineStage) => Promise<void>;
   updateNotes: (id: string, notes: string) => Promise<void>;
+  updateAdditionalPhones: (id: string, additionalPhones: AdditionalPhone[]) => Promise<void>;
+  updateAdditionalEmails: (id: string, additionalEmails: AdditionalEmail[]) => Promise<void>;
   deleteProspect: (id: string) => Promise<void>;
   restoreProspect: (id: string) => Promise<void>;
   addProspect: (prospect: Prospect) => void;
@@ -72,6 +74,10 @@ export const useProspectsStore = create<ProspectsState>((set, get) => ({
   },
 
   updateStage: async (id: string, stage: PipelineStage) => {
+    const previous = get().prospects.find((p) => p.id === id);
+    const previousStage = previous?.stage;
+    const previousLastContact = previous?.lastContact;
+
     const isContacted = stage !== 'nouveau';
     const now = new Date();
     const lastContact = isContacted ? "Aujourd'hui" : 'Non contacté';
@@ -85,7 +91,7 @@ export const useProspectsStore = create<ProspectsState>((set, get) => ({
 
     // Server persistence
     try {
-      await fetch(`/api/prospects/${id}`, {
+      const res = await fetch(`/api/prospects/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -94,8 +100,20 @@ export const useProspectsStore = create<ProspectsState>((set, get) => ({
           lastContact,
         }),
       });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Erreur serveur (${res.status})`);
+      }
     } catch (err) {
-      console.warn('[useProspectsStore] Sync error:', err);
+      console.error('[useProspectsStore] Sync error:', err);
+      if (previousStage !== undefined) {
+        set((state) => ({
+          prospects: state.prospects.map((p) =>
+            p.id === id ? { ...p, stage: previousStage, lastContact: previousLastContact ?? p.lastContact } : p
+          ),
+        }));
+      }
+      throw err;
     }
   },
 
@@ -143,6 +161,10 @@ export const useProspectsStore = create<ProspectsState>((set, get) => ({
   },
 
   updateNotes: async (id: string, notes: string) => {
+    const previous = get().prospects.find((p) => p.id === id);
+    const previousNotes = previous?.notes;
+
+    // Optimistic update
     set((state) => ({
       prospects: state.prospects.map((p) =>
         p.id === id ? { ...p, notes } : p
@@ -150,13 +172,96 @@ export const useProspectsStore = create<ProspectsState>((set, get) => ({
     }));
 
     try {
-      await fetch(`/api/prospects/${id}`, {
+      const res = await fetch(`/api/prospects/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notes }),
       });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Erreur serveur (${res.status})`);
+      }
     } catch (err) {
-      console.warn('[useProspectsStore] Notes sync error:', err);
+      console.error('[useProspectsStore] Notes sync error:', err);
+      // Revert optimistic update
+      if (previousNotes !== undefined) {
+        set((state) => ({
+          prospects: state.prospects.map((p) =>
+            p.id === id ? { ...p, notes: previousNotes } : p
+          ),
+        }));
+      }
+      throw err;
+    }
+  },
+
+  updateAdditionalPhones: async (id: string, additionalPhones: AdditionalPhone[]) => {
+    const previous = get().prospects.find((p) => p.id === id);
+    const previousPhones = previous?.additionalPhones;
+
+    // Optimistic update
+    set((state) => ({
+      prospects: state.prospects.map((p) =>
+        p.id === id ? { ...p, additionalPhones } : p
+      ),
+    }));
+
+    try {
+      const res = await fetch(`/api/prospects/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ additionalPhones }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Erreur serveur (${res.status})`);
+      }
+    } catch (err) {
+      console.error('[useProspectsStore] Additional phones sync error:', err);
+      // Revert optimistic update
+      if (previousPhones !== undefined) {
+        set((state) => ({
+          prospects: state.prospects.map((p) =>
+            p.id === id ? { ...p, additionalPhones: previousPhones } : p
+          ),
+        }));
+      }
+      throw err;
+    }
+  },
+
+  updateAdditionalEmails: async (id: string, additionalEmails: AdditionalEmail[]) => {
+    const previous = get().prospects.find((p) => p.id === id);
+    const previousEmails = previous?.additionalEmails;
+
+    // Optimistic update
+    set((state) => ({
+      prospects: state.prospects.map((p) =>
+        p.id === id ? { ...p, additionalEmails } : p
+      ),
+    }));
+
+    try {
+      const res = await fetch(`/api/prospects/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ additionalEmails }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Erreur serveur (${res.status})`);
+      }
+    } catch (err) {
+      console.error('[useProspectsStore] Additional emails sync error:', err);
+      // Revert optimistic update
+      if (previousEmails !== undefined) {
+        set((state) => ({
+          prospects: state.prospects.map((p) =>
+            p.id === id ? { ...p, additionalEmails: previousEmails } : p
+          ),
+        }));
+      }
+      throw err;
     }
   },
 
@@ -232,6 +337,8 @@ export const useProspectsStore = create<ProspectsState>((set, get) => ({
           ...p,
           stage: changes.stage ? changes.stage : p.stage,
           notes: changes.notes !== undefined ? (typeof changes.notes === 'string' ? changes.notes : p.notes) : p.notes,
+          additionalPhones: changes.additionalPhones !== undefined ? changes.additionalPhones : p.additionalPhones,
+          additionalEmails: changes.additionalEmails !== undefined ? changes.additionalEmails : p.additionalEmails,
           lastContact: changes.lastContact || p.lastContact,
         };
       }),

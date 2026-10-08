@@ -14,7 +14,7 @@
     "Wilaya": "Annaba",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "LOCATION DE VOITURES\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-06T00:31:21.281Z\",\"lastActionAt\":\"2026-10-08T14:22:52.948Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -27,7 +27,8 @@
       "Pas de site internet professionnel"
     ],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "LOCATION DE VOITURES\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-06T00:31:21.281Z\",\"lastActionAt\":\"2026-10-08T14:22:52.948Z\",\"history\":[]} -->"
   },
   {
     "id": "d5741c6e-37a0-49ce-8208-1e4ecedbd158",
@@ -44,7 +45,7 @@
     "Wilaya": "Tlemcen",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "LOCATION DE VOITURES\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-06T00:31:21.281Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -57,7 +58,8 @@
       "Pas de site internet professionnel"
     ],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "LOCATION DE VOITURES\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-06T00:31:21.281Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "58446da0-a5f7-49ec-8a02-5e14083a8463",
@@ -74,7 +76,7 @@
     "Wilaya": "Tlemcen",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Besoin d'un logiciel\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:39:18.714Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -87,7 +89,8 @@
       "Pas de site internet professionnel"
     ],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Besoin d'un logiciel\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:39:18.714Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "00f6892a-5cc9-41e9-a0c7-51e3ccd3b7d0",
@@ -104,7 +107,7 @@
     "Wilaya": "Tlemcen",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "occupé\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-06T00:58:27.711Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -117,7 +120,8 @@
       "Pas de site internet professionnel"
     ],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "occupé\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-06T00:58:27.711Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "87964280-ba35-422f-8704-a65852528abe",
@@ -224,7 +228,7 @@
     "Wilaya": "Tlemcen",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-10-07T22:33:39.929Z\",\"lastActionAt\":\"2026-10-07T22:33:39.929Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -237,7 +241,8 @@
       "Pas de site internet professionnel"
     ],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-10-07T22:33:39.929Z\",\"lastActionAt\":\"2026-10-07T22:33:39.929Z\",\"history\":[]} -->"
   },
   {
     "id": "38696fa5-364f-45f9-9de8-b3977f34b206",
@@ -344,7 +349,7 @@
     "Wilaya": "Tlemcen",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-05T15:49:49.868Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -357,7 +362,8 @@
       "Pas de site internet professionnel"
     ],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-05T15:49:49.868Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "aeeed697-3834-4b5b-8cab-44a47c131137",
@@ -404,7 +410,7 @@
     "Wilaya": "Tlemcen",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:50:32.122Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -417,7 +423,8 @@
       "Pas de site internet professionnel"
     ],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:50:32.122Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "37e510b5-32d9-4d1f-9b82-bb0f3aa7c5ad",
@@ -554,7 +561,7 @@
     "Wilaya": "Tlemcen",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-10-07T15:50:55.587Z\",\"lastActionAt\":\"2026-10-07T15:50:55.587Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -567,7 +574,8 @@
       "Pas de site internet professionnel"
     ],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-10-07T15:50:55.587Z\",\"lastActionAt\":\"2026-10-07T15:50:55.587Z\",\"history\":[]} -->"
   },
   {
     "id": "5975fe7c-e342-415f-88b0-00162bbb8bcf",
@@ -584,7 +592,7 @@
     "Wilaya": "Tlemcen",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:47:00.266Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -597,7 +605,8 @@
       "Pas de site internet professionnel"
     ],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:47:00.266Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "a0b4f114-3112-41ae-aaf8-436b868b05b9",
@@ -734,7 +743,7 @@
     "Wilaya": "Tlemcen",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:51:10.651Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -747,7 +756,8 @@
       "Pas de site internet professionnel"
     ],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:51:10.651Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "24897f1b-dbf2-4d93-b491-575bb9903404",
@@ -884,7 +894,7 @@
     "Wilaya": "Tlemcen",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:51:23.081Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -897,7 +907,8 @@
       "Pas de site internet professionnel"
     ],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:51:23.081Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "5466339d-0c2c-404a-8bf8-16f2b143be6a",
@@ -1064,7 +1075,7 @@
     "Wilaya": "Tlemcen",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:45:11.911Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -1077,7 +1088,8 @@
       "Pas de site internet professionnel"
     ],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:45:11.911Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "1d15d746-7eec-4d7b-81fc-1c06a203bfc4",
@@ -1184,7 +1196,7 @@
     "Wilaya": "Tlemcen",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:48:53.046Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -1197,7 +1209,8 @@
       "Pas de site internet professionnel"
     ],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:48:53.046Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "8a9fea40-5a42-415d-b731-dd6590f8ff22",
@@ -1304,7 +1317,7 @@
     "Wilaya": "Tlemcen",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:48:30.446Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -1317,7 +1330,8 @@
       "Pas de site internet professionnel"
     ],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:48:30.446Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "338fce4e-558e-4ca1-9c24-4da46a9c8305",
@@ -1364,7 +1378,7 @@
     "Wilaya": "Tlemcen",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:44:39.809Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -1377,7 +1391,8 @@
       "Pas de site internet professionnel"
     ],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:44:39.809Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "cc149569-021e-4b85-b4bc-d5a3125cf90f",
@@ -1424,7 +1439,7 @@
     "Wilaya": "Tlemcen",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:43:55.322Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -1437,7 +1452,8 @@
       "Pas de site internet professionnel"
     ],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:43:55.322Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "47e67bda-3cec-4379-bb0c-e8a354042c3d",
@@ -1484,7 +1500,7 @@
     "Wilaya": "Tlemcen",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:49:12.198Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -1497,7 +1513,8 @@
       "Pas de site internet professionnel"
     ],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: Tlemcen\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-10-07T15:49:12.198Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "a535fa86-b512-4333-ad45-03158ad7a519",
@@ -1604,7 +1621,7 @@
     "Wilaya": "Tizi Ouzou",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Tizi Ouzou\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-10-06T01:12:02.185Z\",\"lastActionAt\":\"2026-10-06T01:12:02.185Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -1617,7 +1634,8 @@
       "Pas de site internet professionnel"
     ],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: Tizi Ouzou\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-10-06T01:12:02.185Z\",\"lastActionAt\":\"2026-10-06T01:12:02.185Z\",\"history\":[]} -->"
   },
   {
     "id": "063ea34b-ace8-4a4a-8ee6-a0303ef2848e",
@@ -2954,7 +2972,7 @@
     "Wilaya": "Tizi Ouzou",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Tizi Ouzou\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-10-08T14:09:13.481Z\",\"lastActionAt\":\"2026-10-08T14:09:13.481Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -2967,7 +2985,8 @@
       "Pas de site internet professionnel"
     ],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: Tizi Ouzou\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-10-08T14:09:13.481Z\",\"lastActionAt\":\"2026-10-08T14:09:13.481Z\",\"history\":[]} -->"
   },
   {
     "id": "3fe366f6-5e87-4013-b1f9-38047be07f64",
@@ -5380,7 +5399,7 @@
     "Wilaya": "blida",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: blida\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-29T17:52:03.787Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -5391,7 +5410,8 @@
     "WebsiteScore": 5,
     "Weaknesses": [],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: blida\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-29T17:52:03.787Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "230cd1ec-82ac-4453-aad5-abd348441cff",
@@ -5436,7 +5456,7 @@
     "Wilaya": "blida",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: blida\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-29T17:52:03.534Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[{\"step\":0,\"date\":\"2026-10-07T23:03:22.087Z\",\"channel\":\"whatsapp\",\"reaction\":\"price\",\"verbatim\":\"\"},{\"step\":0,\"date\":\"2026-10-08T01:02:43.049Z\",\"channel\":\"whatsapp\",\"reaction\":\"price\",\"verbatim\":\"\"},{\"step\":0,\"date\":\"2026-10-08T01:11:51.442Z\",\"channel\":\"whatsapp\",\"reaction\":\"price\",\"verbatim\":\"\"},{\"step\":0,\"date\":\"2026-10-08T01:11:59.971Z\",\"channel\":\"whatsapp\",\"reaction\":\"no_reply\",\"verbatim\":\"\"}],\"primaryObjection\":\"no_reply\"} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -5447,7 +5467,8 @@
     "WebsiteScore": 5,
     "Weaknesses": [],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: blida\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-29T17:52:03.534Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[{\"step\":0,\"date\":\"2026-10-07T23:03:22.087Z\",\"channel\":\"whatsapp\",\"reaction\":\"price\",\"verbatim\":\"\"},{\"step\":0,\"date\":\"2026-10-08T01:02:43.049Z\",\"channel\":\"whatsapp\",\"reaction\":\"price\",\"verbatim\":\"\"},{\"step\":0,\"date\":\"2026-10-08T01:11:51.442Z\",\"channel\":\"whatsapp\",\"reaction\":\"price\",\"verbatim\":\"\"},{\"step\":0,\"date\":\"2026-10-08T01:11:59.971Z\",\"channel\":\"whatsapp\",\"reaction\":\"no_reply\",\"verbatim\":\"\"}],\"primaryObjection\":\"no_reply\"} -->"
   },
   {
     "id": "5d73b515-f71f-4efa-922c-88d273328c27",
@@ -5492,7 +5513,7 @@
     "Wilaya": "blida",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: blida\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-30T15:14:29.935Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -5503,7 +5524,8 @@
     "WebsiteScore": 5,
     "Weaknesses": [],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: blida\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-30T15:14:29.935Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "996538c9-80dc-4e10-9c20-a88225eb93a3",
@@ -5520,7 +5542,7 @@
     "Wilaya": "blida",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: blida\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-30T15:28:34.689Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -5531,7 +5553,8 @@
     "WebsiteScore": 5,
     "Weaknesses": [],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: blida\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-30T15:28:34.689Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "3779d8bd-1beb-45de-9601-f173885cc63c",
@@ -5548,7 +5571,7 @@
     "Wilaya": "blida",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: blida\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-30T15:16:56.883Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -5559,7 +5582,8 @@
     "WebsiteScore": 5,
     "Weaknesses": [],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: blida\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-30T15:16:56.883Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "d6051738-df99-4c32-bef2-2b7aff961473",
@@ -5576,7 +5600,7 @@
     "Wilaya": "tizi ouzou",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: tizi ouzou\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-30T14:39:39.946Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -5587,7 +5611,8 @@
     "WebsiteScore": 5,
     "Weaknesses": [],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: tizi ouzou\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-30T14:39:39.946Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "f1ac3897-63de-4cda-997a-185b7653db1a",
@@ -5632,7 +5657,7 @@
     "Wilaya": "tizi ouzou",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: tizi ouzou\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-30T14:40:04.040Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -5643,7 +5668,8 @@
     "WebsiteScore": 5,
     "Weaknesses": [],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: tizi ouzou\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-30T14:40:04.040Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "cc67f4cd-bf59-4335-a063-2515041b15a5",
@@ -5688,7 +5714,7 @@
     "Wilaya": "tizi ouzou",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: tizi ouzou\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-30T14:40:25.524Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -5699,7 +5725,8 @@
     "WebsiteScore": 5,
     "Weaknesses": [],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: tizi ouzou\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-30T14:40:25.524Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "2af9bd40-46c8-436c-b0dd-1915a3ff0b0c",
@@ -5744,7 +5771,7 @@
     "Wilaya": "tizi ouzou",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: tizi ouzou\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-30T14:45:15.857Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -5755,7 +5782,8 @@
     "WebsiteScore": 5,
     "Weaknesses": [],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: tizi ouzou\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-30T14:45:15.857Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "197a1ad1-d394-461b-9eed-8773b2c1bfe8",
@@ -5884,7 +5912,7 @@
     "Wilaya": "tizi ouzou",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: tizi ouzou\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-30T14:54:45.259Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -5895,7 +5923,8 @@
     "WebsiteScore": 5,
     "Weaknesses": [],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: tizi ouzou\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-30T14:54:45.259Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "baffa020-93d5-4369-9430-f53e6783d94d",
@@ -6080,7 +6109,7 @@
     "Wilaya": "bejaia",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: bejaia\nhe needs a fully system not just a website\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-09-30T15:24:29.713Z\",\"lastActionAt\":\"2026-09-30T15:24:29.713Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -6091,7 +6120,8 @@
     "WebsiteScore": 5,
     "Weaknesses": [],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: bejaia\nhe needs a fully system not just a website\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-09-30T15:24:29.713Z\",\"lastActionAt\":\"2026-09-30T15:24:29.713Z\",\"history\":[]} -->"
   },
   {
     "id": "9016d955-632f-47da-88fa-33082da68b12",
@@ -6108,7 +6138,7 @@
     "Wilaya": "bejaia",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: bejaia\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-30T15:32:02.491Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -6119,7 +6149,8 @@
     "WebsiteScore": 5,
     "Weaknesses": [],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: bejaia\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-30T15:32:02.491Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "1fd1922f-efc5-43bd-95a1-ec8e44d44657",
@@ -6360,7 +6391,7 @@
     "Wilaya": "bejaia",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: bejaia\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-09-30T15:52:47.656Z\",\"lastActionAt\":\"2026-09-30T15:52:47.656Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -6371,7 +6402,8 @@
     "WebsiteScore": 5,
     "Weaknesses": [],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: bejaia\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-09-30T15:52:47.656Z\",\"lastActionAt\":\"2026-09-30T15:52:47.656Z\",\"history\":[]} -->"
   },
   {
     "id": "5351fdae-86f7-435d-b3fa-37d9ede33f10",
@@ -6388,7 +6420,7 @@
     "Wilaya": "bejaia",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: bejaia\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-09-30T15:41:08.758Z\",\"lastActionAt\":\"2026-09-30T15:41:08.758Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -6399,7 +6431,8 @@
     "WebsiteScore": 5,
     "Weaknesses": [],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "Zone: bejaia\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-09-30T15:41:08.758Z\",\"lastActionAt\":\"2026-09-30T15:41:08.758Z\",\"history\":[]} -->"
   },
   {
     "id": "b931d8c3-2e68-4b79-a14e-550bf9474c8f",
@@ -6416,7 +6449,7 @@
     "Wilaya": "bejaia",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "LOCATION DE VOITURES\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-10-06T00:31:21.281Z\",\"lastActionAt\":\"2026-10-06T00:31:21.281Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -6427,7 +6460,8 @@
     "WebsiteScore": 5,
     "Weaknesses": [],
     "OwnerName": "",
-    "OwnerLinkedIn": ""
+    "OwnerLinkedIn": "",
+    "notes": "LOCATION DE VOITURES\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-10-06T00:31:21.281Z\",\"lastActionAt\":\"2026-10-06T00:31:21.281Z\",\"history\":[]} -->"
   },
   {
     "id": "slimani-test-vip",
@@ -19933,7 +19967,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-08-13T02:13:13.360Z",
-    "CampaignID": "20260813-Malta"
+    "CampaignID": "20260813-Malta",
+    "additionalPhones": []
   },
   {
     "id": "cd1d08e0-b1bb-42c1-bddb-cdb8bf4631db",
@@ -24408,7 +24443,7 @@
     "Wilaya": "Oran",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Oran\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-29T14:07:29.574Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -24417,7 +24452,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Oran"
+    "CampaignID": "20260923-Oran",
+    "notes": "Zone: Oran\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-29T14:07:29.574Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "f65bd596-3a26-4562-8ad1-3334a657374a",
@@ -24486,7 +24522,7 @@
     "Wilaya": "Constantine",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Constantine\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-29T14:25:30.171Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -24495,7 +24531,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Constantine"
+    "CampaignID": "20260923-Constantine",
+    "notes": "Zone: Constantine\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-29T14:25:30.171Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "5cc3d2da-bcab-45f1-b21f-fb18d0d8d69b",
@@ -25058,7 +25095,7 @@
     "Wilaya": "Alger",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Alger\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-28T21:25:10.638Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -25067,7 +25104,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Alger"
+    "CampaignID": "20260923-Alger",
+    "notes": "Zone: Alger\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-28T21:25:10.638Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "9b7d4f55-19b5-492f-b71e-dbd760a77bda",
@@ -25084,7 +25122,7 @@
     "Wilaya": "Oran",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Oran\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-29T14:11:25.774Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -25093,7 +25131,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Oran"
+    "CampaignID": "20260923-Oran",
+    "notes": "Zone: Oran\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-29T14:11:25.774Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "a2654a7c-e14c-41d0-a7ec-be4d23bae030",
@@ -25136,7 +25175,7 @@
     "Wilaya": "Constantine",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Constantine\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -25145,7 +25184,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Constantine"
+    "CampaignID": "20260923-Constantine",
+    "notes": "Zone: Constantine\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "3a00afd5-e319-4066-b2e6-acf7c90fa55e",
@@ -25188,7 +25228,7 @@
     "Wilaya": "Constantine",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Constantine\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-29T14:58:09.882Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -25197,7 +25237,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Constantine"
+    "CampaignID": "20260923-Constantine",
+    "notes": "Zone: Constantine\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-29T14:58:09.882Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "d34b1fcb-1f54-49d0-8e60-e2d74ea7d6f9",
@@ -25214,7 +25255,7 @@
     "Wilaya": "Annaba",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Annaba\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-29T15:32:14.407Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -25223,7 +25264,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Annaba"
+    "CampaignID": "20260923-Annaba",
+    "notes": "Zone: Annaba\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-29T15:32:14.407Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "02c3ed04-5d34-40cf-beb2-546aabe7ffb4",
@@ -25240,7 +25282,7 @@
     "Wilaya": "Annaba",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Annaba\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-29T16:12:32.870Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -25249,7 +25291,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Annaba"
+    "CampaignID": "20260923-Annaba",
+    "notes": "Zone: Annaba\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-29T16:12:32.870Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "2bc5e815-ccfe-4540-8436-feb2ded7fa3d",
@@ -25266,7 +25309,7 @@
     "Wilaya": "Alger",
     "Niche": "Clinique dentaire",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Alger\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-10-04T15:44:27.330Z\",\"lastActionAt\":\"2026-10-04T15:44:27.330Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -25275,7 +25318,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Alger"
+    "CampaignID": "20260923-Alger",
+    "notes": "Zone: Alger\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-10-04T15:44:27.330Z\",\"lastActionAt\":\"2026-10-04T15:44:27.330Z\",\"history\":[]} -->"
   },
   {
     "id": "1f9beec4-56a5-4261-890f-bc9249462a8a",
@@ -25422,7 +25466,7 @@
     "Wilaya": "Oran",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Oran\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -25431,7 +25475,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Oran"
+    "CampaignID": "20260923-Oran",
+    "notes": "Zone: Oran\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "ea36d4c5-82d5-41a5-9acc-21022f973ed4",
@@ -25448,7 +25493,7 @@
     "Wilaya": "Constantine",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Constantine\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-09-29T14:57:43.476Z\",\"lastActionAt\":\"2026-09-29T14:57:43.476Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -25457,7 +25502,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Constantine"
+    "CampaignID": "20260923-Constantine",
+    "notes": "Zone: Constantine\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-09-29T14:57:43.476Z\",\"lastActionAt\":\"2026-09-29T14:57:43.476Z\",\"history\":[]} -->"
   },
   {
     "id": "8809213a-359a-42e5-b708-9d4bcf656815",
@@ -25500,7 +25546,7 @@
     "Wilaya": "Annaba",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Annaba\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -25509,7 +25555,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Annaba"
+    "CampaignID": "20260923-Annaba",
+    "notes": "Zone: Annaba\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "fa0c21f1-3576-4c42-954b-93d5240d4a55",
@@ -25526,7 +25573,7 @@
     "Wilaya": "Annaba",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Annaba\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -25535,7 +25582,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Annaba"
+    "CampaignID": "20260923-Annaba",
+    "notes": "Zone: Annaba\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "46143f2f-11c1-431a-8b5f-0517ea8e25dd",
@@ -25552,7 +25600,7 @@
     "Wilaya": "Alger",
     "Niche": "Clinique dentaire",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Alger\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-10-04T15:52:40.073Z\",\"lastActionAt\":\"2026-10-04T15:52:40.073Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -25561,7 +25609,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Alger"
+    "CampaignID": "20260923-Alger",
+    "notes": "Zone: Alger\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-10-04T15:52:40.073Z\",\"lastActionAt\":\"2026-10-04T15:52:40.073Z\",\"history\":[]} -->"
   },
   {
     "id": "5cdf23a8-3b1a-4956-9ad5-46d19e8375ce",
@@ -25760,7 +25809,7 @@
     "Wilaya": "Annaba",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Annaba\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -25769,7 +25818,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Annaba"
+    "CampaignID": "20260923-Annaba",
+    "notes": "Zone: Annaba\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "cef18fbb-7027-42f7-bce1-af5ad9d01c03",
@@ -25838,7 +25888,7 @@
     "Wilaya": "Constantine",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Constantine\nÀ recontacter : to his brother\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-29T14:58:52.146Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -25847,7 +25897,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Constantine"
+    "CampaignID": "20260923-Constantine",
+    "notes": "Zone: Constantine\nÀ recontacter : to his brother\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-29T14:58:52.146Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "e29505c3-427b-43af-bd22-f67786bdf43f",
@@ -25942,7 +25993,7 @@
     "Wilaya": "Alger",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Alger\nÀ recontacter: A 14H\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -25951,7 +26002,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Alger"
+    "CampaignID": "20260923-Alger",
+    "notes": "Zone: Alger\nÀ recontacter: A 14H\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "4a7096de-bd02-48c2-b990-cebcc0ce82a9",
@@ -25968,7 +26020,7 @@
     "Wilaya": "Oran",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Oran\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -25977,7 +26029,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Oran"
+    "CampaignID": "20260923-Oran",
+    "notes": "Zone: Oran\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "9971e587-cb7b-4376-9535-1dead7ce05d3",
@@ -26072,7 +26125,7 @@
     "Wilaya": "Annaba",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Annaba\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -26081,7 +26134,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Annaba"
+    "CampaignID": "20260923-Annaba",
+    "notes": "Zone: Annaba\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "1e54b837-8ffb-4f90-8eee-5d4de18d5181",
@@ -26332,7 +26386,7 @@
     "Wilaya": "Alger",
     "Niche": "Clinique dentaire",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Alger\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-10-04T15:55:14.408Z\",\"lastActionAt\":\"2026-10-04T15:55:14.408Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -26341,7 +26395,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Alger"
+    "CampaignID": "20260923-Alger",
+    "notes": "Zone: Alger\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-10-04T15:55:14.408Z\",\"lastActionAt\":\"2026-10-04T15:55:14.408Z\",\"history\":[]} -->"
   },
   {
     "id": "0a0e44d6-d307-4e21-91ff-23c1533178df",
@@ -26488,7 +26543,7 @@
     "Wilaya": "Annaba",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Annaba\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -26497,7 +26552,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Annaba"
+    "CampaignID": "20260923-Annaba",
+    "notes": "Zone: Annaba\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "5aa6a1ab-86dc-4605-9ada-9959077313a6",
@@ -26540,7 +26596,7 @@
     "Wilaya": "Alger",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Alger\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-28T21:25:36.661Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -26549,7 +26605,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Alger"
+    "CampaignID": "20260923-Alger",
+    "notes": "Zone: Alger\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-28T21:25:36.661Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "7126c709-b821-4d91-9cdb-17e66236f90a",
@@ -26618,7 +26675,7 @@
     "Wilaya": "Constantine",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Constantine\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-29T15:04:31.649Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -26627,7 +26684,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Constantine"
+    "CampaignID": "20260923-Constantine",
+    "notes": "Zone: Constantine\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-29T15:04:31.649Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "8ed02541-a665-4ca1-bb62-dbad666c8acf",
@@ -26904,7 +26962,7 @@
     "Wilaya": "Annaba",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Annaba\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -26913,7 +26971,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Annaba"
+    "CampaignID": "20260923-Annaba",
+    "notes": "Zone: Annaba\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "37e0ad5b-d7e1-4518-bcaa-74d540a086bd",
@@ -27034,7 +27093,7 @@
     "Wilaya": "Alger",
     "Niche": "Clinique dentaire",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Alger\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-10-04T15:58:28.134Z\",\"lastActionAt\":\"2026-10-04T15:58:28.134Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -27043,7 +27102,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Alger"
+    "CampaignID": "20260923-Alger",
+    "notes": "Zone: Alger\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":0,\"prototypeSentAt\":\"2026-10-04T15:58:28.134Z\",\"lastActionAt\":\"2026-10-04T15:58:28.134Z\",\"history\":[]} -->"
   },
   {
     "id": "f3797301-1f4c-4784-85ee-da3a9ccd3d08",
@@ -27138,7 +27198,7 @@
     "Wilaya": "Annaba",
     "Niche": "Agence de voyage",
     "PipelineStage": "New",
-    "Notes": "",
+    "Notes": "Zone: Annaba\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->",
     "ContactedAt": null,
     "RespondedAt": null,
     "DailyOutreachDate": null,
@@ -27147,7 +27207,8 @@
     "OwnerName": "",
     "OwnerLinkedIn": "",
     "RunDate": "2026-09-23T14:12:21.105Z",
-    "CampaignID": "20260923-Annaba"
+    "CampaignID": "20260923-Annaba",
+    "notes": "Zone: Annaba\n\n<!-- FOLLOWUP_DATA: {\"currentStep\":1,\"prototypeSentAt\":\"2026-09-23T14:12:21.105Z\",\"lastActionAt\":\"2026-10-08T14:26:09.818Z\",\"history\":[]} -->"
   },
   {
     "id": "f9ff7123-3d25-4c67-add0-a8a599217708",
