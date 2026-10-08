@@ -31,6 +31,10 @@ interface ConstellationNode {
   y: number;
   cluster: FollowUpStep;
   size: number;
+  rank: number;
+  totalInCluster: number;
+  delayDays: number;
+  isCriticalCore: boolean;
 }
 
 export function NeuralConstellationCanvas({
@@ -40,7 +44,7 @@ export function NeuralConstellationCanvas({
   onQuickWhatsApp,
 }: NeuralConstellationCanvasProps) {
   const [search, setSearch] = useState('');
-  const [urgencyFilter, setUrgencyFilter] = useState<'all' | 'today' | 'overdue'>('all');
+  const [urgencyFilter, setUrgencyFilter] = useState<'all' | 'critical' | 'today' | 'overdue'>('all');
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
@@ -58,6 +62,10 @@ export function NeuralConstellationCanvas({
   // Filter leads
   const filtered = useMemo(() => {
     return enrichedLeads.filter(({ prospect, data }) => {
+      const delay = data.currentStep === 0
+        ? (data.daysSincePrototype || 0)
+        : Math.max(data.daysSinceLastAction || 0, data.daysSincePrototype || 0);
+      if (urgencyFilter === 'critical' && delay < 10) return false;
       if (urgencyFilter === 'today' && data.urgency !== 'today') return false;
       if (urgencyFilter === 'overdue' && data.urgency !== 'overdue') return false;
 
@@ -78,13 +86,62 @@ export function NeuralConstellationCanvas({
   }, [enrichedLeads, urgencyFilter, search]);
 
   // Spatial Constellation Coordinates Calculation
-  // 4 Main Neural Clusters laid out in organic spatial arcs (scaled to fit screen seamlessly)
+  // 4 Main Neural Clusters laid out in organic spatial arcs across the Zuma Pipeline
   const clusterCenters: Record<FollowUpStep, { cx: number; cy: number; radius: number }> = {
-    0: { cx: 200, cy: 360, radius: 175 },  // Core Soma Reservoir (Left)
-    1: { cx: 540, cy: 360, radius: 145 },  // Synapse I Hub (Mid-left)
-    2: { cx: 850, cy: 360, radius: 145 },  // Synapse II Hub (Mid-right)
-    3: { cx: 1140, cy: 360, radius: 135 }, // Axon Terminals / Closing (Right)
+    0: { cx: 270, cy: 370, radius: 240 },  // Step 0: Prototype Envoyé (Zuma Reservoir)
+    1: { cx: 640, cy: 370, radius: 155 },  // Step 1: Relance #1 (Synapse I Zuma Rail)
+    2: { cx: 920, cy: 370, radius: 155 },  // Step 2: Relance #2 (Synapse II Zuma Rail)
+    3: { cx: 1200, cy: 370, radius: 145 }, // Step 3: Closing & Décision (Terminal Zuma Rail)
   };
+
+  // Dynamic Zuma Rails Generator for ALL Steps (0, 1, 2, 3)
+  const allZumaRails = useMemo(() => {
+    const stepCounts: Record<FollowUpStep, number> = { 0: 0, 1: 0, 2: 0, 3: 0 };
+    filtered.forEach((item) => {
+      stepCounts[item.data.currentStep]++;
+    });
+
+    return ([0, 1, 2, 3] as FollowUpStep[]).map((step) => {
+      const { cx, cy } = clusterCenters[step];
+      const count = stepCounts[step];
+      const meta = STEP_NAMES[step];
+
+      if (count > 12) {
+        // Full winding Zuma Spiral Rail (e.g. Step 0 with 58 leads)
+        const r0 = 54;
+        const radialPitch = 56 / (2 * Math.PI);
+        const steps = 180;
+        const maxTheta = 3.25 * 2 * Math.PI;
+        let d = '';
+        for (let i = 0; i <= steps; i++) {
+          const t = (i / steps) * maxTheta;
+          const r = r0 + radialPitch * t;
+          const px = cx + r * Math.cos(t);
+          const py = cy + r * Math.sin(t);
+          d += (i === 0 ? 'M ' : ' L ') + px.toFixed(1) + ' ' + py.toFixed(1);
+        }
+        return { step, type: 'spiral' as const, path: d, cx, cy, count, meta };
+      } else if (count >= 2) {
+        // Curved Zuma Arc Rail (e.g. 2 to 12 leads): a sweeping semi-spiral queue
+        const r0 = 46;
+        const radialPitch = 24 / (2 * Math.PI);
+        const steps = 80;
+        const maxTheta = Math.min(Math.PI * 1.8, 0.9 + count * 0.45);
+        let d = '';
+        for (let i = 0; i <= steps; i++) {
+          const t = (i / steps) * maxTheta;
+          const r = r0 + radialPitch * t;
+          const px = cx + r * Math.cos(t);
+          const py = cy + r * Math.sin(t);
+          d += (i === 0 ? 'M ' : ' L ') + px.toFixed(1) + ' ' + py.toFixed(1);
+        }
+        return { step, type: 'arc' as const, path: d, cx, cy, count, meta };
+      } else {
+        // Single lead or dormant standby portal
+        return { step, type: 'portal' as const, path: '', cx, cy, count, meta };
+      }
+    });
+  }, [filtered, clusterCenters]);
 
   const constellationNodes: ConstellationNode[] = useMemo(() => {
     // Group by step
@@ -100,46 +157,135 @@ export function NeuralConstellationCanvas({
     });
 
     const nodes: ConstellationNode[] = [];
-    const GOLDEN_ANGLE = 137.5 * (Math.PI / 180);
+
+    const getDelayScore = (item: { prospect: Prospect; data: LeadFollowUpData }, step: FollowUpStep) => {
+      // Step 0 is 'Prototype Envoyé': delay is strictly days since prototype was sent
+      // Step 1, 2, 3: delay is days since last recorded follow-up action
+      const delayDays = step === 0
+        ? (item.data.daysSincePrototype ?? 0)
+        : Math.max(item.data.daysSinceLastAction ?? 0, item.data.daysSincePrototype ?? 0);
+
+      // Stable base timestamp:
+      // In Step 0: anchor to prototypeSentAt / createdAt so editing notes or testing doesn't reshuffle positions.
+      // In Step 1-3: anchor to lastActionAt (or prototypeSentAt if no action yet).
+      const baseDate = step === 0
+        ? (item.data.prototypeSentAt || item.prospect.createdAt)
+        : (item.data.lastActionAt || item.data.prototypeSentAt || item.prospect.createdAt);
+
+      const timeMs = baseDate ? new Date(baseDate).getTime() : 0;
+
+      return { delayDays, timeMs };
+    };
 
     ([0, 1, 2, 3] as FollowUpStep[]).forEach((step) => {
       const list = stepGroups[step];
-      const { cx, cy, radius } = clusterCenters[step];
+      const { cx, cy } = clusterCenters[step];
       const totalInCluster = list.length;
 
-      list.forEach((item, idx) => {
-        let x: number;
-        let y: number;
-
-        if (totalInCluster > 18) {
-          // Fermat Golden Spiral packing: spreads smoothly in all directions with zero clumping
-          const angle = idx * GOLDEN_ANGLE;
-          const spreadFactor = totalInCluster > 40 ? 19.5 : 24;
-          const currentRadius = 30 + Math.sqrt(idx) * spreadFactor;
-          x = cx + Math.cos(angle) * currentRadius;
-          y = cy + Math.sin(angle) * currentRadius;
-        } else {
-          // Multi-ring organic celestial distribution for smaller clusters
-          const ring = Math.floor(idx / 6);
-          const posInRing = idx % 6;
-          const currentRadius = 42 + ring * 46;
-          const angle = (posInRing / 6) * Math.PI * 2 + (ring * 0.5);
-          x = cx + Math.cos(angle) * currentRadius;
-          y = cy + Math.sin(angle) * currentRadius;
+      // In each relance step, sort descending by delay so the most overdue lead sits at #1 (Rail Head)
+      const sortedList = [...list].sort((a, b) => {
+        const scoreA = getDelayScore(a, step);
+        const scoreB = getDelayScore(b, step);
+        if (scoreB.delayDays !== scoreA.delayDays) {
+          return scoreB.delayDays - scoreA.delayDays;
         }
+        if (scoreA.timeMs !== scoreB.timeMs) {
+          return scoreA.timeMs - scoreB.timeMs;
+        }
+        return a.prospect.company.localeCompare(b.prospect.company);
+      });
 
-        // Tailored node size so all nodes remain distinct and non-overlapping
-        const size = totalInCluster > 35 ? 38 : (item.data.urgency === 'today' ? 48 : 42);
+      if (totalInCluster > 12) {
+        // Full winding Zuma Spiral Rail (for large clusters like Step 0)
+        const r0 = 54;
+        const radialGrowthPerRadian = 56 / (2 * Math.PI);
+        const stepArcLength = 47;
+        let currentTheta = 0;
 
+        sortedList.forEach((item, idx) => {
+          const rank = idx + 1;
+          const delayDays = step === 0
+            ? (item.data.daysSincePrototype ?? 0)
+            : Math.max(item.data.daysSinceLastAction ?? 0, item.data.daysSincePrototype ?? 0);
+          const isCriticalCore = delayDays >= 10 || idx === 0;
+
+          const r = r0 + radialGrowthPerRadian * currentTheta;
+          const x = cx + r * Math.cos(currentTheta);
+          const y = cy + r * Math.sin(currentTheta);
+
+          const dTheta = stepArcLength / r;
+          currentTheta += dTheta;
+
+          const size = idx === 0 ? 48 : isCriticalCore ? 42 : 38;
+
+          nodes.push({
+            prospect: item.prospect,
+            data: item.data,
+            x,
+            y,
+            cluster: step,
+            size,
+            rank,
+            totalInCluster,
+            delayDays,
+            isCriticalCore,
+          });
+        });
+      } else if (totalInCluster >= 2) {
+        // Curved Zuma Arc Rail (for 2 to 12 leads)
+        const r0 = 46;
+        const radialGrowth = 24 / (2 * Math.PI);
+        const stepArcLength = 48;
+        let currentTheta = 0;
+
+        sortedList.forEach((item, idx) => {
+          const rank = idx + 1;
+          const delayDays = step === 0
+            ? (item.data.daysSincePrototype ?? 0)
+            : Math.max(item.data.daysSinceLastAction ?? 0, item.data.daysSincePrototype ?? 0);
+          const isCriticalCore = delayDays >= (step === 0 ? 10 : step === 1 ? 4 : 3) || idx === 0;
+
+          const r = r0 + radialGrowth * currentTheta;
+          const x = cx + r * Math.cos(currentTheta);
+          const y = cy + r * Math.sin(currentTheta);
+
+          const dTheta = stepArcLength / r;
+          currentTheta += dTheta;
+
+          const size = idx === 0 ? 46 : isCriticalCore ? 42 : 38;
+
+          nodes.push({
+            prospect: item.prospect,
+            data: item.data,
+            x,
+            y,
+            cluster: step,
+            size,
+            rank,
+            totalInCluster,
+            delayDays,
+            isCriticalCore,
+          });
+        });
+      } else if (totalInCluster === 1) {
+        // Single lead (e.g. Melouka Voyage): sits proudly in the center aperture of this step
+        const item = sortedList[0];
+        const delayDays = step === 0
+          ? (item.data.daysSincePrototype ?? 0)
+          : Math.max(item.data.daysSinceLastAction ?? 0, item.data.daysSincePrototype ?? 0);
         nodes.push({
           prospect: item.prospect,
           data: item.data,
-          x,
-          y,
+          x: cx,
+          y: cy,
           cluster: step,
-          size,
+          size: 48,
+          rank: 1,
+          totalInCluster: 1,
+          delayDays,
+          isCriticalCore: true,
         });
-      });
+      }
     });
 
     return nodes;
@@ -149,41 +295,43 @@ export function NeuralConstellationCanvas({
   const synapticAxons = useMemo(() => {
     const axons: Array<{ id: string; d: string; color: string; pulse: boolean }> = [];
 
-    // 1. Massive trunk axons between Ganglion cluster hubs
+    // 1. Massive trunk axons between Zuma pipeline stages
     for (let s = 0; s < 3; s++) {
       const current = clusterCenters[s as FollowUpStep];
       const next = clusterCenters[(s + 1) as FollowUpStep];
-      const midX = (current.cx + next.cx) / 2;
-      const arcY = s % 2 === 0 ? current.cy - 120 : current.cy + 120;
+      // Start from current step exit and curve into next step entrance
+      const startX = s === 0 ? current.cx + 54 : current.cx + 40;
+      const startY = current.cy;
+      const endX = next.cx - 40;
+      const endY = next.cy;
+      const midX = (startX + endX) / 2;
+      const arcY = s % 2 === 0 ? current.cy - 105 : current.cy + 105;
+
       axons.push({
         id: `trunk_${s}`,
-        d: `M ${current.cx} ${current.cy} Q ${midX} ${arcY} ${next.cx} ${next.cy}`,
+        d: `M ${startX} ${startY} Q ${midX} ${arcY} ${endX} ${endY}`,
         color: s === 0 ? '#a855f7' : s === 1 ? '#eab308' : '#3b82f6',
         pulse: true,
       });
     }
 
-    // 2. Faint dendrites between neighboring nodes within each cluster
+    // 2. Faint dendrites between consecutive nodes along each Zuma rail
     const clusterMap: Record<number, ConstellationNode[]> = { 0: [], 1: [], 2: [], 3: [] };
     constellationNodes.forEach((n) => clusterMap[n.cluster].push(n));
 
-    Object.values(clusterMap).forEach((group) => {
-      for (let i = 0; i < group.length; i++) {
-        // Connect each node to next 1-2 neighbors
+    Object.entries(clusterMap).forEach(([stepStr, group]) => {
+      const stepNum = parseInt(stepStr, 10);
+      const stepColor = STEP_NAMES[stepNum as FollowUpStep]?.color || '#a855f7';
+      // Connect sequential nodes along the Zuma rail smoothly
+      for (let i = 0; i < group.length - 1; i++) {
         const a = group[i];
-        const nextIdx = (i + 1) % group.length;
-        const b = group[nextIdx];
-        if (b && a !== b) {
-          const dist = Math.hypot(a.x - b.x, a.y - b.y);
-          if (dist < 130) {
-            axons.push({
-              id: `dendrite_${a.prospect.id}_${b.prospect.id}`,
-              d: `M ${a.x} ${a.y} Q ${(a.x + b.x) / 2 + 10} ${(a.y + b.y) / 2 - 10} ${b.x} ${b.y}`,
-              color: 'rgba(168, 85, 247, 0.16)',
-              pulse: false,
-            });
-          }
-        }
+        const b = group[i + 1];
+        axons.push({
+          id: `zuma_link_${a.prospect.id}_${b.prospect.id}`,
+          d: `M ${a.x} ${a.y} L ${b.x} ${b.y}`,
+          color: a.isCriticalCore ? 'rgba(239, 68, 68, 0.28)' : `${stepColor}28`,
+          pulse: false,
+        });
       }
     });
 
@@ -230,6 +378,19 @@ export function NeuralConstellationCanvas({
             )}
           >
             <span>Tous les neurones ({constellationNodes.length})</span>
+          </button>
+
+          <button
+            onClick={() => setUrgencyFilter('critical')}
+            className={cn(
+              "h-9 px-3.5 rounded-[10px] text-[12px] font-body font-medium transition-all cursor-pointer flex items-center gap-1.5",
+              urgencyFilter === 'critical'
+                ? "bg-[rgba(239,68,68,0.28)] border border-[#ef4444] text-[#fca5a5] shadow-[0_0_16px_rgba(239,68,68,0.4)]"
+                : "bg-[#111120] border border-[rgba(255,255,255,0.08)] text-[rgba(232,228,220,0.65)] hover:border-[rgba(239,68,68,0.4)]"
+            )}
+          >
+            <span className="w-2 h-2 rounded-full bg-[#ef4444] animate-ping" />
+            <span>🎯 Cœur Critique +10j ({enrichedLeads.filter((l) => (l.data.currentStep === 0 ? (l.data.daysSincePrototype || 0) : Math.max(l.data.daysSinceLastAction || 0, l.data.daysSincePrototype || 0)) >= 10).length})</span>
           </button>
 
           <button
@@ -296,7 +457,7 @@ export function NeuralConstellationCanvas({
 
         {/* Scaled Spatial Canvas */}
         <div
-          className="min-w-[1300px] w-full h-[740px] relative transition-transform duration-200 origin-top-left"
+          className="min-w-[1440px] w-full h-[740px] relative transition-transform duration-200 origin-top-left"
           style={{
             transform: `scale(${zoomLevel})`,
           }}
@@ -316,7 +477,7 @@ export function NeuralConstellationCanvas({
               </filter>
             </defs>
 
-            {/* Axon Curves */}
+            {/* Axon Highway Conduits between Zuma pipeline stages */}
             {synapticAxons.map((axon) => (
               <path
                 key={axon.id}
@@ -325,19 +486,146 @@ export function NeuralConstellationCanvas({
                 stroke={axon.pulse ? 'url(#trunkGrad)' : axon.color}
                 strokeWidth={axon.pulse ? 3 : 1.2}
                 strokeDasharray={axon.pulse ? '6,6' : '3,3'}
-                className={axon.pulse ? 'opacity-80' : 'opacity-40'}
+                className={axon.pulse ? 'opacity-85' : 'opacity-40'}
                 filter={axon.pulse ? 'url(#glow)' : undefined}
               />
             ))}
 
-            {/* Cluster Hub Background Auroras */}
+            {/* ─── Multi-Stage Zuma Pipeline Energy Rails (All Steps 0, 1, 2, 3) ─── */}
+            {allZumaRails.map((rail) => {
+              if (rail.path) {
+                return (
+                  <g key={`zuma_rail_${rail.step}`}>
+                    {/* Outer Dark Trench Bed */}
+                    <path
+                      d={rail.path}
+                      fill="none"
+                      stroke="rgba(8, 7, 18, 0.95)"
+                      strokeWidth="50"
+                      strokeLinecap="round"
+                    />
+                    {/* Glowing Rail Bed with step theme color */}
+                    <path
+                      d={rail.path}
+                      fill="none"
+                      stroke={`${rail.meta.color}28`}
+                      strokeWidth="48"
+                      strokeLinecap="round"
+                    />
+                    {/* Metallic Double Laser Guide Rails */}
+                    <path
+                      d={rail.path}
+                      fill="none"
+                      stroke="rgba(197, 160, 89, 0.32)"
+                      strokeWidth="24"
+                      strokeDasharray="4,6"
+                    />
+                    {/* Superconducting Center Beam */}
+                    <path
+                      d={rail.path}
+                      fill="none"
+                      stroke={rail.meta.color}
+                      strokeWidth="2.5"
+                      strokeDasharray="8,6"
+                      className="opacity-80"
+                      filter="url(#glow)"
+                    />
+                    {/* Zuma Mouth Aperture at (cx + 50, cy) */}
+                    <g transform={`translate(${rail.cx + (rail.step === 0 ? 54 : 40)}, ${rail.cy})`}>
+                      <circle
+                        r="30"
+                        fill={`${rail.meta.color}15`}
+                        stroke={rail.meta.color}
+                        strokeWidth="1.5"
+                        strokeDasharray="3,3"
+                        className="animate-spin"
+                        style={{ animationDuration: '24s' }}
+                      />
+                      <circle
+                        r="20"
+                        fill="none"
+                        stroke="rgba(239, 68, 68, 0.4)"
+                        strokeWidth="1"
+                        strokeDasharray="2,2"
+                      />
+                      <circle
+                        r="5"
+                        fill={rail.meta.color}
+                        className="animate-ping opacity-75"
+                      />
+                    </g>
+                  </g>
+                );
+              } else {
+                // Standby / Single Lead Receptor Portal Pad
+                return (
+                  <g key={`zuma_portal_${rail.step}`} transform={`translate(${rail.cx}, ${rail.cy})`}>
+                    {/* Glowing Base Platform */}
+                    <circle
+                      r="44"
+                      fill={`${rail.meta.color}08`}
+                      stroke={`${rail.meta.color}35`}
+                      strokeWidth="1.2"
+                      strokeDasharray="4,4"
+                      className="animate-spin"
+                      style={{ animationDuration: '40s' }}
+                    />
+                    <circle
+                      r="30"
+                      fill="none"
+                      stroke={`${rail.meta.color}20`}
+                      strokeWidth="0.8"
+                    />
+                    {rail.count === 0 && (
+                      <circle
+                        r="4"
+                        fill={`${rail.meta.color}40`}
+                        className="animate-pulse"
+                      />
+                    )}
+                  </g>
+                );
+              }
+            })}
+
+            {/* Final Closing Victory Portal (Step 3 Output Gateway) */}
+            <g transform={`translate(${clusterCenters[3].cx + 74}, ${clusterCenters[3].cy})`}>
+              <line
+                x1="-32"
+                y1="0"
+                x2="0"
+                y2="0"
+                stroke="#10b981"
+                strokeWidth="2"
+                strokeDasharray="3,3"
+                className="opacity-70"
+              />
+              <circle
+                r="26"
+                fill="rgba(16, 185, 129, 0.12)"
+                stroke="#10b981"
+                strokeWidth="2"
+                strokeDasharray="3,3"
+                className="animate-spin"
+                style={{ animationDuration: '16s' }}
+              />
+              <circle
+                r="16"
+                fill="none"
+                stroke="#4ade80"
+                strokeWidth="1"
+                strokeDasharray="2,2"
+              />
+              <circle r="4" fill="#10b981" className="animate-ping opacity-80" />
+            </g>
+
+            {/* Ambient Celestial Cluster Orbit Rings */}
             {([0, 1, 2, 3] as FollowUpStep[]).map((step) => {
               const { cx, cy, radius } = clusterCenters[step];
               const meta = STEP_NAMES[step];
 
               return (
                 <g key={`hub_bg_${step}`}>
-                  {/* Outer Orbit Rings */}
                   <circle
                     cx={cx}
                     cy={cy}
@@ -346,7 +634,7 @@ export function NeuralConstellationCanvas({
                     stroke={meta.color}
                     strokeWidth="1"
                     strokeDasharray="4,8"
-                    className="opacity-20 animate-spin"
+                    className="opacity-15 animate-spin"
                     style={{ animationDuration: `${50 + step * 10}s` }}
                   />
                   <circle
@@ -357,7 +645,7 @@ export function NeuralConstellationCanvas({
                     stroke={meta.color}
                     strokeWidth="0.8"
                     strokeDasharray="3,6"
-                    className="opacity-15"
+                    className="opacity-10"
                   />
                 </g>
               );
@@ -368,13 +656,15 @@ export function NeuralConstellationCanvas({
           {([0, 1, 2, 3] as FollowUpStep[]).map((step) => {
             const { cx, cy } = clusterCenters[step];
             const meta = STEP_NAMES[step];
-            const count = constellationNodes.filter((n) => n.cluster === step).length;
+            const clusterNodes = constellationNodes.filter((n) => n.cluster === step);
+            const count = clusterNodes.length;
+            const criticalCount = clusterNodes.filter((n) => n.isCriticalCore).length;
 
             return (
               <div
                 key={`hub_label_${step}`}
                 className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 flex flex-col items-center"
-                style={{ left: cx, top: cy - 135 }}
+                style={{ left: cx, top: cy - 145 }}
               >
                 <div
                   className="px-3 py-1 rounded-full text-[11px] font-mono font-bold tracking-wider uppercase flex items-center gap-1.5 shadow-[0_0_20px_rgba(0,0,0,0.8)] border"
@@ -391,13 +681,32 @@ export function NeuralConstellationCanvas({
                 <h4 className="font-display text-[15px] font-semibold text-[#e8e4dc] mt-1 shadow-sm">
                   {meta.title}
                 </h4>
+                <span
+                  className={cn(
+                    "text-[10px] font-mono font-bold mt-1 px-2.5 py-0.5 rounded-full border shadow-sm flex items-center gap-1",
+                    count > 0
+                      ? "text-[#c5a059] bg-[rgba(197,160,89,0.12)] border-[rgba(197,160,89,0.35)]"
+                      : "text-[rgba(232,228,220,0.4)] bg-[#101020] border-[rgba(255,255,255,0.06)]"
+                  )}
+                >
+                  <span>⚡</span>
+                  <span>
+                    {step === 0
+                      ? `Rail Spiral Zuma • ${criticalCount} critiques (+10j)`
+                      : count > 1
+                      ? `Rail Zuma Arc • ${count} en cours`
+                      : count === 1
+                      ? `Recepteur Zuma Actif (1)`
+                      : `En attente de relance`}
+                  </span>
+                </span>
               </div>
             );
           })}
 
           {/* ─── Floating Cellular Somas (Neuron Nodes) ─── */}
           {constellationNodes.map((node) => {
-            const { prospect, data, x, y, size } = node;
+            const { prospect, data, x, y, size, rank, delayDays, isCriticalCore } = node;
             const isHovered = hoveredNodeId === prospect.id;
             const isSelected = selectedProspect?.id === prospect.id;
             const initial = (prospect.company || 'A').trim().charAt(0).toUpperCase();
@@ -408,23 +717,47 @@ export function NeuralConstellationCanvas({
                 key={prospect.id}
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                whileHover={{ scale: 1.25, zIndex: 50 }}
+                whileHover={{ scale: 1.25, zIndex: 60 }}
                 onMouseEnter={() => setHoveredNodeId(prospect.id)}
                 onMouseLeave={() => setHoveredNodeId(null)}
                 onClick={() => onSelectProspect(prospect)}
-                className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer z-20 group"
-                style={{ left: x, top: y }}
+                className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
+                style={{
+                  left: x,
+                  top: y,
+                  zIndex: isSelected ? 50 : rank === 1 ? 35 : isCriticalCore ? 30 : 20,
+                }}
               >
+                {/* Micro Rank Badge (#1, #2, #3...) */}
+                <div
+                  className={cn(
+                    "absolute -top-2.5 -left-2.5 min-w-[20px] h-[18px] px-1 rounded-full flex items-center justify-center font-mono text-[9px] font-black tracking-tight border shadow-lg z-30 transition-transform group-hover:scale-110 select-none",
+                    rank === 1
+                      ? "bg-gradient-to-r from-[#ef4444] via-[#f59e0b] to-[#ef4444] text-white border-[#fef08a] shadow-[0_0_15px_rgba(239,68,68,0.95)] ring-1 ring-[#fef08a]/60 animate-pulse scale-110"
+                      : delayDays >= 10
+                      ? "bg-[#581014] text-[#fca5a5] border-[#ef4444] shadow-[0_0_8px_rgba(239,68,68,0.6)]"
+                      : rank <= 5
+                      ? "bg-[#251833] text-[#c5a059] border-[#c5a059] shadow-[0_0_6px_rgba(197,160,89,0.35)]"
+                      : "bg-[#0b0b16] text-[rgba(232,228,220,0.6)] border-[rgba(255,255,255,0.15)]"
+                  )}
+                >
+                  #{rank}
+                </div>
+
                 {/* Cellular Membrane (Halo) */}
                 <div
                   className={cn(
                     "rounded-full flex items-center justify-center transition-all relative",
                     isSelected
-                      ? "ring-4 ring-[#c5a059] shadow-[0_0_35px_rgba(197,160,89,0.8)] bg-gradient-to-br from-[#2a2245] to-[#121020]"
+                      ? "ring-4 ring-[#c5a059] shadow-[0_0_35px_rgba(197,160,89,0.9)] bg-gradient-to-br from-[#2a2245] to-[#121020]"
+                      : rank === 1
+                      ? "ring-3 ring-[#f59e0b] shadow-[0_0_35px_rgba(239,68,68,0.95),0_0_15px_rgba(245,158,11,0.85)] bg-gradient-to-br from-[#450a0a] via-[#2a060a] to-[#140406] animate-pulse"
+                      : delayDays >= 10
+                      ? "ring-2 ring-[#ef4444] shadow-[0_0_24px_rgba(239,68,68,0.65)] bg-gradient-to-br from-[#3b080d] to-[#160406]"
                       : data.urgency === 'today'
                       ? "ring-2 ring-[#4ade80] shadow-[0_0_26px_rgba(74,222,128,0.55)] bg-gradient-to-br from-[#122b1e] to-[#0a1410] animate-pulse"
                       : data.urgency === 'overdue'
-                      ? "ring-2 ring-[#f87171] shadow-[0_0_20px_rgba(239,68,68,0.45)] bg-gradient-to-br from-[#2b1216] to-[#140a0c]"
+                      ? "ring-1.5 ring-[rgba(248,113,113,0.5)] shadow-[0_0_14px_rgba(239,68,68,0.25)] bg-gradient-to-br from-[#1c0e14] to-[#0c080d]"
                       : "ring-1 ring-[rgba(168,85,247,0.4)] shadow-[0_0_15px_rgba(168,85,247,0.25)] bg-gradient-to-br from-[#1b1530] to-[#0e0c18] hover:ring-[#c5a059]"
                   )}
                   style={{ width: size, height: size }}
@@ -432,18 +765,22 @@ export function NeuralConstellationCanvas({
                   {/* Inner Nucleus Core */}
                   <span
                     className={cn(
-                      "font-display font-bold text-[13px] select-none",
-                      data.urgency === 'today'
-                        ? "text-[#4ade80]"
+                      "font-display font-bold select-none",
+                      rank === 1
+                        ? "font-black text-[15px] text-[#fef08a]"
+                        : delayDays >= 10
+                        ? "text-[13px] text-[#fca5a5]"
+                        : data.urgency === 'today'
+                        ? "text-[13px] text-[#4ade80]"
                         : data.urgency === 'overdue'
-                        ? "text-[#f87171]"
-                        : "text-[#e8e4dc] group-hover:text-[#c5a059]"
+                        ? "text-[12px] text-[#f87171]"
+                        : "text-[12px] text-[#e8e4dc] group-hover:text-[#c5a059]"
                     )}
                   >
                     {initial}
                   </span>
 
-                  {/* Pulsating electrical spark particle */}
+                  {/* Pulsating electrical spark particle for today urgency */}
                   {data.urgency === 'today' && (
                     <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#4ade80] shadow-[0_0_10px_#4ade80] animate-ping" />
                   )}
@@ -454,13 +791,31 @@ export function NeuralConstellationCanvas({
                       {reactionMeta.emoji}
                     </span>
                   )}
+
+                  {/* Apex Crown Indicator for #1 */}
+                  {rank === 1 && (
+                    <span className="absolute -bottom-1.5 -left-1 text-[10px] select-none" title="Cœur Bullseye #1">
+                      👑
+                    </span>
+                  )}
                 </div>
 
                 {/* Micro Label under node */}
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap pointer-events-none">
-                  <span className="text-[10px] font-body font-medium text-[rgba(232,228,220,0.7)] group-hover:text-[#c5a059] transition-colors truncate max-w-[90px] block">
-                    {prospect.company}
-                  </span>
+                  {(rank <= 5 || isHovered) && (
+                    <span
+                      className={cn(
+                        "text-[9.5px] font-body font-semibold px-1.5 py-0.5 rounded shadow-md transition-all truncate max-w-[105px] block text-center backdrop-blur-md",
+                        rank === 1
+                          ? "bg-[rgba(197,160,89,0.28)] border border-[#fef08a] text-[#fef08a] font-bold shadow-[0_0_8px_rgba(197,160,89,0.4)]"
+                          : delayDays >= 10
+                          ? "bg-[rgba(239,68,68,0.25)] border border-[rgba(239,68,68,0.45)] text-[#fca5a5]"
+                          : "bg-[#0c0c16]/95 border border-[rgba(255,255,255,0.15)] text-[rgba(232,228,220,0.85)]"
+                      )}
+                    >
+                      {prospect.company}
+                    </span>
+                  )}
                 </div>
               </motion.div>
             );
@@ -475,14 +830,31 @@ export function NeuralConstellationCanvas({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="absolute top-6 right-6 z-40 p-4 rounded-[18px] bg-[#0c0c1c]/95 border border-[rgba(197,160,89,0.45)] shadow-[0_16px_50px_rgba(0,0,0,0.95)] backdrop-blur-2xl w-[330px] pointer-events-auto"
+              className="absolute top-6 right-6 z-40 p-4 rounded-[18px] bg-[#0c0c1c]/95 border border-[rgba(197,160,89,0.45)] shadow-[0_16px_50px_rgba(0,0,0,0.95)] backdrop-blur-2xl w-[340px] pointer-events-auto"
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-[rgba(168,85,247,0.18)] text-[#c084fc] border border-[rgba(168,85,247,0.3)]">
-                    {STEP_NAMES[activeHoveredNode.cluster].title}
-                  </span>
-                  <h4 className="font-display font-semibold text-[15px] text-[#e8e4dc] mt-1.5 leading-snug">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span
+                      className={cn(
+                        "text-[10px] font-mono font-black px-2 py-0.5 rounded-full border shadow-sm",
+                        activeHoveredNode.rank === 1
+                          ? "bg-gradient-to-r from-[#ef4444] to-[#f59e0b] text-white border-[#fef08a] shadow-[0_0_8px_rgba(239,68,68,0.6)]"
+                          : activeHoveredNode.delayDays >= 10
+                          ? "bg-[#581014] text-[#fca5a5] border-[#ef4444]"
+                          : "bg-[#1f1938] text-[#c5a059] border-[rgba(197,160,89,0.3)]"
+                      )}
+                    >
+                      {activeHoveredNode.rank === 1
+                        ? '👑 Rang #1 Cœur'
+                        : `Rang #${activeHoveredNode.rank} / ${activeHoveredNode.totalInCluster}`}
+                    </span>
+                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-[rgba(168,85,247,0.18)] text-[#c084fc] border border-[rgba(168,85,247,0.3)]">
+                      {STEP_NAMES[activeHoveredNode.cluster].title}
+                    </span>
+                  </div>
+
+                  <h4 className="font-display font-semibold text-[15px] text-[#e8e4dc] mt-2 leading-snug">
                     {activeHoveredNode.prospect.company}
                   </h4>
                   <p className="text-[11.5px] font-body text-[rgba(232,228,220,0.6)]">
@@ -490,20 +862,27 @@ export function NeuralConstellationCanvas({
                   </p>
                 </div>
 
-                <span
-                  className={cn(
-                    "text-[10.5px] font-mono font-bold px-2 py-0.5 rounded border",
-                    activeHoveredNode.data.urgency === 'today'
-                      ? "bg-[rgba(74,222,128,0.2)] border-[#4ade80] text-[#4ade80]"
-                      : activeHoveredNode.data.urgency === 'overdue'
-                      ? "bg-[rgba(239,68,68,0.2)] border-[#f87171] text-[#f87171]"
-                      : "bg-[#18182b] border-[rgba(255,255,255,0.08)] text-[rgba(232,228,220,0.6)]"
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <span
+                    className={cn(
+                      "text-[11px] font-mono font-bold px-2 py-0.5 rounded border shadow-sm",
+                      activeHoveredNode.delayDays >= 10
+                        ? "bg-[rgba(239,68,68,0.25)] border-[#ef4444] text-[#fca5a5] shadow-[0_0_10px_rgba(239,68,68,0.3)]"
+                        : activeHoveredNode.data.urgency === 'today'
+                        ? "bg-[rgba(74,222,128,0.2)] border-[#4ade80] text-[#4ade80]"
+                        : "bg-[#18182b] border-[rgba(255,255,255,0.08)] text-[rgba(232,228,220,0.6)]"
+                    )}
+                  >
+                    {activeHoveredNode.delayDays === 0
+                      ? "Aujourd'hui"
+                      : `J+${activeHoveredNode.delayDays}`}
+                  </span>
+                  {activeHoveredNode.delayDays >= 10 && (
+                    <span className="text-[9px] font-mono font-bold text-[#ef4444] uppercase tracking-wider">
+                      🚨 Retard Critique (+10j)
+                    </span>
                   )}
-                >
-                  {activeHoveredNode.data.daysSinceLastAction === 0
-                    ? "Aujourd'hui"
-                    : `J+${activeHoveredNode.data.daysSinceLastAction}`}
-                </span>
+                </div>
               </div>
 
               {/* Reaction */}

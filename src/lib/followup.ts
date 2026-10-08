@@ -182,37 +182,79 @@ export const FOLLOW_UP_SCRIPTS: Record<
   },
 };
 
+export type DelayMilestone = 'fresh_48h' | 'midweek' | 'week_mark' | 'breakup_2w';
+
+export function getDelayMilestone(days: number): DelayMilestone {
+  if (days >= 14) return 'breakup_2w';
+  if (days >= 7) return 'week_mark';
+  if (days >= 3) return 'midweek';
+  return 'fresh_48h';
+}
+
 /**
- * Returns an enriched, personalized follow-up script with prospect details and objection handling.
+ * Returns an enriched, personalized follow-up script with prospect details,
+ * objection handling, and human elapsed-time psychology (48h, 1 week, 2 weeks+).
  */
 export function getSmartFollowUpScript(
   step: FollowUpStep,
   prospect: Prospect,
   lang: 'fr' | 'darija' = 'fr',
-  reaction?: ReactionType
+  reaction?: ReactionType,
+  delayDays?: number
 ): string {
   const comp = prospect.company || 'votre agence';
   const city = prospect.city ? ` (${prospect.city})` : '';
   const name = prospect.name && !prospect.name.toLowerCase().includes('responsable') ? prospect.name : comp;
+  const days = typeof delayDays === 'number' ? delayDays : 0;
 
-  if (step === 2 && reaction) {
+  // 1. Direct objection handling has highest priority when selected
+  if (reaction) {
     if (reaction === 'price') {
-      return lang === 'darija'
+      return (lang === 'darija'
         ? `Salam alaykoum ${name} ! 🇩🇿💼\n\nبخصوص السعر لوكالة ${comp}، على بالك بلي حجز واحد برك إضافي عبر الموقع يرجعلك كامل حق لو سيت للعام كامل.\n\nوعندنا ثاني عرض One-Page بسعر رمزي جدا نقدر نبعثهولك :\n👉 https://flyer-parfait-voyage.vercel.app/\n\nاسكو نقدر نعيطلك 3 دقائق غدوة نقترحو حل يساعد الميزانية تاعكم ؟ 🤝✨`
-        : `Salam alaykoum ${name} ! 🇩🇿💼\n\nConcernant votre réflexion budgétaire pour ${comp}, sachez qu'une seule réservation supplémentaire grâce à la plateforme rembourse déjà la totalité du site pour l'année.\n\nNous proposons également la formule One-Page très accessible (ou un règlement échelonné en 2 fois) :\n👉 https://flyer-parfait-voyage.vercel.app/\n\nSeriez-vous partant pour un court échange de 3 minutes demain afin de trouver la solution adaptée à votre budget ? 🤝✨`;
+        : `Salam alaykoum ${name} ! 🇩🇿💼\n\nConcernant votre réflexion budgétaire pour ${comp}, sachez qu'une seule réservation supplémentaire grâce à la plateforme rembourse déjà la totalité du site pour l'année.\n\nNous proposons également la formule One-Page très accessible (ou un règlement échelonné en 2 fois) :\n👉 https://flyer-parfait-voyage.vercel.app/\n\nSeriez-vous partant pour un court échange de 3 minutes demain afin de trouver la solution adaptée à votre budget ? 🤝✨`
+      );
     }
     if (reaction === 'partner') {
-      return lang === 'darija'
+      return (lang === 'darija'
         ? `Salam alaykoum ${name} ! 🇩🇿🤝\n\nباش تسهل عليك النقاش مع الشريك تاعك في ${comp}، هاوليك لو فلاير فيه العروض بوضوح تقدر تبعثهولو مباشرة :\n👉 https://flyer-parfait-voyage.vercel.app/\n\nوهاوليك رابط الديمو الحية :\n👉 https://parfait-voyage.vercel.app/\n\nقولي اذا تحب نديرو مكالمة خفيفة تاع 5 دقائق نجاوبو على كامل استفساراتكم ! ✨`
-        : `Salam alaykoum ${name} ! 🇩🇿🤝\n\nPour faciliter la décision avec votre associé pour ${comp}, voici le flyer récapitulatif avec nos 3 formules claires à lui transférer directement :\n👉 https://flyer-parfait-voyage.vercel.app/\n\nEt le lien du prototype en direct :\n👉 https://parfait-voyage.vercel.app/\n\nN'hésitez pas si vous souhaitez qu'on fasse un mini-point à trois de 5 minutes pour répondre à ses questions ! ✨`;
+        : `Salam alaykoum ${name} ! 🇩🇿🤝\n\nPour faciliter la décision avec votre associé pour ${comp}, voici le flyer récapitulatif avec nos 3 formules claires à lui transférer directement :\n👉 https://flyer-parfait-voyage.vercel.app/\n\nEt le lien du prototype en direct :\n👉 https://parfait-voyage.vercel.app/\n\nN'hésitez pas si vous souhaitez qu'on fasse un mini-point à trois de 5 minutes pour répondre à ses questions ! ✨`
+      );
     }
     if (reaction === 'no_reply') {
-      return lang === 'darija'
+      return (lang === 'darija'
         ? `Salam alaykoum ${name} ! 🇩🇿✈️\n\nرسالة خفيفة برك خويا باش نتطمن. اسكو فتحت الرابط تاع لو سيت بروتوتيب لي بعثتهولك للوكالة ${comp} ؟\n👉 https://parfait-voyage.vercel.app/\n\nاذا لقيت أي مشكل فالرابط ولا ما قعدتش، قولي برك 🤝🇩🇿`
-        : `Salam alaykoum ${name} ! 🇩🇿✈️\n\nCourt message pour prendre de vos nouvelles concernant ${comp}. Avez-vous réussi à ouvrir le lien du prototype sur votre téléphone ?\n👉 https://parfait-voyage.vercel.app/\n\nSi vous n'avez pas eu le temps, aucun souci, dites-moi simplement quand vous êtes plus disponible 🤝✨`;
+        : `Salam alaykoum ${name} ! 🇩🇿✈️\n\nCourt message pour prendre de vos nouvelles concernant ${comp}. Avez-vous réussi à ouvrir le lien du prototype sur votre téléphone ?\n👉 https://parfait-voyage.vercel.app/\n\nSi vous n'avez pas eu le temps, aucun souci, dites-moi simplement quand vous êtes plus disponible 🤝✨`
+      );
     }
   }
 
+  // 2. Elapsed time milestones psychology (when no specific objection is active)
+  if (days >= 14) {
+    // Tier 4: Critical Core (+14 days / 2+ weeks) — Breakup / Permission to close
+    return (lang === 'darija'
+      ? `Salam alaykoum ${name} ! 🇩🇿✨\n\nخويا ${name}، راني شفت بلي جازو سيمانتين ملي بعثنا لو سيت بروتوتيب لوكالة ${comp}${city} :\n👉 https://parfait-voyage.vercel.app/\n\nعلابالي بلي الخدمة تدي كامل وقتكم والواحد ما يقعدش.\n\nحبيت برك نسقسيك قبل ما نقفلو الدوسي ونشوفو مع وكالة ثانية في جهتكم : قولي بصراحة، اسكو المشروع مازالو يهمكم هاد الفترة ولا نلغيوه ويبقى الاتصال بيناتنا للمستقبل ؟ 🤝🇩🇿`
+      : `Salam alaykoum ${name} ! 🇩🇿✨\n\nÇa fait maintenant plus de 2 semaines que je vous ai transmis la démo de la plateforme pour ${comp}${city} :\n👉 https://parfait-voyage.vercel.app/\n\nJ'imagine que le quotidien a pris le dessus ou que le timing n'est pas idéal en ce moment.\n\nAvant que je n'archive votre dossier pour attribuer la priorité à une autre agence sur votre secteur, dites-moi simplement : est-ce que le projet est toujours d'actualité pour vous, ou préfère-t-on mettre cela de côté ? 🤝🌍`
+    );
+  }
+
+  if (days >= 7) {
+    // Tier 3: One Week Mark (+7 to +13 days) — Territory exclusivity & season rush
+    return (lang === 'darija'
+      ? `Salam alaykoum ${name} ! 🇩🇿💼\n\nجاز سمانة ملي تكلمنا وبعثنالكم لو سيت بروتوتيب لوكالة ${comp}${city} :\n👉 https://parfait-voyage.vercel.app/\n\nكيما علابالك الموسم راهو قريب ورانا نحددو فالوكالات الشريكة في منطقتكم بالعرض الترويجي قبل ما نغلقو التسجيلات :\n📑 👉 https://flyer-parfait-voyage.vercel.app/\n\nحبيت برك نعرف اسكو راكم حابين تطلقو لو سيت تاعكم هاد الفترة قبل الزحام ولا مازال ؟ 🤝🇩🇿`
+      : `Salam alaykoum ${name} ! 🇩🇿💼\n\nCela fait une semaine que nous vous avons partagé le prototype conçu pour ${comp}${city} :\n👉 https://parfait-voyage.vercel.app/\n\nComme la saison approche et que nous finalisons actuellement les agences partenaires sur votre zone avec nos formules de lancement (One-Page, Pro, Sur-mesure) :\n📑 👉 https://flyer-parfait-voyage.vercel.app/\n\nJe voulais faire le point avec vous : est-ce toujours une priorité pour votre agence d'avoir votre site en ligne avant le rush ? 🤝✨`
+    );
+  }
+
+  if (days >= 3) {
+    // Tier 2: Mid-Week (+3 to +6 days) — Busy hustle empathy & 30-sec test
+    return (lang === 'darija'
+      ? `Salam alaykoum ${name} ! 🇩🇿✈️\n\nعلابالي بلي السيمانة هادي معمرة خدمة عندكم في ${comp}${city}.\n\nباش نسهلوها عليكم، هاوليك لو سيت بروتوتيب لي وجدناه باش تشوفوه في 30 ثانية برك على التيليفون :\n👉 https://parfait-voyage.vercel.app/\n\nاسكو نقدر نعيطلك غدوة 3 دقائق نوضحلك كيفاش نطلقوه باسمكم في 48 ساعة ؟ 🤝🇩🇿`
+      : `Salam alaykoum ${name} ! 🇩🇿✈️\n\nJe sais que vos journées sont bien chargées en agence cette semaine pour ${comp}${city}.\n\nPour vous faire gagner du temps, voici le lien direct du prototype rapide pour tester en 30 secondes sur smartphone :\n👉 https://parfait-voyage.vercel.app/\n\nSeriez-vous partant pour un court échange de 3 minutes demain afin de valider si cela correspond à vos objectifs ? 🤝📞`
+    );
+  }
+
+  // Tier 1: Fresh 24h-48h (+0 to +2 days)
   const baseTemplate = FOLLOW_UP_SCRIPTS[step]?.[lang] || FOLLOW_UP_SCRIPTS[0][lang];
   return baseTemplate
     .replace(/{company}/g, comp)
@@ -251,6 +293,8 @@ export function parseLeadFollowUp(prospect: Prospect): LeadFollowUpData {
   if (history.length > 0) {
     const lastRec = history[history.length - 1];
     if (lastRec?.date) lastActionAt = lastRec.date;
+  } else if (currentStep === 0) {
+    lastActionAt = prototypeSentAt;
   }
 
   const lastActionDate = new Date(lastActionAt);

@@ -57,11 +57,16 @@ export function NeuralScribeDrawer({
       const lastHistory = parsed.history[parsed.history.length - 1];
       setVerbatimText(lastHistory?.verbatim || '');
 
+      const delayDays = parsed.currentStep === 0
+        ? (parsed.daysSincePrototype ?? 0)
+        : Math.max(parsed.daysSinceLastAction ?? 0, parsed.daysSincePrototype ?? 0);
+
       const initialScript = getSmartFollowUpScript(
         parsed.currentStep,
         prospect,
         scriptLanguage,
-        parsed.primaryObjection || undefined
+        parsed.primaryObjection || undefined,
+        delayDays
       );
       setEditableScript(initialScript);
     }
@@ -70,15 +75,20 @@ export function NeuralScribeDrawer({
   // Recalculate script when step, language or reaction changes (if not actively customized)
   useEffect(() => {
     if (prospect) {
+      const delayDays = followUpData.currentStep === 0
+        ? (followUpData.daysSincePrototype ?? 0)
+        : Math.max(followUpData.daysSinceLastAction ?? 0, followUpData.daysSincePrototype ?? 0);
+
       const script = getSmartFollowUpScript(
         followUpData.currentStep,
         prospect,
         scriptLanguage,
-        selectedReaction || undefined
+        selectedReaction || undefined,
+        delayDays
       );
       setEditableScript(script);
     }
-  }, [followUpData.currentStep, scriptLanguage, selectedReaction]);
+  }, [followUpData.currentStep, followUpData.daysSincePrototype, followUpData.daysSinceLastAction, scriptLanguage, selectedReaction]);
 
   const currentMeta = STEP_NAMES[followUpData.currentStep];
   const reactionMeta = selectedReaction ? REACTION_CONFIG[selectedReaction] : null;
@@ -90,6 +100,10 @@ export function NeuralScribeDrawer({
   const handleGenerateWithAi = async () => {
     setIsGeneratingAi(true);
     try {
+      const delayDays = followUpData.currentStep === 0
+        ? (followUpData.daysSincePrototype ?? 0)
+        : Math.max(followUpData.daysSinceLastAction ?? 0, followUpData.daysSincePrototype ?? 0);
+
       const generated = await generateWhatsAppAiMessage(
         prospect,
         'ultra_persuasive',
@@ -100,6 +114,7 @@ export function NeuralScribeDrawer({
           reaction: selectedReaction || undefined,
           verbatim: verbatimText.trim() || undefined,
           language: scriptLanguage,
+          delayDays,
         }
       );
       if (generated) {
@@ -138,10 +153,16 @@ export function NeuralScribeDrawer({
         ? [...followUpData.history, newRecord]
         : followUpData.history;
 
+      const actionDate = newRecord
+        ? newRecord.date
+        : (nextStep === 0 && updatedHistory.length === 0
+            ? followUpData.prototypeSentAt
+            : followUpData.lastActionAt);
+
       const updatedData: LeadFollowUpData = {
         ...followUpData,
         currentStep: nextStep,
-        lastActionAt: new Date().toISOString(),
+        lastActionAt: actionDate,
         primaryObjection: selectedReaction || followUpData.primaryObjection,
         history: updatedHistory,
       };
@@ -167,6 +188,10 @@ export function NeuralScribeDrawer({
     await onUpdateStage(prospect.id, 'perdu');
     onClose();
   };
+
+  const activeDelayDays = followUpData.currentStep === 0
+    ? (followUpData.daysSincePrototype ?? 0)
+    : Math.max(followUpData.daysSinceLastAction ?? 0, followUpData.daysSincePrototype ?? 0);
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden flex justify-end">
@@ -341,6 +366,44 @@ export function NeuralScribeDrawer({
                     </button>
                   </div>
                 </div>
+              </div>
+
+              {/* Strategic Time-Elapsed Milestone Badge */}
+              <div className="flex items-center justify-between px-2.5 py-1.5 rounded-[7px] bg-[#0c0c16] border border-[rgba(255,255,255,0.06)] text-[11px]">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  {activeDelayDays >= 14 ? (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-[#ef4444] animate-ping shrink-0" />
+                      <span className="font-medium text-[#fca5a5] truncate">
+                        🎯 Scénario J+{activeDelayDays} : Rupture & Clôture (2 sem.+)
+                      </span>
+                    </>
+                  ) : activeDelayDays >= 7 ? (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-[#a855f7] shrink-0" />
+                      <span className="font-medium text-[#d8b4fe] truncate">
+                        💼 Scénario J+{activeDelayDays} : Priorité Secteur & Rush (1 sem.)
+                      </span>
+                    </>
+                  ) : activeDelayDays >= 3 ? (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-[#3b82f6] shrink-0" />
+                      <span className="font-medium text-[#93c5fd] truncate">
+                        ⚡ Scénario J+{activeDelayDays} : Empathie Semaine Chargée (3-6j)
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-[#22c55e] shrink-0" />
+                      <span className="font-medium text-[#86efac] truncate">
+                        ✨ Scénario J+{activeDelayDays} : Suivi Doux Mobile (24-48h)
+                      </span>
+                    </>
+                  )}
+                </div>
+                <span className="text-[10px] text-[rgba(232,228,220,0.4)] font-mono shrink-0 ml-2">
+                  {followUpData.currentStep === 0 ? "Prototype envoyé" : `Relance #${followUpData.currentStep}`}
+                </span>
               </div>
 
               {/* Editable Message Textarea */}

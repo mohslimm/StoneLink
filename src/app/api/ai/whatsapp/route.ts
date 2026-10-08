@@ -35,11 +35,11 @@ const WhatsAppAiSchema = z.object({
   formule2: z.string().optional(),
   formule3: z.string().optional(),
   nicheEmoji: z.string().optional(),
-  // Nouveaux champs pour le suivi / relances
   step: z.number().optional(), // 0 = envoi, 1 = relance 1, 2 = relance 2, 3 = closing
   reaction: z.string().optional(), // 'price', 'partner', 'no_reply', 'no_time', 'custom_request', 'interested', 'refusal', 'other'
   verbatim: z.string().optional(), // Ce que le prospect a dit
   language: z.enum(['fr', 'darija']).optional(),
+  delayDays: z.number().optional(), // Nombre de jours écoulés depuis la dernière action ou le prototype
 });
 
 // EMOJI PALETTES PAR NICHE (Vrais emojis Unicode)
@@ -149,15 +149,42 @@ function generateLocalSmartFallback(params: {
   formule2: string;
   formule3: string;
   mainEmoji: string;
+  delayDays?: number;
 }): string {
-  const { prospect, tone, step, reaction, protoUrl, flyerUrl, formule1, formule2, formule3, mainEmoji } = params;
+  const { prospect, tone, step, reaction, protoUrl, flyerUrl, formule1, formule2, formule3, mainEmoji, delayDays } = params;
   const sector = prospect.sector || 'Professionnels';
   const cityStr = prospect.city ? ` à ${prospect.city}` : '';
   const contactName = prospect.name ? ` ${prospect.name}` : '';
+  const delay = typeof delayDays === 'number' ? delayDays : 0;
+  const isDarija = tone === 'darija_pro';
+
+  // 14+ days Breakup hook fallback
+  if (delay >= 14 && !reaction) {
+    if (isDarija) {
+      return `Salam alaykoum${contactName} ! 🇩🇿✨\n\nخويا${contactName}، راني شفت بلي جازو سيمانتين ملي بعثنا لو سيت بروتوتيب لوكالة ${prospect.company}${cityStr} :\n👉 ${protoUrl}\n\nعلابالي بلي الخدمة تدي كامل وقتكم والواحد ما يقعدش.\n\nحبيت برك نسقسيك قبل ما نقفلو الدوسي ونشوفو مع وكالة ثانية في جهتكم : قولي بصراحة، اسكو المشروع مازالو يهمكم هاد الفترة ولا نلغيوه ويبقى الاتصال بيناتنا للمستقبل ؟ 🤝🇩🇿`;
+    }
+    return `Salam alaykoum${contactName} ! 🇩🇿✨\n\nÇa fait maintenant plus de 2 semaines que je vous ai transmis la démo de la plateforme pour ${prospect.company}${cityStr} :\n👉 ${protoUrl}\n\nJ'imagine que le quotidien a pris le dessus ou que le timing n'est pas idéal en ce moment.\n\nAvant que je n'archive votre dossier pour attribuer la priorité à une autre agence sur votre secteur, dites-moi simplement : est-ce que le projet est toujours d'actualité pour vous, ou préfère-t-on mettre cela de côté ? 🤝🌍`;
+  }
+
+  // 7-13 days 1-week mark fallback
+  if (delay >= 7 && !reaction) {
+    if (isDarija) {
+      return `Salam alaykoum${contactName} ! 🇩🇿💼\n\nجاز سمانة ملي تكلمنا وبعثنالكم لو سيت بروتوتيب لوكالة ${prospect.company}${cityStr} :\n👉 ${protoUrl}\n\nكيما علابالك الموسم راهو قريب ورانا نحددو فالوكالات الشريكة في منطقتكم بالعرض الترويجي قبل ما نغلقو التسجيلات :\n📑 👉 ${flyerUrl}\n\nحبيت برك نعرف اسكو راكم حابين تطلقو لو سيت تاعكم هاد الفترة قبل الزحام ولا مازال ؟ 🤝🇩🇿`;
+    }
+    return `Salam alaykoum${contactName} ! 🇩🇿💼\n\nCela fait une semaine que nous vous avons partagé le prototype conçu pour ${prospect.company}${cityStr} :\n👉 ${protoUrl}\n\nComme la saison approche et que nous finalisons actuellement les agences partenaires sur votre zone avec nos formules de lancement :\n📑 👉 ${flyerUrl}\n\nJe voulais faire le point avec vous : est-ce toujours une priorité pour votre agence d'avoir votre site en ligne avant le rush ? 🤝✨`;
+  }
+
+  // 3-6 days Mid-week busy check fallback
+  if (delay >= 3 && !reaction) {
+    if (isDarija) {
+      return `Salam alaykoum${contactName} ! 🇩🇿✈️\n\nعلابالي بلي السيمانة هادي معمرة خدمة عندكم في ${prospect.company}${cityStr}.\n\nباش نسهلوها عليكم، هاوليك لو سيت بروتوتيب لي وجدناه باش تشوفوه في 30 ثانية برك على التيليفون :\n👉 ${protoUrl}\n\nاسكو نقدر نعيطلك غدوة 3 دقائق نوضحلك كيفاش نطلقوه باسمكم في 48 ساعة ؟ 🤝🇩🇿`;
+    }
+    return `Salam alaykoum${contactName} ! 🇩🇿✈️\n\nJe sais que vos journées sont bien chargées en agence cette semaine pour ${prospect.company}${cityStr}.\n\nPour vous faire gagner du temps, voici le lien direct du prototype rapide pour tester en 30 secondes sur smartphone :\n👉 ${protoUrl}\n\nSeriez-vous partant pour un court échange de 3 minutes demain afin de valider si cela correspond à vos objectifs ? 🤝📞`;
+  }
 
   // Step 1: Relance #1
   if (step === 1) {
-    if (tone === 'darija_pro') {
+    if (isDarija) {
       return `Salam alaykoum${contactName} ! 🇩🇿✈️\n\nان شاء الله راك مليح خويا. راني نتواصل معاك بخصوص لو سيت بروتوتيب لي وجدناه لوكالة ${prospect.company}${cityStr} :\n👉 ${protoUrl}\n\nاسكو شفتو ولا مازال ما قعدتش ؟ واش رايك فيه مقارنة مع واش يحتاجو زبائنك ؟ 🤝\n\nرانا هنا باش نساعدوكم ونحطوه باسمكم في 48 ساعة ان شاء الله ✨`;
     }
     return `Salam alaykoum${contactName} ! 🇩🇿${mainEmoji}\n\nJ'espère que vous allez très bien. Je reviens vers vous suite à l'envoi de la démo de la plateforme conçue pour ${prospect.company}${cityStr} :\n👉 ${protoUrl}\n\nAvez-vous eu l'occasion d'y jeter un œil sur smartphone ? Qu'en avez-vous pensé pour vos clients ? 🤝✨`;
@@ -218,6 +245,7 @@ export async function POST(req: NextRequest) {
       reaction,
       verbatim,
       language,
+      delayDays,
     } = parsed.data;
 
     const sector = targetSector || prospect.sector || 'Professionnels';
@@ -246,6 +274,34 @@ export async function POST(req: NextRequest) {
     };
 
     const currentStepContext = stepContextMap[step] || stepContextMap[0];
+
+    // Contexte Temporel & Psychologie du Délai Écoulé
+    let delayDirective = "";
+    if (typeof delayDays === 'number') {
+      if (delayDays >= 14) {
+        delayDirective = `DÉLAI ÉCOULÉ : J+${delayDays} (PLUS DE 2 SEMAINES DEPUIS L'ENVOI OU LA DERNIÈRE ACTION).
+PSYCHOLOGIE COMMERCIALE B2B (APPROCHE RUPTURE & PERMISSION DE CLÔTURE) :
+- Le prospect n'a pas répondu depuis plus de deux semaines. INTERDICTION FORMELLE d'utiliser des formules passives comme "Avez-vous vu mon message ?".
+- Adopte l'approche d'autorité bienveillante et de désengagement poli : "Ça fait maintenant plus de 2 semaines que je vous ai partagé la démo... J'imagine que le quotidien a pris le dessus ou que le timing n'est pas idéal en ce moment".
+- Introduis la clôture du dossier et l'exclusivité territoriale : "Avant que je n'archive votre dossier pour attribuer la priorité à une autre agence sur ${prospect.city || 'votre région'}..."
+- Pose une question binaire fermée et déculpabilisante pour forcer une décision rapide : "Dites-moi simplement en un mot : est-ce que le projet est toujours d'actualité pour vous, ou préfère-t-on mettre cela de côté pour l'instant ?"`;
+      } else if (delayDays >= 7) {
+        delayDirective = `DÉLAI ÉCOULÉ : J+${delayDays} (ENVIRON 1 SEMAINE PASSÉE).
+PSYCHOLOGIE COMMERCIALE B2B (POINT D'ÉTAPE & PRESSION DU TEMPS) :
+- Mentionne qu'environ une semaine s'est écoulée ("Cela fait une semaine qu'on a échangé...").
+- Rappelle que la saison approche et que nous finalisons actuellement les partenaires prioritaires sur ${prospect.city || 'sa zone'} avec les tarifs de lancement.
+- Demande si c'est toujours une priorité pour son agence avant le rush.`;
+      } else if (delayDays >= 3) {
+        delayDirective = `DÉLAI ÉCOULÉ : J+${delayDays} (MILIEU DE SEMAINE).
+PSYCHOLOGIE COMMERCIALE B2B (EMPATHIE CHARGE DE TRAVAIL) :
+- Reconnais avec empathie que ses journées sont bien chargées en agence cette semaine.
+- Va droit au but, propose un test express en 30 secondes sur smartphone ou un court point de 3 minutes.`;
+      } else {
+        delayDirective = `DÉLAI ÉCOULÉ : J+${delayDays} (SUIVI IMMÉDIAT 24H-48H).
+PSYCHOLOGIE COMMERCIALE B2B :
+- La démo est encore très fraîche. Demande chaleureusement s'il a pu y jeter un coup d'œil rapide sur son téléphone et ce qu'il en a pensé pour ses clients.`;
+      }
+    }
 
     // Contexte de l'objection
     let objectionDirectives = "";
@@ -277,6 +333,7 @@ DONNÉES DU PROSPECT :
 ${verbatimContext}
 
 ${currentStepContext}
+${delayDirective ? `\n${delayDirective}\n` : ''}
 ${objectionDirectives}
 
 LES 3 FORMULES :
@@ -333,6 +390,7 @@ RÈGLES D'OR DU MESSAGE WHATSAPP :
         formule2: f2,
         formule3: f3,
         mainEmoji,
+        delayDays,
       });
       return NextResponse.json({
         success: true,

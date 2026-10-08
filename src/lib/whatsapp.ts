@@ -228,6 +228,7 @@ export interface FollowUpAiContext {
   reaction?: string;
   verbatim?: string;
   language?: 'fr' | 'darija';
+  delayDays?: number;
 }
 
 export async function generateWhatsAppAiMessage(
@@ -254,6 +255,7 @@ export async function generateWhatsAppAiMessage(
         reaction: followUpContext?.reaction,
         verbatim: followUpContext?.verbatim,
         language: followUpContext?.language,
+        delayDays: followUpContext?.delayDays,
       }),
     });
 
@@ -273,9 +275,35 @@ export async function generateWhatsAppAiMessage(
   const city = prospect?.city ? ` à ${prospect.city}` : '';
   const activeProtoUrl = prototype?.prototypeUrl || 'https://parfait-voyage.vercel.app/';
   const activeFlyerUrl = prototype?.flyerUrl || 'https://flyer-parfait-voyage.vercel.app/';
+  const delay = followUpContext?.delayDays ?? 0;
+  const isDarija = followUpContext?.language === 'darija';
+
+  // 14+ days Breakup hook fallback
+  if (delay >= 14 && !followUpContext?.reaction) {
+    if (isDarija) {
+      return `Salam alaykoum${contact} ! 🇩🇿✨\n\nخويا${contact}، راني شفت بلي جازو سيمانتين ملي بعثنا لو سيت بروتوتيب لوكالة ${comp}${city} :\n👉 ${activeProtoUrl}\n\nعلابالي بلي الخدمة تدي كامل وقتكم والواحد ما يقعدش.\n\nحبيت برك نسقسيك قبل ما نقفلو الدوسي ونشوفو مع وكالة ثانية في جهتكم : قولي بصراحة، اسكو المشروع مازالو يهمكم هاد الفترة ولا نلغيوه ويبقى الاتصال بيناتنا للمستقبل ؟ 🤝🇩🇿`;
+    }
+    return `Salam alaykoum${contact} ! 🇩🇿✨\n\nÇa fait maintenant plus de 2 semaines que je vous ai transmis la démo de la plateforme pour ${comp}${city} :\n👉 ${activeProtoUrl}\n\nJ'imagine que le quotidien a pris le dessus ou que le timing n'est pas idéal en ce moment.\n\nAvant que je n'archive votre dossier pour attribuer la priorité à une autre agence sur votre secteur, dites-moi simplement : est-ce que le projet est toujours d'actualité pour vous, ou préfère-t-on mettre cela de côté ? 🤝🌍`;
+  }
+
+  // 7-13 days 1-week mark fallback
+  if (delay >= 7 && !followUpContext?.reaction) {
+    if (isDarija) {
+      return `Salam alaykoum${contact} ! 🇩🇿💼\n\nجاز سمانة ملي تكلمنا وبعثنالكم لو سيت بروتوتيب لوكالة ${comp}${city} :\n👉 ${activeProtoUrl}\n\nكيما علابالك الموسم راهو قريب ورانا نحددو فالوكالات الشريكة في منطقتكم بالعرض الترويجي قبل ما نغلقو التسجيلات :\n📑 👉 ${activeFlyerUrl}\n\nحبيت برك نعرف اسكو راكم حابين تطلقو لو سيت تاعكم هاد الفترة قبل الزحام ولا مازال ؟ 🤝🇩🇿`;
+    }
+    return `Salam alaykoum${contact} ! 🇩🇿💼\n\nCela fait une semaine que nous vous avons partagé le prototype conçu pour ${comp}${city} :\n👉 ${activeProtoUrl}\n\nComme la saison approche et que nous finalisons actuellement les agences partenaires sur votre zone avec nos formules de lancement :\n📑 👉 ${activeFlyerUrl}\n\nJe voulais faire le point avec vous : est-ce toujours une priorité pour votre agence d'avoir votre site en ligne avant le rush ? 🤝✨`;
+  }
+
+  // 3-6 days Mid-week busy check fallback
+  if (delay >= 3 && !followUpContext?.reaction) {
+    if (isDarija) {
+      return `Salam alaykoum${contact} ! 🇩🇿✈️\n\nعلابالي بلي السيمانة هادي معمرة خدمة عندكم في ${comp}${city}.\n\nباش نسهلوها عليكم، هاوليك لو سيت بروتوتيب لي وجدناه باش تشوفوه في 30 ثانية برك على التيليفون :\n👉 ${activeProtoUrl}\n\nاسكو نقدر نعيطلك غدوة 3 دقائق نوضحلك كيفاش نطلقوه باسمكم في 48 ساعة ؟ 🤝🇩🇿`;
+    }
+    return `Salam alaykoum${contact} ! 🇩🇿✈️\n\nJe sais que vos journées sont bien chargées en agence cette semaine pour ${comp}${city}.\n\nPour vous faire gagner du temps, voici le lien direct du prototype rapide pour tester en 30 secondes sur smartphone :\n👉 ${activeProtoUrl}\n\nSeriez-vous partant pour un court échange de 3 minutes demain afin de valider si cela correspond à vos objectifs ? 🤝📞`;
+  }
 
   if (followUpContext?.step === 1) {
-    if (followUpContext?.language === 'darija') {
+    if (isDarija) {
       return `Salam alaykoum${contact} ! 🇩🇿✈️\n\nان شاء الله راك مليح خويا. راني نتواصل معاك بخصوص لو سيت بروتوتيب لي وجدناه لوكالة ${comp}${city} :\n👉 ${activeProtoUrl}\n\nاسكو شفتو ولا مازال ما قعدتش ؟ واش رايك فيه ؟ 🤝\n\nرانا هنا باش نساعدوكم ونحطوه باسمكم في 48 ساعة ان شاء الله ✨`;
     }
     return `Salam alaykoum${contact} ! 🇩🇿✈️\n\nJ'espère que vous allez très bien. Je reviens vers vous suite à l'envoi de la démo de la plateforme pour ${comp}${city} :\n👉 ${activeProtoUrl}\n\nAvez-vous eu l'occasion d'y jeter un coup d'œil sur smartphone ? Qu'en avez-vous pensé pour vos clients ? 🤝✨`;
